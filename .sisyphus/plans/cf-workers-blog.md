@@ -712,7 +712,7 @@ Max Concurrent: 5 (Wave 1)
 
 ### Wave 2 — Core APIs
 
-- [ ] 6. Blog Post CRUD API
+- [x] 6. Blog Post CRUD API
 
   **What to do**:
   - 创建 `src/routes/posts.ts` — 所有路由受 authMiddleware 保护：
@@ -811,7 +811,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add blog post CRUD API with pagination and tag management`
   - Files: `src/routes/posts.ts, src/db/queries.ts, src/utils/slugify.ts`
 
-- [ ] 7. Tag System API
+- [x] 7. Tag System API
 
   **What to do**:
   - 创建 `src/routes/tags.ts`:
@@ -869,7 +869,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add tag system API with post count aggregation`
   - Files: `src/routes/tags.ts`
 
-- [ ] 8. Comment System API + Moderation
+- [x] 8. Comment System API + Moderation
 
   **What to do**:
   - 创建 `src/routes/comments.ts`:
@@ -947,7 +947,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add comment system with admin moderation`
   - Files: `src/routes/comments.ts`
 
-- [ ] 9. Image Upload/Serve API Routes
+- [x] 9. Image Upload/Serve API Routes
 
   **What to do**:
   - 创建 `src/routes/images.ts`:

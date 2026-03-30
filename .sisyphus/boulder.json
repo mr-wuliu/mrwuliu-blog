@@ -7,7 +7,11 @@
     "ses_2bf464fb2ffeDqovY9a3ygQsWp",
     "ses_2bf47c2faffetq926JUSZ60A7J",
     "ses_2bf470fddffeJbiBfXqw6d5bnU",
-    "ses_2bf485888ffeHh5Xk8zS4jDj6d"
+    "ses_2bf485888ffeHh5Xk8zS4jDj6d",
+    "ses_2bf3d620cffeyd4DrPzXn87mow",
+    "ses_2bf3dda33ffeXHExoSnjm7EVyB",
+    "ses_2bf3cc76dffeGkFGIonJv3LUA2",
+    "ses_2bf3c5d50ffeFl8C8g4MSwOsXr"
   ],
   "plan_name": "cf-workers-blog",
   "agent": "atlas",
@@ -20,6 +24,15 @@
       "agent": "Sisyphus-Junior",
       "category": "quick",
       "updated_at": "2026-03-30T21:56:25.793Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "Blog Post CRUD API",
+      "session_id": "ses_2bf3dda33ffeXHExoSnjm7EVyB",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-03-30T22:02:11.839Z"
     }
   }
 }

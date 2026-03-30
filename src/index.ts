@@ -1,6 +1,10 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import authRoutes from './routes/auth'
+import tagRoutes from './routes/tags'
+import postRoutes from './routes/posts'
+import commentRoutes from './routes/comments'
+import imageRoutes, { imageServeRoutes } from './routes/images'
 
 type Bindings = {
   DB: D1Database
@@ -24,5 +28,10 @@ app.get('/api/health', (c) => {
 })
 
 app.route('/api/auth', authRoutes)
+app.route('/api/tags', tagRoutes)
+app.route('/api/posts', postRoutes)
+app.route('/api', commentRoutes)
+app.route('/api', imageRoutes)
+app.route('/images', imageServeRoutes)
 
 export default app
