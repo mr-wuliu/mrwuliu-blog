@@ -1,0 +1,23 @@
+name = "blog"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "blog-db"
+database_id = "local-dev-placeholder"
+
+[[r2_buckets]]
+binding = "IMAGES"
+bucket_name = "blog-images"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/images/*"]
+
+[[routes]]
+pattern = "mrwuliu.top"
+custom_domain = true

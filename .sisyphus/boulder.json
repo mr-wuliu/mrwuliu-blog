@@ -1,0 +1,25 @@
+{
+  "active_plan": "/home/mrwuliu/Code/blog/.sisyphus/plans/cf-workers-blog.md",
+  "started_at": "2026-03-30T21:29:43.400Z",
+  "session_ids": [
+    "ses_2bfbdcfbcffeU1dE7J9IKAV6Wh",
+    "ses_2bf45c6a6ffeW93nAUU1cSHHbN",
+    "ses_2bf464fb2ffeDqovY9a3ygQsWp",
+    "ses_2bf47c2faffetq926JUSZ60A7J",
+    "ses_2bf470fddffeJbiBfXqw6d5bnU",
+    "ses_2bf485888ffeHh5Xk8zS4jDj6d"
+  ],
+  "plan_name": "cf-workers-blog",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Project Scaffolding + Wrangler Config + Hono Setup",
+      "session_id": "ses_2bf485888ffeHh5Xk8zS4jDj6d",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-03-30T21:56:25.793Z"
+    }
+  }
+}
