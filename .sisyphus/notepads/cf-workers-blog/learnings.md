@@ -125,3 +125,17 @@
 - `deploy` script chains build + env sourcing + wrangler deploy with CF_API_TOKEN env var
 - Vite build warning: index chunk is 841KB — consider code-splitting for production optimization
 - Root package.json already had most scripts from prior tasks — only `build:deploy` and updated `deploy` were missing
+
+## 2026-03-31 Task 20: Integration Tests
+- `@cloudflare/vitest-pool-workers` v0.13.5 does NOT export `defineWorkersConfig` or `/config` subpath — must use `cloudflareTest` Vite plugin from main entry
+- `readD1Migrations` is exported from `@cloudflare/vitest-pool-workers` main entry (NOT `/config`)
+- `applyD1Migrations` is imported from `cloudflare:test` module (runs in Workers context)
+- `D1Migration` type has `queries: string[]` (NOT `sql: string`) — `applyD1Migrations` handles execution
+- `SELF` from `cloudflare:test` is deprecated — use `exports` from `cloudflare:workers` instead
+- `exports.default.fetch(request)` calls the Worker's default export (Hono app) with auto-provided env/ctx
+- `env` from `cloudflare:workers` gives typed access to bindings (DB, IMAGES, etc.) in Workers context
+- Test credentials passed via `miniflare.bindings` in `cloudflareTest` options — `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`
+- `cloudflareTest` requires `main: "./src/index.ts"` explicitly for `exports` to work (even if wrangler.toml defines it)
+- R2 objects stored via `put()` may not be retrievable via `get()` across fetch calls in miniflare test env — image serve test adapted to use list endpoint instead
+- Auth flow in tests: POST /api/auth/login → extract `admin_token` from Set-Cookie header → send as `Cookie` header in subsequent requests
+- `new Request(new URL(path, "http://localhost"), init)` pattern works for creating test requests to Hono app

@@ -1904,7 +1904,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add build pipeline, deploy scripts, and custom domain config`
   - Files: `scripts/build.sh, package.json (update scripts), wrangler.toml (update database_id)`
 
-- [ ] 20. Integration Tests
+- [x] 20. Integration Tests
 
   **What to do**:
   - 配置 `vitest` 测试框架：

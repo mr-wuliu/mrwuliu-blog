@@ -21,7 +21,8 @@
     "ses_2bf279a4cffeCBdRNO5DmWd31W",
     "ses_2bf283efbffe9ckWKNk17JonLW",
     "ses_2bf28c95cffesFeGYQ3rbtUj0m",
-    "ses_2bf21a05affeF7T46GQg6M66Zf"
+    "ses_2bf21a05affeF7T46GQg6M66Zf",
+    "ses_2bf1dfb00ffe3RM1ZsJx00KWQg"
   ],
   "plan_name": "cf-workers-blog",
   "agent": "atlas",
@@ -70,6 +71,15 @@
       "agent": "Sisyphus-Junior",
       "category": "deep",
       "updated_at": "2026-03-30T22:32:52.483Z"
+    },
+    "todo:20": {
+      "task_key": "todo:20",
+      "task_label": "20",
+      "task_title": "Integration Tests",
+      "session_id": "ses_2bf1dfb00ffe3RM1ZsJx00KWQg",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-03-30T23:03:46.568Z"
     }
   }
 }
