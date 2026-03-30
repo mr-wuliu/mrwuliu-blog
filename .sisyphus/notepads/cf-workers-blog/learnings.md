@@ -93,3 +93,26 @@
 - TOC generation: regex replace on `<h[234]>` tags to inject `id` attributes, extract plain text by stripping inner HTML
 - `InferSelectModel<typeof schema.posts>` from drizzle-orm provides proper TypeScript types for DB rows
 - `getPostWithTags()` from queries.ts returns `{ ...post, tags: Tag[] }` — use it instead of manual joins for post+tags
+
+## 2026-03-31 Task 16: Tiptap Editor + Post Create/Edit
+- Tiptap `useEditor` hook requires `content` prop as initial HTML string
+- `@tiptap/extension-placeholder` uses CSS `::before` pseudo-element on `.is-editor-empty` class — needs Tailwind arbitrary selectors for styling
+- Image upload must use raw `fetch` with `FormData`, NOT `api.post()` which sets `Content-Type: application/json`
+- `@tiptap/extension-mathematics` depends on `katex` — import `katex/dist/katex.min.css` for rendering
+- `tiptap-markdown` installed for future markdown support
+- NewPost.tsx is a thin wrapper that renders EditPost without `:id` param — EditPost detects create vs edit mode via `useParams()`
+- `slugify()` client-side: keep `\u4e00-\u9fa5` (Chinese chars) alongside alphanumeric and hyphens
+- Route split in App.tsx: `/posts/new` → NewPost, `/posts/:id/edit` → EditPost (avoids route param ambiguity)
+
+## 2026-03-31 Task 15: Admin Layout + Auth Guard + Dashboard
+- Auth `/api/auth/me` returns `{ authenticated: true, username: string }` (not `{ sub, iat, exp }`)
+- Auth `/api/auth/login` returns `{ success: true, username: string }` with httpOnly cookie
+- Auth `/api/auth/logout` is `POST` (not GET) — clears cookie
+- `api.ts` has auto-401 redirect to `/admin/login` — but AuthGuard handles auth check before that kicks in
+- BrowserRouter has `basename="/admin"` so all routes are relative (`/login` not `/admin/login`)
+- React Router nested routes: `<Route element={<AuthGuard />}>` renders `<Outlet />` inside AuthGuard, passing user via `useOutletContext<User>()`
+- Layout also renders `<Outlet />` for child routes — double nesting: AuthGuard → Layout → Page
+- `useOutletContext<T>()` must be typed — Layout reads user from AuthGuard's Outlet context
+- Posts API `GET /posts` returns `{ posts: Post[], total: number }` — posts array has raw DB row shape
+- Comments API `GET /admin/comments?status=pending&limit=N` returns `{ comments: Comment[], total: number }`
+- NewPost.tsx was created by parallel task as thin wrapper around EditPost — App.tsx routes `/posts/new` directly to EditPost as per spec

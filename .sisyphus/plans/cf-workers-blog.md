@@ -1423,7 +1423,7 @@ Max Concurrent: 5 (Wave 1)
 
 ### Wave 4 — Admin SPA Features
 
-- [ ] 15. Admin Layout + Auth Guard + Dashboard
+- [x] 15. Admin Layout + Auth Guard + Dashboard
 
   **What to do**:
   - 创建 `admin/src/components/Layout.tsx` — 管理后台布局：
@@ -1518,7 +1518,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add admin layout, auth guard, login page, and dashboard`
   - Files: `admin/src/components/Layout.tsx, admin/src/components/AuthGuard.tsx, admin/src/pages/Login.tsx, admin/src/pages/Dashboard.tsx, admin/src/App.tsx (update)`
 
-- [ ] 16. Tiptap Editor + Post Create/Edit
+- [x] 16. Tiptap Editor + Post Create/Edit
 
   **What to do**:
   - 安装 Tiptap 依赖（在 admin/ 子项目中）：
@@ -1637,7 +1637,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add Tiptap editor with LaTeX support and post create/edit pages`
   - Files: `admin/src/components/Editor.tsx, admin/src/pages/EditPost.tsx, admin/src/pages/NewPost.tsx`
 
-- [ ] 17. Comment Moderation Page
+- [x] 17. Comment Moderation Page
 
   **What to do**:
   - 创建 `admin/src/pages/Comments.tsx` — 评论管理页面：
@@ -1715,7 +1715,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add comment moderation page with filter and batch actions`
   - Files: `admin/src/pages/Comments.tsx`
 
-- [ ] 18. Post List + Management Page
+- [x] 18. Post List + Management Page
 
   **What to do**:
   - 创建 `admin/src/pages/Posts.tsx` — 文章管理列表：
