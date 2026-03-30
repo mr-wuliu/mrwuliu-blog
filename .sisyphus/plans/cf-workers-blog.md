@@ -1793,7 +1793,7 @@ Max Concurrent: 5 (Wave 1)
 
 ### Wave 5 — Deploy + Tests
 
-- [ ] 19. Build Pipeline + Deploy + Custom Domain
+- [x] 19. Build Pipeline + Deploy + Custom Domain
 
   **What to do**:
   - 创建 `scripts/build.sh` — 完整构建脚本：

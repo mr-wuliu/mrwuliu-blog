@@ -20,7 +20,8 @@
     "ses_2bf27e59affeWVGKyIIfELG570",
     "ses_2bf279a4cffeCBdRNO5DmWd31W",
     "ses_2bf283efbffe9ckWKNk17JonLW",
-    "ses_2bf28c95cffesFeGYQ3rbtUj0m"
+    "ses_2bf28c95cffesFeGYQ3rbtUj0m",
+    "ses_2bf21a05affeF7T46GQg6M66Zf"
   ],
   "plan_name": "cf-workers-blog",
   "agent": "atlas",
@@ -60,6 +61,15 @@
       "agent": "Sisyphus-Junior",
       "category": "visual-engineering",
       "updated_at": "2026-03-30T22:27:52.395Z"
+    },
+    "todo:19": {
+      "task_key": "todo:19",
+      "task_label": "19",
+      "task_title": "Build Pipeline + Deploy + Custom Domain",
+      "session_id": "ses_2bf21a05affeF7T46GQg6M66Zf",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-03-30T22:32:52.483Z"
     }
   }
 }

@@ -116,3 +116,12 @@
 - Posts API `GET /posts` returns `{ posts: Post[], total: number }` — posts array has raw DB row shape
 - Comments API `GET /admin/comments?status=pending&limit=N` returns `{ comments: Comment[], total: number }`
 - NewPost.tsx was created by parallel task as thin wrapper around EditPost — App.tsx routes `/posts/new` directly to EditPost as per spec
+
+## 2026-03-31 Task 19: Build Pipeline + Deploy Scripts
+- `scripts/build.sh` uses `set -e` for fail-fast behavior — any command failure stops the script
+- Admin SPA builds to `../public/admin/` (configured in admin/vite.config.ts) — 61 asset files including KaTeX fonts
+- `npm run build` (root) delegates to `cd admin && npm run build` — lightweight wrapper
+- `build:deploy` uses `bash scripts/build.sh` for explicit shell invocation (cross-platform safe)
+- `deploy` script chains build + env sourcing + wrangler deploy with CF_API_TOKEN env var
+- Vite build warning: index chunk is 841KB — consider code-splitting for production optimization
+- Root package.json already had most scripts from prior tasks — only `build:deploy` and updated `deploy` were missing
