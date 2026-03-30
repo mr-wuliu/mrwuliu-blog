@@ -1023,7 +1023,7 @@ Max Concurrent: 5 (Wave 1)
 
 ### Wave 3 — Public Blog SSR
 
-- [ ] 10. Blog Layout + Minimalist CSS Design
+- [x] 10. Blog Layout + Minimalist CSS Design
 
   **What to do**:
   - 创建 `src/views/layout.tsx` — 基础 HTML 布局：
@@ -1109,7 +1109,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add blog layout, SEO component, and minimalist CSS design`
   - Files: `src/views/layout.tsx, src/views/components/seo.tsx, public/css/style.css`
 
-- [ ] 11. Homepage SSR + Pagination
+- [x] 11. Homepage SSR + Pagination
 
   **What to do**:
   - 创建 `src/views/home.tsx` — 首页 JSX 模板：
@@ -1186,7 +1186,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add homepage SSR with post list and pagination`
   - Files: `src/views/home.tsx, src/routes/blog.ts`
 
-- [ ] 12. Post Detail SSR + LaTeX Rendering + Comments Display
+- [x] 12. Post Detail SSR + LaTeX Rendering + Comments Display
 
   **What to do**:
   - 创建 `src/views/post.tsx` — 文章详情 JSX 模板：
@@ -1281,7 +1281,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add post detail SSR with LaTeX rendering and comments`
   - Files: `src/views/post.tsx, src/views/404.tsx, src/routes/blog.ts (update)`
 
-- [ ] 13. Tag Page SSR + RSS Feed
+- [x] 13. Tag Page SSR + RSS Feed
 
   **What to do**:
   - 创建 `src/views/tag.tsx` — 标签页模板：
@@ -1359,7 +1359,7 @@ Max Concurrent: 5 (Wave 1)
   - Message: `feat: add tag page SSR and RSS feed generation`
   - Files: `src/views/tag.tsx, src/utils/rss.ts, src/routes/blog.ts (update)`
 
-- [ ] 14. SEO Meta Tags + Open Graph
+- [x] 14. SEO Meta Tags + Open Graph
 
   **What to do**:
   - 更新 `src/views/components/seo.tsx` — 完善实现：

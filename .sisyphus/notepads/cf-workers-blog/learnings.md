@@ -52,3 +52,44 @@
 - `hashPassword`/`verifyPassword` still exported for future D1-based multi-user support
 - Hono `setCookie` with `sameSite: 'Strict'` literal works (Hono types accept string)
 - `createMiddleware` from `hono/factory` with generic `{ Bindings, Variables }` provides typed context
+
+## 2026-03-31 Task 14: SEO Meta Tags + Open Graph
+- SEO component uses constants for SITE_NAME, BASE_URL, DEFAULT_DESCRIPTION — centralized config
+- Title format: `{title} | {siteName}` for all pages, except homepage where title === siteName (no duplication)
+- URL handling: relative paths (e.g., `/tags/foo`) prepended with BASE_URL in SEO component, not at call site
+- Image URL resolution: handles both absolute URLs and relative paths
+- Layout passes all SEO props through to SEO component — page components just pass data to Layout
+- `description` and `url` props are optional on both Layout and SEO (sensible defaults)
+- Only pre-existing tsc error in `src/routes/blog.ts` (`FC.render()` doesn't exist) — not related to SEO changes
+
+## 2026-03-31 Task 11: Homepage SSR + Pagination
+- Hono JSX `.tsx` files required for JSX syntax — `.ts` files cannot contain JSX even with `jsxImportSource` configured
+- Hono FC components don't have a `.render()` method — use JSX syntax `<Component props />` or call as function `Component({props})`
+- `c.html()` accepts JSX elements directly in `.tsx` files, but not in `.ts` files (type mismatch with `HtmlEscapedString`)
+- `getPublishedPosts()` returns posts without tags — must call `getPostWithTags()` separately for each post (N+1 acceptable for 10 posts/page)
+- Date formatting: `new Date(isoString)` + `getFullYear()/getMonth()/getDate()` for "YYYY年MM月DD日" format
+- `app.route('/', blogRoutes)` mounts blog routes at root — homepage `GET /` is defined in blogRoutes
+- Removed placeholder `app.get('/', () => c.text('Blog is running'))` replaced with SSR blog homepage
+
+## 2026-03-31 Task 13: Tag Page SSR + RSS Feed
+- `src/routes/blog.ts` was renamed to `blog.tsx` by parallel Task 12 — must handle file extension changes
+- Hono `.tsx` files can use `<Component props={...} />` JSX syntax with `c.html()` directly — no need for `renderToString` or `.render()`
+- Function call syntax `Component({...})` returns `HtmlEscapedString | null` which doesn't match `c.html()` signature — MUST use JSX syntax in `.tsx` route files
+- `renderToString` from `hono/jsx/dom/server` is available but unnecessary when using `.tsx` files with JSX syntax
+- RSS 2.0 pubDate must be RFC 822 format — `new Date().toUTCString()` produces correct format
+- CDATA sections `<![CDATA[...]]>` used for RSS description content to handle special characters
+- Tag posts query requires joining postTags → posts with status='published' filter + count query for pagination
+- Parallel tasks heavily modify shared files — always re-read before editing
+
+## 2026-03-31 Task 12: Post Detail SSR + LaTeX + Comments
+- KaTeX `renderToString(tex, { displayMode, throwOnError: false })` works in Workers runtime
+- KaTeX CSS loaded conditionally via layout `type === 'article'` check — only for post detail pages
+- LaTeX rendering protects `<code>`, `<pre>`, and HTML tags from processing via placeholder substitution pattern
+- Display math `$$...$$` must be matched before inline `$...$` to avoid partial matches
+- Hono JSX form attributes: `method` must be lowercase `"post"` (not `"POST"`), `maxlength` expects number not string
+- HTML forms send `application/x-www-form-urlencoded` — can't POST directly to JSON API endpoints
+- Solution: added a form-handling route `POST /posts/:slug/comments` in blog.tsx that accepts both JSON and form-data
+- `c.req.parseBody()` parses form data in Hono; `c.req.json()` parses JSON — check `Content-Type` header to handle both
+- TOC generation: regex replace on `<h[234]>` tags to inject `id` attributes, extract plain text by stripping inner HTML
+- `InferSelectModel<typeof schema.posts>` from drizzle-orm provides proper TypeScript types for DB rows
+- `getPostWithTags()` from queries.ts returns `{ ...post, tags: Tag[] }` — use it instead of manual joins for post+tags

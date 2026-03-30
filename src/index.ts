@@ -5,6 +5,7 @@ import tagRoutes from './routes/tags'
 import postRoutes from './routes/posts'
 import commentRoutes from './routes/comments'
 import imageRoutes, { imageServeRoutes } from './routes/images'
+import blogRoutes from './routes/blog'
 
 type Bindings = {
   DB: D1Database
@@ -19,13 +20,11 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', logger())
 
-app.get('/', (c) => {
-  return c.text('Blog is running')
-})
-
 app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
+
+app.route('/', blogRoutes)
 
 app.route('/api/auth', authRoutes)
 app.route('/api/tags', tagRoutes)
