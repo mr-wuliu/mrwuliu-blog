@@ -94,21 +94,21 @@ export default function EditPost() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-400">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-sm opacity-50">Loading...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      <div className="flex-1 max-w-4xl w-full mx-auto px-6 py-8 flex flex-col gap-4">
+    <div className="min-h-screen text-black flex flex-col">
+      <div className="flex-1 max-w-4xl w-full mx-auto px-8 py-8 flex flex-col gap-4">
         <input
           type="text"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
           placeholder="文章标题"
-          className="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder-gray-600 text-white"
+          className="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder-black placeholder-opacity-30 text-black"
         />
 
         <input
@@ -116,7 +116,7 @@ export default function EditPost() {
           value={slug}
           onChange={(e) => handleSlugChange(e.target.value)}
           placeholder="url-slug"
-          className="w-full text-sm bg-transparent border-none outline-none text-gray-500 placeholder-gray-700"
+          className="w-full text-sm bg-transparent border-none outline-none text-black opacity-50 placeholder-black placeholder-opacity-20"
         />
 
         <input
@@ -124,7 +124,7 @@ export default function EditPost() {
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
           placeholder="标签（逗号分隔）"
-          className="w-full text-sm bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 outline-none text-gray-300 placeholder-gray-600 focus:ring-1 focus:ring-blue-500"
+          className="w-full text-sm border border-black px-4 py-2.5 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black"
         />
 
         <textarea
@@ -132,7 +132,7 @@ export default function EditPost() {
           onChange={(e) => setExcerpt(e.target.value)}
           placeholder="摘要（可选）"
           rows={2}
-          className="w-full text-sm bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 outline-none text-gray-300 placeholder-gray-600 resize-none focus:ring-1 focus:ring-blue-500"
+          className="w-full text-sm border border-black px-4 py-2.5 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black"
         />
 
         <div className="flex-1">
@@ -140,13 +140,13 @@ export default function EditPost() {
         </div>
       </div>
 
-      <div className="sticky bottom-0 bg-gray-800 border-t border-gray-700 px-6 py-3">
+      <div className="sticky bottom-0 bg-white border-t border-black px-8 py-4">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <button
             type="button"
             onClick={() => handleSave('published')}
             disabled={saving || !title}
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors cursor-pointer"
+            className="px-6 py-2.5 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             发布
           </button>
@@ -154,7 +154,7 @@ export default function EditPost() {
             type="button"
             onClick={() => handleSave('draft')}
             disabled={saving || !title}
-            className="px-5 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors cursor-pointer"
+            className="px-6 py-2.5 font-bold text-sm border border-black border-opacity-50 rounded-none uppercase tracking-widest text-black hover:border-opacity-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
             保存草稿
           </button>
@@ -163,7 +163,7 @@ export default function EditPost() {
               type="button"
               onClick={() => handleSave('published')}
               disabled={saving || !title}
-              className="px-5 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors cursor-pointer"
+              className="px-6 py-2.5 font-bold text-sm border border-green-600 rounded-none uppercase tracking-widest text-green-600 hover:bg-green-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               更新
             </button>
@@ -171,11 +171,11 @@ export default function EditPost() {
           <button
             type="button"
             onClick={() => navigate('/posts')}
-            className="px-5 py-2 text-gray-400 hover:text-white text-sm transition-colors cursor-pointer"
+            className="px-6 py-2.5 font-bold text-sm text-black opacity-70 hover:opacity-100 transition-all cursor-pointer"
           >
             取消
           </button>
-          {saving && <span className="text-sm text-gray-400">保存中...</span>}
+          {saving && <span className="text-xs font-bold uppercase tracking-widest opacity-50">保存中...</span>}
         </div>
       </div>
     </div>

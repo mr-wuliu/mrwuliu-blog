@@ -1,5 +1,5 @@
-import { eq, desc, and, sql } from 'drizzle-orm'
-import { posts, postTags, tags } from './schema'
+import { eq, desc, and, sql, asc } from 'drizzle-orm'
+import { posts, postTags, tags, siteConfig, projects } from './schema'
 import type { Database } from './index'
 
 // Get posts with pagination (admin - all statuses)
@@ -76,4 +76,95 @@ export async function getPublishedPosts(
 
   const total = countResult[0]?.count ?? 0
   return { posts: result, total, page, limit }
+}
+
+// Site config queries
+export async function getSiteConfig(db: Database, key: string) {
+  const [config] = await db.select().from(siteConfig).where(eq(siteConfig.key, key))
+  return config ?? undefined
+}
+
+export async function upsertSiteConfig(db: Database, data: { key: string; value: string }) {
+  await db
+    .insert(siteConfig)
+    .values({ key: data.key, value: data.value, updatedAt: new Date().toISOString() })
+    .onConflictDoUpdate({
+      target: siteConfig.key,
+      set: { value: data.value, updatedAt: new Date().toISOString() },
+    })
+  const [config] = await db.select().from(siteConfig).where(eq(siteConfig.key, data.key))
+  return config
+}
+
+// Project queries
+export async function getPublishedProjects(db: Database) {
+  return db
+    .select()
+    .from(projects)
+    .where(eq(projects.status, 'published'))
+    .orderBy(asc(projects.sortOrder))
+}
+
+export async function getAllProjects(db: Database) {
+  return db.select().from(projects).orderBy(asc(projects.sortOrder))
+}
+
+export async function getProjectById(db: Database, id: string) {
+  const [project] = await db.select().from(projects).where(eq(projects.id, id))
+  return project ?? undefined
+}
+
+export async function createProject(
+  db: Database,
+  data: {
+    title: string
+    description?: string
+    url?: string
+    coverImageKey?: string
+    techStack?: string
+    sortOrder?: number
+    status?: 'draft' | 'published'
+  }
+) {
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  await db.insert(projects).values({
+    id,
+    title: data.title,
+    description: data.description ?? '',
+    url: data.url,
+    coverImageKey: data.coverImageKey,
+    techStack: data.techStack ?? '',
+    sortOrder: data.sortOrder ?? 0,
+    status: data.status ?? 'draft',
+    createdAt: now,
+    updatedAt: now,
+  })
+  const [project] = await db.select().from(projects).where(eq(projects.id, id))
+  return project
+}
+
+export async function updateProject(
+  db: Database,
+  id: string,
+  data: {
+    title?: string
+    description?: string
+    url?: string
+    coverImageKey?: string
+    techStack?: string
+    sortOrder?: number
+    status?: 'draft' | 'published'
+  }
+) {
+  await db
+    .update(projects)
+    .set({ ...data, updatedAt: new Date().toISOString() })
+    .where(eq(projects.id, id))
+  const [project] = await db.select().from(projects).where(eq(projects.id, id))
+  return project
+}
+
+export async function deleteProject(db: Database, id: string) {
+  await db.delete(projects).where(eq(projects.id, id))
 }

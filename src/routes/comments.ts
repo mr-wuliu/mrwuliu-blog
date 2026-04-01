@@ -2,20 +2,15 @@ import { Hono } from 'hono'
 import { eq, and, desc, sql } from 'drizzle-orm'
 import { createDb } from '../db'
 import { comments, posts } from '../db/schema'
-import { authMiddleware } from '../middleware/auth'
 
 type Bindings = {
   DB: D1Database
   IMAGES: R2Bucket
   ASSETS: Fetcher
-  JWT_SECRET: string
-  ADMIN_USERNAME: string
-  ADMIN_PASSWORD: string
 }
 
 const commentRoutes = new Hono<{ Bindings: Bindings }>()
 
-// XSS protection: escape HTML entities
 function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -25,17 +20,14 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#039;')
 }
 
-// Email validation
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-// POST /posts/:postId/comments — Submit comment (public, no auth required)
 commentRoutes.post('/posts/:postId/comments', async (c) => {
   const postId = c.req.param('postId')
   const body = await c.req.json<{ authorName: string; authorEmail?: string; content: string }>()
 
-  // Validate inputs
   if (!body.authorName || body.authorName.length < 1 || body.authorName.length > 50) {
     return c.json({ error: 'Author name must be 1-50 characters' }, 400)
   }
@@ -48,13 +40,11 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
 
   const db = createDb(c.env.DB)
 
-  // Verify post exists
   const [post] = await db.select().from(posts).where(eq(posts.id, postId))
   if (!post) return c.json({ error: 'Post not found' }, 404)
 
   const id = crypto.randomUUID()
 
-  // Escape HTML to prevent XSS
   const safeContent = escapeHtml(body.content)
   const safeName = escapeHtml(body.authorName)
 
@@ -70,7 +60,6 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   return c.json({ id, status: 'pending', authorName: safeName, content: safeContent }, 201)
 })
 
-// GET /posts/:postId/comments — Public: only approved comments
 commentRoutes.get('/posts/:postId/comments', async (c) => {
   const postId = c.req.param('postId')
   const db = createDb(c.env.DB)
@@ -84,8 +73,7 @@ commentRoutes.get('/posts/:postId/comments', async (c) => {
   return c.json(result)
 })
 
-// GET /admin/comments — Admin: all comments with status filter
-commentRoutes.get('/admin/comments', authMiddleware, async (c) => {
+commentRoutes.get('/admin/comments', async (c) => {
   const db = createDb(c.env.DB)
   const status = c.req.query('status') as 'pending' | 'approved' | 'rejected' | undefined
   const page = Number(c.req.query('page') ?? 1)
@@ -110,8 +98,7 @@ commentRoutes.get('/admin/comments', authMiddleware, async (c) => {
   return c.json({ comments: result, total: countResult[0]?.count ?? 0, page, limit })
 })
 
-// PUT /admin/comments/:id — Admin: approve/reject comment
-commentRoutes.put('/admin/comments/:id', authMiddleware, async (c) => {
+commentRoutes.put('/admin/comments/:id', async (c) => {
   const id = c.req.param('id')
   const { status } = await c.req.json<{ status: 'approved' | 'rejected' }>()
 
@@ -129,8 +116,7 @@ commentRoutes.put('/admin/comments/:id', authMiddleware, async (c) => {
   return c.json(updated)
 })
 
-// DELETE /admin/comments/:id — Admin: delete comment
-commentRoutes.delete('/admin/comments/:id', authMiddleware, async (c) => {
+commentRoutes.delete('/admin/comments/:id', async (c) => {
   const id = c.req.param('id')
   const db = createDb(c.env.DB)
 

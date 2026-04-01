@@ -6,3 +6,92 @@ body {
   margin: 0;
   font-family: system-ui, -apple-system, sans-serif;
 }
+
+/* Block math — rendered mode */
+.tiptap [data-type="block-math"] {
+  margin: 1rem 0;
+  overflow-x: auto;
+  padding: 0.75rem 1rem;
+  background: #fafafa;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.tiptap [data-type="block-math"]:hover {
+  background: #f0f0f0;
+}
+
+.tiptap [data-type="block-math"].ProseMirror-selectednode {
+  border-color: #000;
+  outline: 2px solid rgba(0, 0, 0, 0.15);
+}
+
+/* Inline math — rendered mode */
+.tiptap [data-type="inline-math"] {
+  padding: 0.1em 0.3em;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.tiptap [data-type="inline-math"]:hover {
+  background: #e8e8e8;
+}
+
+.tiptap [data-type="inline-math"].ProseMirror-selectednode {
+  background: #e0e0e0;
+}
+
+/* Math editing mode — textarea */
+.math-edit-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+  color: #000;
+  resize: vertical;
+  outline: none;
+}
+
+.math-edit-textarea:focus {
+  border-color: #000;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+/* Math editing mode — input (inline) */
+.math-edit-input {
+  padding: 2px 6px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: #fff;
+  color: #000;
+  outline: none;
+  width: 200px;
+}
+
+.math-edit-input:focus {
+  border-color: #000;
+}
+
+/* Live preview area */
+.math-preview {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #fafafa;
+  border: 1px dashed rgba(0, 0, 0, 0.15);
+  text-align: center;
+  overflow-x: auto;
+}
+
+.math-preview-error {
+  color: #dc2626;
+  font-family: monospace;
+  font-size: 13px;
+}

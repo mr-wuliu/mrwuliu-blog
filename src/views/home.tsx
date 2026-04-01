@@ -44,20 +44,20 @@ function formatDate(isoDate: string | null): string {
 
 const PostCard: FC<{ post: Post }> = ({ post }) => {
   return (
-    <article class="post-card">
-      <h2 class="post-card__title">
-        <a href={`/posts/${post.slug}`}>{post.title}</a>
-      </h2>
-      {post.publishedAt && (
-        <time class="post-card__date" datetime={post.publishedAt}>
-          {formatDate(post.publishedAt)}
-        </time>
-      )}
-      {post.excerpt && <p class="post-card__excerpt">{post.excerpt}</p>}
+    <article class="p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-6 cursor-pointer">
+      <a href={`/posts/${post.slug}`} class="no-underline text-black block">
+        <h2 class="text-xl font-bold tracking-tight mb-2">{post.title}</h2>
+        {post.publishedAt && (
+          <time class="text-xs font-bold uppercase tracking-widest opacity-50" datetime={post.publishedAt}>
+            {formatDate(post.publishedAt)}
+          </time>
+        )}
+        {post.excerpt && <p class="mt-3 opacity-70 text-lg leading-relaxed">{post.excerpt}</p>}
+      </a>
       {post.tags && post.tags.length > 0 && (
-        <div class="post-card__tags">
+        <div class="mt-4 flex flex-wrap gap-2">
           {post.tags.map((tag) => (
-            <a href={`/tags/${tag.slug}`} class="post-card__tag">{tag.name}</a>
+            <a href={`/tags/${tag.slug}`} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
           ))}
         </div>
       )}
@@ -70,20 +70,20 @@ const Pagination: FC<{ pagination: PaginationData }> = ({ pagination }) => {
   if (totalPages <= 1) return null
 
   return (
-    <nav class="pagination" aria-label="文章分页">
-      <div class="pagination__links">
+    <nav class="mt-12 pt-8 border-t border-black" aria-label="文章分页">
+      <div class="flex justify-between">
         {page > 1 && (
-          <a href={`/?page=${page - 1}`} class="pagination__link pagination__link--prev">
+          <a href={`/?page=${page - 1}`} class="text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline">
             ← 上一页
           </a>
         )}
         {page < totalPages && (
-          <a href={`/?page=${page + 1}`} class="pagination__link pagination__link--next">
+          <a href={`/?page=${page + 1}`} class="ml-auto text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline">
             下一页 →
           </a>
         )}
       </div>
-      <span class="pagination__info">
+      <span class="block mt-4 text-center text-xs font-bold uppercase tracking-widest opacity-50">
         第 {page} 页 / 共 {totalPages} 页
       </span>
     </nav>
@@ -98,15 +98,15 @@ const Home: FC<HomeProps> = ({ posts, pagination }) => {
       url="/"
       type="website"
     >
-      <div class="home">
-        <h1 class="home__title">最新文章</h1>
+      <div>
+        <h1 class="text-4xl font-bold tracking-tight mb-10">最新文章</h1>
         {posts.length === 0 ? (
-          <div class="home__empty">
+          <div class="py-16 text-center opacity-50 text-lg">
             <p>暂无文章</p>
           </div>
         ) : (
           <>
-            <div class="home__posts">
+            <div>
               {posts.map((post) => (
                 <PostCard post={post} />
               ))}

@@ -36,9 +36,9 @@ const STATUS_LABEL: Record<CommentStatus, string> = {
 }
 
 const STATUS_BADGE: Record<CommentStatus, string> = {
-  pending: 'bg-yellow-900/50 text-yellow-400 border-yellow-700',
-  approved: 'bg-green-900/50 text-green-400 border-green-700',
-  rejected: 'bg-red-900/50 text-red-400 border-red-700',
+  pending: 'bg-yellow-500/20 text-yellow-600 border-black',
+  approved: 'bg-green-500/20 text-green-600 border-black',
+  rejected: 'bg-red-500/20 text-red-600 border-black',
 }
 
 const FILTER_EMPTY: Record<FilterTab, string> = {
@@ -102,113 +102,109 @@ export default function Comments() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <h1 className="text-xl font-bold">评论管理</h1>
-      </header>
+    <div className="space-y-6">
+      <h1 className="text-xl font-bold tracking-tight text-black">评论管理</h1>
 
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        <div className="flex gap-1 mb-6 bg-gray-800 rounded-lg p-1 border border-gray-700 w-fit">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => handleFilterChange(tab.key)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                filter === tab.key
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+      <div className="flex gap-2 mb-6">
+        {TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => handleFilterChange(tab.key)}
+            className={
+              filter === tab.key
+                ? 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black text-black bg-black bg-opacity-5 transition-all'
+                : 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black border-opacity-30 text-black opacity-70 hover:opacity-100 hover:border-opacity-100 transition-all'
+            }
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {loading && (
+        <div className="text-center opacity-50 py-16 text-sm">加载中...</div>
+      )}
+
+      {!loading && comments.length === 0 && (
+        <div className="text-center opacity-50 py-16 text-sm">
+          {FILTER_EMPTY[filter]}
         </div>
+      )}
 
-        {loading && (
-          <div className="text-center text-gray-500 py-12">加载中...</div>
-        )}
-
-        {!loading && comments.length === 0 && (
-          <div className="text-center text-gray-500 py-12">
-            {FILTER_EMPTY[filter]}
-          </div>
-        )}
-
-        {!loading && comments.length > 0 && (
-          <div className="space-y-4">
-            {comments.map((comment) => (
-              <div
-                key={comment.id}
-                className="bg-gray-800 rounded-lg border border-gray-700 p-5"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="font-bold text-white">{comment.authorName}</span>
-                    <span className="text-sm text-gray-500">{formatDate(comment.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500">文章 #{comment.postId}</span>
-                    <span className={`text-xs px-2 py-0.5 rounded border ${STATUS_BADGE[comment.status]}`}>
-                      {STATUS_LABEL[comment.status]}
-                    </span>
-                  </div>
+      {!loading && comments.length > 0 && (
+        <div className="space-y-4">
+          {comments.map((comment) => (
+            <div
+              key={comment.id}
+              className="bg-white border border-black p-6 mb-4"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-3">
+                  <span className="font-bold text-black text-sm">{comment.authorName}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-50">{formatDate(comment.createdAt)}</span>
                 </div>
-
-                <p className="text-gray-300 mb-3">
-                  {truncate(comment.content, 100)}
-                </p>
-
-                <div className="flex gap-2">
-                  {comment.status !== 'approved' && (
-                    <button
-                      onClick={() => updateStatus(comment.id, 'approved')}
-                      className="px-3 py-1 text-sm rounded bg-green-700 hover:bg-green-600 text-white transition-colors"
-                    >
-                      通过
-                    </button>
-                  )}
-                  {comment.status !== 'rejected' && (
-                    <button
-                      onClick={() => updateStatus(comment.id, 'rejected')}
-                      className="px-3 py-1 text-sm rounded bg-red-700 hover:bg-red-600 text-white transition-colors"
-                    >
-                      拒绝
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDelete(comment.id)}
-                    className="px-3 py-1 text-sm rounded bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
-                  >
-                    删除
-                  </button>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-50">文章 #{comment.postId}</span>
+                  <span className={`text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 ${STATUS_BADGE[comment.status]}`}>
+                    {STATUS_LABEL[comment.status]}
+                  </span>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {!loading && total > 0 && (
-          <div className="flex items-center justify-center gap-4 mt-8 text-sm text-gray-400">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-3 py-1 rounded bg-gray-800 border border-gray-700 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              上一页
-            </button>
-            <span>
-              第 {page} 页 / 共 {totalPages} 页
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-3 py-1 rounded bg-gray-800 border border-gray-700 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              下一页
-            </button>
-          </div>
-        )}
-      </main>
+              <p className="opacity-70 text-sm leading-relaxed mb-4">
+                {truncate(comment.content, 100)}
+              </p>
+
+              <div className="flex gap-2">
+                {comment.status !== 'approved' && (
+                  <button
+                    onClick={() => updateStatus(comment.id, 'approved')}
+                    className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all"
+                  >
+                    通过
+                  </button>
+                )}
+                {comment.status !== 'rejected' && (
+                  <button
+                    onClick={() => updateStatus(comment.id, 'rejected')}
+                    className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all"
+                  >
+                    拒绝
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDelete(comment.id)}
+                  className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-black opacity-70 hover:opacity-100 hover:bg-black hover:text-white transition-all"
+                >
+                  删除
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {!loading && total > 0 && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            上一页
+          </button>
+          <span className="text-xs font-bold uppercase tracking-widest opacity-50">
+            第 {page} 页 / 共 {totalPages} 页
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            下一页
+          </button>
+        </div>
+      )}
     </div>
   )
 }

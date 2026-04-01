@@ -92,28 +92,28 @@ export default function Posts() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-100">文章管理</h1>
-          <p className="text-sm text-gray-400 mt-1">共 {total} 篇文章</p>
+          <h1 className="text-xl font-bold tracking-tight text-black">文章管理</h1>
+          <p className="text-xs font-bold uppercase tracking-widest opacity-50 mt-1">共 {total} 篇文章</p>
         </div>
         <button
           onClick={() => navigate('/posts/new')}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+          className="px-6 py-2.5 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white transition-all"
         >
           新文章
         </button>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <div className="flex gap-1 bg-gray-800 rounded-lg p-1">
+        <div className="flex gap-2">
           {tabs.map((tab) => (
             <button
               key={String(tab.value)}
               onClick={() => { setStatus(tab.value); setPage(1) }}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+              className={
                 status === tab.value
-                  ? 'bg-gray-700 text-white font-medium'
-                  : 'text-gray-400 hover:text-gray-200'
-              }`}
+                  ? 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black text-black bg-black bg-opacity-5 transition-all'
+                  : 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black border-opacity-30 text-black opacity-70 hover:opacity-100 hover:border-opacity-100 transition-all'
+              }
             >
               {tab.label}
             </button>
@@ -125,41 +125,41 @@ export default function Posts() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="搜索文章标题..."
-          className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 w-64"
+          className="px-4 py-2.5 border border-black text-sm focus:outline-none focus:border-black w-64 placeholder-black placeholder-opacity-30"
         />
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-gray-500">加载中...</div>
+        <div className="text-center py-16 opacity-50 text-sm">加载中...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">
-          <p className="text-gray-500 mb-4">暂无文章</p>
+          <p className="opacity-50 text-sm mb-4">暂无文章</p>
           <button
             onClick={() => navigate('/posts/new')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="px-6 py-2.5 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white transition-all"
           >
             写第一篇文章
           </button>
         </div>
       ) : (
         <>
-          <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
+          <div className="border border-black overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-700 text-left">
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                <tr className="border-b border-black bg-black bg-opacity-5">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     标题
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     状态
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     标签
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     日期
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider text-right">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left text-right">
                     操作
                   </th>
                 </tr>
@@ -168,34 +168,34 @@ export default function Posts() {
                 {filtered.map((post) => (
                   <tr
                     key={post.id}
-                    className="border-b border-gray-700/50 hover:bg-gray-750 transition-colors"
+                    className="border-b border-black border-opacity-20 hover:bg-black hover:bg-opacity-5 transition-all"
                   >
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3">
                       <button
                         onClick={() => navigate(`/posts/${post.id}/edit`)}
-                        className="text-gray-200 hover:text-blue-400 font-medium text-left transition-colors"
+                        className="text-black font-medium text-sm text-left hover:opacity-70 transition-all"
                       >
                         {post.title}
                       </button>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3">
                       {post.status === 'published' ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-900/50 text-green-400">
+                        <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-green-500/20 text-green-600">
                           已发布
                         </span>
                       ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-900/50 text-yellow-400">
+                        <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-yellow-500/20 text-yellow-600">
                           草稿
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-5 py-3">
                       <div className="flex gap-1 flex-wrap">
                         {post.tags && post.tags.length > 0
                           ? post.tags.map((tag) => (
                               <span
                                 key={tag.id}
-                                className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-700 text-gray-300"
+                                className="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-30 px-2 py-0.5 text-black opacity-70"
                               >
                                 {tag.name}
                               </span>
@@ -203,23 +203,23 @@ export default function Posts() {
                           : null}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-400 whitespace-nowrap">
+                    <td className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 whitespace-nowrap">
                       {formatDate(
                         post.status === 'published' && post.publishedAt
                           ? post.publishedAt
                           : post.createdAt,
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <td className="px-5 py-3 text-right whitespace-nowrap">
                       <button
                         onClick={() => navigate(`/posts/${post.id}/edit`)}
-                        className="text-sm text-blue-400 hover:text-blue-300 mr-3 transition-colors"
+                        className="text-xs font-bold uppercase tracking-widest text-black opacity-70 hover:opacity-100 mr-3 transition-all"
                       >
                         编辑
                       </button>
                       <button
                         onClick={() => handleDelete(post.id)}
-                        className="text-sm text-red-400 hover:text-red-300 transition-colors"
+                        className="text-xs font-bold uppercase tracking-widest text-red-600 opacity-70 hover:opacity-100 transition-all"
                       >
                         删除
                       </button>
@@ -231,21 +231,21 @@ export default function Posts() {
           </div>
 
           <div className="flex items-center justify-between mt-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-xs font-bold uppercase tracking-widest opacity-50">
               第 {page} / {totalPages} 页
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 上一页
               </button>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
               >
                 下一页
               </button>

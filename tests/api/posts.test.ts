@@ -1,10 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { appFetch, getAdminCookie, withAuth } from "../helpers";
+import { appFetch } from "../helpers";
 
 describe("Posts API", () => {
-  it("should create a post with tags (auth required)", async () => {
-    const cookie = await getAdminCookie();
-    const res = await appFetch("/api/posts", withAuth(cookie, {
+  it("should create a post with tags", async () => {
+    const res = await appFetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -13,7 +12,7 @@ describe("Posts API", () => {
         status: "draft",
         tags: ["test", "blog"],
       }),
-    }));
+    });
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.title).toBe("Test Post");
@@ -23,8 +22,7 @@ describe("Posts API", () => {
   });
 
   it("should list posts with pagination", async () => {
-    const cookie = await getAdminCookie();
-    const res = await appFetch("/api/posts", withAuth(cookie));
+    const res = await appFetch("/api/posts");
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.posts).toBeDefined();
@@ -33,54 +31,41 @@ describe("Posts API", () => {
   });
 
   it("should get, update, and delete a single post", async () => {
-    const cookie = await getAdminCookie();
-
-    // Create
-    const createRes = await appFetch("/api/posts", withAuth(cookie, {
+    const createRes = await appFetch("/api/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "CRUD Post", content: "Original", status: "draft" }),
-    }));
+    });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
 
-    // Read
-    const getRes = await appFetch(`/api/posts/${created.id}`, withAuth(cookie));
+    const getRes = await appFetch(`/api/posts/${created.id}`);
     expect(getRes.status).toBe(200);
     const fetched = await getRes.json();
     expect(fetched.id).toBe(created.id);
 
-    // Update
-    const updateRes = await appFetch(`/api/posts/${created.id}`, withAuth(cookie, {
+    const updateRes = await appFetch(`/api/posts/${created.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: "Updated Post", status: "published" }),
-    }));
+    });
     expect(updateRes.status).toBe(200);
     const updated = await updateRes.json();
     expect(updated.title).toBe("Updated Post");
     expect(updated.status).toBe("published");
     expect(updated.publishedAt).toBeDefined();
 
-    // Delete
-    const deleteRes = await appFetch(`/api/posts/${created.id}`, withAuth(cookie, { method: "DELETE" }));
+    const deleteRes = await appFetch(`/api/posts/${created.id}`, { method: "DELETE" });
     expect(deleteRes.status).toBe(200);
     const deleted = await deleteRes.json();
     expect(deleted.success).toBe(true);
 
-    // Verify deleted
-    const goneRes = await appFetch(`/api/posts/${created.id}`, withAuth(cookie));
+    const goneRes = await appFetch(`/api/posts/${created.id}`);
     expect(goneRes.status).toBe(404);
   });
 
-  it("should reject unauthenticated access", async () => {
-    const res = await appFetch("/api/posts");
-    expect(res.status).toBe(401);
-  });
-
   it("should return 404 for non-existent post", async () => {
-    const cookie = await getAdminCookie();
-    const res = await appFetch("/api/posts/nonexistent-id", withAuth(cookie));
+    const res = await appFetch("/api/posts/nonexistent-id");
     expect(res.status).toBe(404);
   });
 });

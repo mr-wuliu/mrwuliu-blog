@@ -58,3 +58,27 @@ export const images = sqliteTable('images', {
   sizeBytes: integer('size_bytes').notNull(),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 })
+
+// site_config table (key-value store for site settings)
+export const siteConfig = sqliteTable('site_config', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull().default(''),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+})
+
+// projects table (project cards for 工程 page)
+export const projects = sqliteTable('projects', {
+  id: text('id').primaryKey(),
+  title: text('title').notNull(),
+  description: text('description').notNull().default(''),
+  url: text('url'),
+  coverImageKey: text('cover_image_key'),
+  techStack: text('tech_stack').notNull().default(''),
+  sortOrder: integer('sort_order').notNull().default(0),
+  status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  projects_status_idx: index('projects_status_idx').on(table.status),
+  projects_sort_order_idx: index('projects_sort_order_idx').on(table.sortOrder),
+}))

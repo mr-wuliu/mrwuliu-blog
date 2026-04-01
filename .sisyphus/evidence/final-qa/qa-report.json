@@ -1,0 +1,99 @@
+{
+  "timestamp": "2026-04-01T15:56:04.488Z",
+  "totalPages": 8,
+  "pagesOk": 7,
+  "pagesWithErrors": 1,
+  "totalConsoleErrors": 1,
+  "totalConsoleWarnings": 0,
+  "pages": [
+    {
+      "name": "homepage",
+      "url": "/",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "cacheControl": "public, s-maxage=300, stale-while-revalidate=3600",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "homepage-page2",
+      "url": "/?page=2",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "cacheControl": "public, s-maxage=300, stale-while-revalidate=3600",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "post-detail",
+      "url": "/posts/test-post-001",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "cacheControl": "public, s-maxage=600, stale-while-revalidate=86400",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "post-detail-002",
+      "url": "/posts/test-post-002",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "cacheControl": "public, s-maxage=600, stale-while-revalidate=86400",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "tag-test",
+      "url": "/tags/test",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "cacheControl": "public, s-maxage=300, stale-while-revalidate=3600",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "tag-cloudflare",
+      "url": "/tags/cloudflare",
+      "status": 200,
+      "contentType": "text/html; charset=UTF-8",
+      "cacheControl": "public, s-maxage=300, stale-while-revalidate=3600",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "feed-xml",
+      "url": "/feed.xml",
+      "status": 200,
+      "contentType": "application/xml",
+      "cacheControl": "public, s-maxage=1800",
+      "consoleErrors": [],
+      "consoleWarnings": [],
+      "ok": true
+    },
+    {
+      "name": "404-page",
+      "url": "/nonexistent-page",
+      "status": 404,
+      "contentType": "text/plain; charset=UTF-8",
+      "cacheControl": "MISSING",
+      "consoleErrors": [
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "consoleWarnings": [],
+      "ok": false
+    }
+  ],
+  "consoleErrors": [
+    {
+      "page": "404-page",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    }
+  ],
+  "consoleWarnings": []
+}

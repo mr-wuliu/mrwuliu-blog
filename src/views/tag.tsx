@@ -46,20 +46,20 @@ function formatDate(isoDate: string | null): string {
 
 const PostCard: FC<{ post: Post }> = ({ post }) => {
   return (
-    <article class="post-card">
-      <h2 class="post-card__title">
-        <a href={`/posts/${post.slug}`}>{post.title}</a>
+    <article class="p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-6">
+      <h2 class="text-xl font-bold tracking-tight mb-2">
+        <a href={`/posts/${post.slug}`} class="text-black no-underline hover:opacity-70 transition-all">{post.title}</a>
       </h2>
       {post.publishedAt && (
-        <time class="post-card__date" datetime={post.publishedAt}>
+        <time class="text-xs font-bold uppercase tracking-widest opacity-50" datetime={post.publishedAt}>
           {formatDate(post.publishedAt)}
         </time>
       )}
-      {post.excerpt && <p class="post-card__excerpt">{post.excerpt}</p>}
+      {post.excerpt && <p class="mt-3 opacity-70 text-lg leading-relaxed">{post.excerpt}</p>}
       {post.tags && post.tags.length > 0 && (
-        <div class="post-card__tags">
+        <div class="mt-3 flex flex-wrap gap-1.5">
           {post.tags.map((tag) => (
-            <a href={`/tags/${tag.slug}`} class="post-card__tag">{tag.name}</a>
+            <a href={`/tags/${tag.slug}`} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
           ))}
         </div>
       )}
@@ -72,20 +72,20 @@ const Pagination: FC<{ pagination: PaginationData; tagSlug: string }> = ({ pagin
   if (totalPages <= 1) return null
 
   return (
-    <nav class="pagination" aria-label="文章分页">
-      <div class="pagination__links">
+    <nav class="mt-12 pt-8 border-t border-black" aria-label="文章分页">
+      <div class="flex justify-between">
         {page > 1 && (
-          <a href={`/tags/${tagSlug}?page=${page - 1}`} class="pagination__link pagination__link--prev">
+          <a href={`/tags/${tagSlug}?page=${page - 1}`} class="text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline">
             ← 上一页
           </a>
         )}
         {page < totalPages && (
-          <a href={`/tags/${tagSlug}?page=${page + 1}`} class="pagination__link pagination__link--next">
+          <a href={`/tags/${tagSlug}?page=${page + 1}`} class="ml-auto text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline">
             下一页 →
           </a>
         )}
       </div>
-      <span class="pagination__info">
+      <span class="block mt-4 text-center text-xs font-bold uppercase tracking-widest opacity-50">
         第 {page} 页 / 共 {totalPages} 页
       </span>
     </nav>
@@ -100,15 +100,18 @@ const TagPage: FC<TagPageProps> = ({ tag, posts, allTags, pagination }) => {
       url={`/tags/${tag.slug}`}
       type="website"
     >
-      <div class="tag-page">
-        <aside class="tag-page__sidebar">
-          <h2 class="tag-page__sidebar-title">所有标签</h2>
-          <ul class="tag-page__tag-list">
+      <div class="flex flex-col md:flex-row gap-12">
+        <aside class="md:w-56 shrink-0">
+          <h2 class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">所有标签</h2>
+          <ul class="space-y-1 list-none p-0">
             {allTags.map((t) => (
               <li>
                 <a
                   href={`/tags/${t.slug}`}
-                  class={`tag-page__tag-link ${t.slug === tag.slug ? 'tag-page__tag-link--active' : ''}`}
+                  class={t.slug === tag.slug
+                    ? 'block text-sm px-4 py-2 border-l-2 border-black font-bold text-black bg-black bg-opacity-5 no-underline transition-all'
+                    : 'block text-sm px-4 py-2 border-l-2 border-transparent text-black opacity-70 hover:opacity-100 hover:border-black no-underline transition-all'
+                  }
                 >
                   {t.name}
                 </a>
@@ -116,15 +119,15 @@ const TagPage: FC<TagPageProps> = ({ tag, posts, allTags, pagination }) => {
             ))}
           </ul>
         </aside>
-        <div class="tag-page__content">
-          <h1 class="tag-page__title">标签: {tag.name}</h1>
+        <div class="flex-1 min-w-0">
+          <h1 class="text-4xl font-bold tracking-tight mb-10">标签: {tag.name}</h1>
           {posts.length === 0 ? (
-            <div class="tag-page__empty">
+            <div class="py-16 text-center opacity-50 text-lg">
               <p>该标签下暂无文章</p>
             </div>
           ) : (
             <>
-              <div class="tag-page__posts">
+              <div>
                 {posts.map((post) => (
                   <PostCard post={post} />
                 ))}

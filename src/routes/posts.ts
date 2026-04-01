@@ -4,7 +4,6 @@ import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, postTags, tags } from '../db/schema'
-import { authMiddleware } from '../middleware/auth'
 import { getPostsWithPagination, getPostWithTags } from '../db/queries'
 import { slugify, generateUniqueSlug } from '../utils/slugify'
 
@@ -12,9 +11,6 @@ type Bindings = {
   DB: D1Database
   IMAGES: R2Bucket
   ASSETS: Fetcher
-  JWT_SECRET: string
-  ADMIN_USERNAME: string
-  ADMIN_PASSWORD: string
 }
 
 const postRoutes = new Hono<{ Bindings: Bindings }>()
@@ -35,7 +31,7 @@ const updatePostSchema = z.object({
   tags: z.array(z.string()).optional(),
 })
 
-postRoutes.post('/', authMiddleware, zValidator('json', createPostSchema), async (c) => {
+postRoutes.post('/', zValidator('json', createPostSchema), async (c) => {
   const data = c.req.valid('json')
   const db = createDb(c.env.DB)
   const id = crypto.randomUUID()
@@ -55,7 +51,7 @@ postRoutes.post('/', authMiddleware, zValidator('json', createPostSchema), async
 
   if (data.tags.length > 0) {
     for (const tagName of data.tags) {
-      const tagSlug = slugify(tagName)
+      const tagSlug = slugify(tagName) || generateUniqueSlug(tagName)
       const tagId = crypto.randomUUID()
       await db.insert(tags).values({ id: tagId, name: tagName, slug: tagSlug })
         .onConflictDoNothing()
@@ -72,7 +68,7 @@ postRoutes.post('/', authMiddleware, zValidator('json', createPostSchema), async
   return c.json(result, 201)
 })
 
-postRoutes.get('/', authMiddleware, async (c) => {
+postRoutes.get('/', async (c) => {
   const db = createDb(c.env.DB)
   const page = Number(c.req.query('page') ?? 1)
   const limit = Number(c.req.query('limit') ?? 20)
@@ -82,14 +78,14 @@ postRoutes.get('/', authMiddleware, async (c) => {
   return c.json(result)
 })
 
-postRoutes.get('/:id', authMiddleware, async (c) => {
+postRoutes.get('/:id', async (c) => {
   const db = createDb(c.env.DB)
   const result = await getPostWithTags(db, c.req.param('id'))
   if (!result) return c.json({ error: 'Post not found' }, 404)
   return c.json(result)
 })
 
-postRoutes.put('/:id', authMiddleware, zValidator('json', updatePostSchema), async (c) => {
+postRoutes.put('/:id', zValidator('json', updatePostSchema), async (c) => {
   const data = c.req.valid('json')
   const db = createDb(c.env.DB)
   const id = c.req.param('id')
@@ -114,7 +110,7 @@ postRoutes.put('/:id', authMiddleware, zValidator('json', updatePostSchema), asy
     await db.delete(postTags).where(eq(postTags.postId, id))
 
     for (const tagName of data.tags) {
-      const tagSlug = slugify(tagName)
+      const tagSlug = slugify(tagName) || generateUniqueSlug(tagName)
       const tagId = crypto.randomUUID()
       await db.insert(tags).values({ id: tagId, name: tagName, slug: tagSlug })
         .onConflictDoNothing()
@@ -131,7 +127,7 @@ postRoutes.put('/:id', authMiddleware, zValidator('json', updatePostSchema), asy
   return c.json(result)
 })
 
-postRoutes.delete('/:id', authMiddleware, async (c) => {
+postRoutes.delete('/:id', async (c) => {
   const db = createDb(c.env.DB)
   const id = c.req.param('id')
 

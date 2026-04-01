@@ -2,21 +2,16 @@ import { Hono } from 'hono'
 import { eq, sql, desc, and } from 'drizzle-orm'
 import { createDb } from '../db'
 import { tags, postTags, posts } from '../db/schema'
-import { authMiddleware } from '../middleware/auth'
-import { slugify } from '../utils/slugify'
+import { slugify, generateUniqueSlug } from '../utils/slugify'
 
 type Bindings = {
   DB: D1Database
   IMAGES: R2Bucket
   ASSETS: Fetcher
-  JWT_SECRET: string
-  ADMIN_USERNAME: string
-  ADMIN_PASSWORD: string
 }
 
 const tagRoutes = new Hono<{ Bindings: Bindings }>()
 
-// GET /api/tags — List all tags with post count
 tagRoutes.get('/', async (c) => {
   const db = createDb(c.env.DB)
 
@@ -37,7 +32,6 @@ tagRoutes.get('/', async (c) => {
   return c.json(tagsWithCount)
 })
 
-// GET /api/tags/:slug — Get tag with associated published posts
 tagRoutes.get('/:slug', async (c) => {
   const db = createDb(c.env.DB)
   const slug = c.req.param('slug')
@@ -73,14 +67,13 @@ tagRoutes.get('/:slug', async (c) => {
   })
 })
 
-// POST /api/tags — Create tag (protected)
-tagRoutes.post('/', authMiddleware, async (c) => {
+tagRoutes.post('/', async (c) => {
   const db = createDb(c.env.DB)
   const { name } = await c.req.json<{ name: string }>()
 
   if (!name) return c.json({ error: 'Tag name is required' }, 400)
 
-  const slug = slugify(name)
+  const slug = slugify(name) || generateUniqueSlug(name)
   const id = crypto.randomUUID()
 
   try {
@@ -96,8 +89,7 @@ tagRoutes.post('/', authMiddleware, async (c) => {
   return c.json(tag, 201)
 })
 
-// DELETE /api/tags/:id — Delete tag (protected, CASCADE deletes associations)
-tagRoutes.delete('/:id', authMiddleware, async (c) => {
+tagRoutes.delete('/:id', async (c) => {
   const db = createDb(c.env.DB)
   const id = c.req.param('id')
 

@@ -10,11 +10,6 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     },
   })
 
-  if (response.status === 401) {
-    window.location.href = '/admin/login'
-    throw new Error('Unauthorized')
-  }
-
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Request failed' }))
     throw new Error(error.error || `HTTP ${response.status}`)

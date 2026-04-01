@@ -2,12 +2,17 @@ import { Hono } from 'hono'
 import { eq, desc, asc, and, sql } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments } from '../db/schema'
-import { getPublishedPosts, getPostWithTags } from '../db/queries'
+import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import Home from '../views/home'
 import TagPage from '../views/tag'
 import PostPage from '../views/post'
 import NotFoundPage from '../views/404'
+import AboutPage from '../views/about'
+import WritingsPage from '../views/writings'
+import TagsCloudPage from '../views/tags-cloud'
+import ProjectsPage from '../views/projects'
+import ProjectDetailPage from '../views/project-detail'
 import { generateRSS } from '../utils/rss'
 
 type Bindings = {
@@ -51,6 +56,10 @@ blogRoutes.get('/', async (c) => {
       }}
     />
   )
+})
+
+blogRoutes.get('/tags', (c) => {
+  return c.redirect('/')
 })
 
 // GET /tags/:slug — Tag page with published posts
@@ -200,6 +209,55 @@ blogRoutes.post('/posts/:slug/comments', async (c) => {
   })
 
   return c.redirect(`/posts/${slug}`)
+})
+
+// GET /writings — All articles list
+blogRoutes.get('/writings', async (c) => {
+  const db = createDb(c.env.DB)
+  const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
+  return c.html(<WritingsPage posts={result.posts} />)
+})
+
+// GET /about — About page
+blogRoutes.get('/about', async (c) => {
+  const db = createDb(c.env.DB)
+  const aboutConfig = await getSiteConfig(db, 'about')
+  const content = aboutConfig?.value || '<p>暂无内容</p>'
+  return c.html(<AboutPage content={content} />)
+})
+
+// GET /tags-cloud — Tags cloud page
+blogRoutes.get('/tags-cloud', async (c) => {
+  const db = createDb(c.env.DB)
+  const allTags = await db.select({
+    id: tags.id,
+    name: tags.name,
+    slug: tags.slug,
+    postCount: sql<number>`count(${postTags.postId})`
+  }).from(tags)
+    .leftJoin(postTags, eq(tags.id, postTags.tagId))
+    .groupBy(tags.id)
+    .orderBy(desc(sql`count(${postTags.postId})`))
+
+  return c.html(<TagsCloudPage tags={allTags} />)
+})
+
+// GET /projects — Projects page
+blogRoutes.get('/projects', async (c) => {
+  const db = createDb(c.env.DB)
+  const publishedProjects = await getPublishedProjects(db)
+  return c.html(<ProjectsPage projects={publishedProjects} />)
+})
+
+// GET /projects/:id — Project detail page
+blogRoutes.get('/projects/:id', async (c) => {
+  const db = createDb(c.env.DB)
+  const id = c.req.param('id')
+  const project = await getProjectById(db, id)
+  if (!project || project.status !== 'published') {
+    return c.html(<NotFoundPage />, 404)
+  }
+  return c.html(<ProjectDetailPage project={project} />)
 })
 
 // GET /feed.xml — RSS 2.0 feed

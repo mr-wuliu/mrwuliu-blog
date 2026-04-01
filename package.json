@@ -20,17 +20,14 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
-    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.36.4",
     "hono": "^4.12.9",
-    "jose": "^6.2.2",
     "katex": "^0.16.44",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.13.5",
     "@cloudflare/workers-types": "^4.20260329.1",
-    "@types/bcryptjs": "^2.4.6",
     "@types/katex": "^0.16.8",
     "drizzle-kit": "^0.30.6",
     "typescript": "^5.9.3",

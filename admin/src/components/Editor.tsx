@@ -1,11 +1,130 @@
 import { useRef, useCallback } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
-import Mathematics from '@tiptap/extension-mathematics'
+import { Mathematics, BlockMath, InlineMath } from '@tiptap/extension-mathematics'
+import { InputRule } from '@tiptap/core'
 import 'katex/dist/katex.min.css'
+import BlockMathView from './math/BlockMathView'
+import InlineMathView from './math/InlineMathView'
+
+const CustomMathematics = Mathematics.extend({
+  addExtensions() {
+    const { inlineOptions, blockOptions, katexOptions } = this.options
+
+    const TyporaBlockMath = BlockMath.extend({
+      addInputRules() {
+        return [
+          new InputRule({
+            find: /^\$\$([^$]+)\$\$$/,
+            handler: ({ state, range, match }) => {
+              const [, latex] = match
+              state.tr.replaceWith(range.from, range.to, this.type.create({ latex }))
+            },
+          }),
+        ]
+      },
+
+      addCommands() {
+        return {
+          insertBlockMath:
+            (options: { latex: string; pos?: number }) =>
+            ({ commands, editor }) => {
+              const { latex, pos } = options
+              return commands.insertContentAt(pos ?? editor.state.selection.from, {
+                type: this.name,
+                attrs: { latex },
+              })
+            },
+          deleteBlockMath:
+            (options?: { pos?: number }) =>
+            ({ editor, tr }) => {
+              const pos = options?.pos ?? editor.state.selection.$from.pos
+              const node = editor.state.doc.nodeAt(pos)
+              if (!node || node.type.name !== this.name) {
+                return false
+              }
+              tr.delete(pos, pos + node.nodeSize)
+              return true
+            },
+          updateBlockMath:
+            (options?: { latex: string; pos?: number }) =>
+            ({ editor, tr }) => {
+              const latex = options?.latex
+              let pos = options?.pos
+              if (pos === undefined) {
+                pos = editor.state.selection.$from.pos
+              }
+              const node = editor.state.doc.nodeAt(pos)
+              if (!node || node.type.name !== this.name) {
+                return false
+              }
+              tr.setNodeMarkup(pos, this.type, {
+                ...node.attrs,
+                latex: latex || node.attrs.latex,
+              })
+              return true
+            },
+        }
+      },
+
+      addKeyboardShortcuts() {
+        return {
+          Enter: ({ editor }) => {
+            const { $from } = editor.state.selection
+            const textBefore = $from.parent.textContent.slice(0, $from.parentOffset)
+            if (textBefore.endsWith('$$')) {
+              return editor.chain()
+                .deleteRange({ from: $from.pos - 2, to: $from.pos })
+                .insertContent({ type: this.name, attrs: { latex: '' } })
+                .run()
+            }
+            return false
+          },
+        }
+      },
+
+      addNodeView() {
+        return ReactNodeViewRenderer(BlockMathView, {
+          stopEvent: ({ event }) => {
+            const target = event.target as HTMLElement
+            return target.tagName === 'TEXTAREA' || target.tagName === 'INPUT'
+          },
+        })
+      },
+    })
+
+    const TyporaInlineMath = InlineMath.extend({
+      addInputRules() {
+        return [
+          new InputRule({
+            find: /(?<!\$)\$([^$\n]+?)\$(?!\$)/,
+            handler: ({ state, range, match }) => {
+              const [, latex] = match
+              state.tr.replaceWith(range.from, range.to, this.type.create({ latex }))
+            },
+          }),
+        ]
+      },
+
+      addNodeView() {
+        return ReactNodeViewRenderer(InlineMathView, {
+          stopEvent: ({ event }) => {
+            const target = event.target as HTMLElement
+            return target.tagName === 'TEXTAREA' || target.tagName === 'INPUT'
+          },
+        })
+      },
+    })
+
+    return [
+      TyporaBlockMath.configure({ ...blockOptions, katexOptions }),
+      TyporaInlineMath.configure({ ...inlineOptions, katexOptions }),
+    ]
+  },
+})
 
 interface EditorProps {
   content: string
@@ -23,7 +142,7 @@ export default function Editor({ content, onChange }: EditorProps) {
       Link.configure({ openOnClick: false }),
       Image,
       Placeholder.configure({ placeholder: '开始写作...' }),
-      Mathematics,
+      CustomMathematics,
     ],
     content,
     onUpdate: ({ editor: e }) => {
@@ -54,7 +173,7 @@ export default function Editor({ content, onChange }: EditorProps) {
       const url = await handleImageUpload(file)
       editor.chain().focus().setImage({ src: url }).run()
     } catch {
-      // Image upload failed — silently ignore to avoid console.log
+      // Image upload failed
     }
     e.target.value = ''
   }, [editor, handleImageUpload])
@@ -68,9 +187,7 @@ export default function Editor({ content, onChange }: EditorProps) {
 
   const addMathBlock = useCallback(() => {
     if (!editor) return
-    const tex = window.prompt('LaTeX expression:')
-    if (!tex) return
-    editor.chain().focus().insertContent(`$$${tex}$$`).run()
+    editor.chain().focus().insertBlockMath({ latex: '' }).run()
   }, [editor])
 
   if (!editor) return null
@@ -99,18 +216,18 @@ export default function Editor({ content, onChange }: EditorProps) {
   ]
 
   return (
-    <div className="border border-gray-700 rounded-lg overflow-hidden">
-      <div className="flex flex-wrap gap-1 bg-gray-800 border-b border-gray-700 px-2 py-1.5">
+    <div className="border border-black rounded-none overflow-hidden">
+      <div className="flex flex-wrap gap-1 bg-white border-b border-black px-2 py-1.5">
         {buttons.map((btn) => (
           <button
             key={btn.label}
             type="button"
             onClick={btn.onClick}
             disabled={btn.disabled}
-            className={`px-2 py-1 text-xs font-mono rounded transition-colors ${
+            className={`px-2 py-1 text-xs font-mono rounded-none transition-colors ${
               btn.active
-                ? 'bg-blue-600 text-white'
-                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                ? 'bg-black text-white'
+                : 'text-black hover:bg-black hover:text-white'
             } ${btn.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
           >
             {btn.label}
@@ -127,7 +244,7 @@ export default function Editor({ content, onChange }: EditorProps) {
 
       <EditorContent
         editor={editor}
-        className="prose prose-invert max-w-none min-h-[400px] px-4 py-3 bg-gray-900 text-gray-100 focus:outline-none [&_.tiptap]:min-h-[400px] [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-gray-500 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
+        className="prose max-w-none min-h-[400px] px-4 py-3 bg-white text-black focus:outline-none [&_.tiptap]:min-h-[400px] [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-black [&_.tiptap_p.is-editor-empty:first-child::before]:opacity-30 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
       />
     </div>
   )

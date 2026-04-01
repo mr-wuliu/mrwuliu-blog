@@ -1,20 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { appFetch, getAdminCookie, withAuth } from "../helpers";
+import { appFetch } from "../helpers";
 
-async function createPublishedPost(cookie: string): Promise<string> {
-  const res = await appFetch("/api/posts", withAuth(cookie, {
+async function createPublishedPost(): Promise<string> {
+  const res = await appFetch("/api/posts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title: "Comment Post", content: "Content", status: "published" }),
-  }));
+  });
   const body = await res.json();
   return body.id;
 }
 
 describe("Comments API", () => {
   it("should submit a comment publicly (no auth)", async () => {
-    const cookie = await getAdminCookie();
-    const postId = await createPublishedPost(cookie);
+    const postId = await createPublishedPost();
 
     const res = await appFetch(`/api/posts/${postId}/comments`, {
       method: "POST",
@@ -29,8 +28,7 @@ describe("Comments API", () => {
   });
 
   it("should escape HTML in comments (XSS protection)", async () => {
-    const cookie = await getAdminCookie();
-    const postId = await createPublishedPost(cookie);
+    const postId = await createPublishedPost();
 
     const res = await appFetch(`/api/posts/${postId}/comments`, {
       method: "POST",
@@ -48,8 +46,7 @@ describe("Comments API", () => {
   });
 
   it("should only list approved comments publicly", async () => {
-    const cookie = await getAdminCookie();
-    const postId = await createPublishedPost(cookie);
+    const postId = await createPublishedPost();
 
     await appFetch(`/api/posts/${postId}/comments`, {
       method: "POST",
@@ -64,8 +61,7 @@ describe("Comments API", () => {
   });
 
   it("should allow admin to moderate comments", async () => {
-    const cookie = await getAdminCookie();
-    const postId = await createPublishedPost(cookie);
+    const postId = await createPublishedPost();
 
     const commentRes = await appFetch(`/api/posts/${postId}/comments`, {
       method: "POST",
@@ -74,11 +70,11 @@ describe("Comments API", () => {
     });
     const comment = await commentRes.json();
 
-    const approveRes = await appFetch(`/api/admin/comments/${comment.id}`, withAuth(cookie, {
+    const approveRes = await appFetch(`/api/admin/comments/${comment.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "approved" }),
-    }));
+    });
     expect(approveRes.status).toBe(200);
     const approved = await approveRes.json();
     expect(approved.status).toBe("approved");
@@ -90,8 +86,7 @@ describe("Comments API", () => {
   });
 
   it("should reject comment with invalid data", async () => {
-    const cookie = await getAdminCookie();
-    const postId = await createPublishedPost(cookie);
+    const postId = await createPublishedPost();
 
     const res = await appFetch(`/api/posts/${postId}/comments`, {
       method: "POST",
