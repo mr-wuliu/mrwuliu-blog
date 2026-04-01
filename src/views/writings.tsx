@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type Post = {
   id: string
@@ -18,9 +19,9 @@ function formatDate(dateStr: string | null): string {
   return `${y}年${m}月${day}日`
 }
 
-const WritingsPage: FC<{ posts: Post[] }> = ({ posts }) => {
+const WritingsPage: FC<{ posts: Post[]; authorProfile?: AuthorProfile }> = ({ posts, authorProfile }) => {
   return (
-    <Layout title="文字 - Blog">
+    <Layout title="文字 - Blog" authorProfile={authorProfile}>
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8">
           文字

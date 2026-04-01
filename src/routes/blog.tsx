@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, desc, asc, and, sql } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments } from '../db/schema'
-import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById } from '../db/queries'
+import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import Home from '../views/home'
 import TagPage from '../views/tag'
@@ -32,6 +32,7 @@ blogRoutes.get('/', async (c) => {
   const limit = 10
 
   const result = await getPublishedPosts(db, { page, limit })
+  const authorProfile = await getAuthorProfile(db)
 
   const postsWithTags = await Promise.all(
     result.posts.map(async (post) => {
@@ -54,6 +55,7 @@ blogRoutes.get('/', async (c) => {
         total: result.total,
         totalPages,
       }}
+      authorProfile={authorProfile}
     />
   )
 })
@@ -103,6 +105,7 @@ blogRoutes.get('/tags/:slug', async (c) => {
   )
 
   const allTags = await db.select().from(tags)
+  const authorProfile = await getAuthorProfile(db)
 
   return c.html(
     <TagPage
@@ -115,6 +118,7 @@ blogRoutes.get('/tags/:slug', async (c) => {
         total,
         totalPages,
       }}
+      authorProfile={authorProfile}
     />
   )
 })
@@ -145,6 +149,7 @@ blogRoutes.get('/posts/:slug', async (c) => {
 
   const prevPost = await getAdjacentPost(db, postWithTags.publishedAt, 'prev')
   const nextPost = await getAdjacentPost(db, postWithTags.publishedAt, 'next')
+  const authorProfile = await getAuthorProfile(db)
 
   return c.html(
     <PostPage
@@ -154,6 +159,7 @@ blogRoutes.get('/posts/:slug', async (c) => {
       comments={approvedComments}
       prev={prevPost}
       next={nextPost}
+      authorProfile={authorProfile}
     />
   )
 })
@@ -215,7 +221,8 @@ blogRoutes.post('/posts/:slug/comments', async (c) => {
 blogRoutes.get('/writings', async (c) => {
   const db = createDb(c.env.DB)
   const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
-  return c.html(<WritingsPage posts={result.posts} />)
+  const authorProfile = await getAuthorProfile(db)
+  return c.html(<WritingsPage posts={result.posts} authorProfile={authorProfile} />)
 })
 
 // GET /about — About page
@@ -223,7 +230,8 @@ blogRoutes.get('/about', async (c) => {
   const db = createDb(c.env.DB)
   const aboutConfig = await getSiteConfig(db, 'about')
   const content = aboutConfig?.value || '<p>暂无内容</p>'
-  return c.html(<AboutPage content={content} />)
+  const authorProfile = await getAuthorProfile(db)
+  return c.html(<AboutPage content={content} authorProfile={authorProfile} />)
 })
 
 // GET /tags-cloud — Tags cloud page
@@ -239,14 +247,17 @@ blogRoutes.get('/tags-cloud', async (c) => {
     .groupBy(tags.id)
     .orderBy(desc(sql`count(${postTags.postId})`))
 
-  return c.html(<TagsCloudPage tags={allTags} />)
+  const authorProfile = await getAuthorProfile(db)
+
+  return c.html(<TagsCloudPage tags={allTags} authorProfile={authorProfile} />)
 })
 
 // GET /projects — Projects page
 blogRoutes.get('/projects', async (c) => {
   const db = createDb(c.env.DB)
   const publishedProjects = await getPublishedProjects(db)
-  return c.html(<ProjectsPage projects={publishedProjects} />)
+  const authorProfile = await getAuthorProfile(db)
+  return c.html(<ProjectsPage projects={publishedProjects} authorProfile={authorProfile} />)
 })
 
 // GET /projects/:id — Project detail page
@@ -257,7 +268,8 @@ blogRoutes.get('/projects/:id', async (c) => {
   if (!project || project.status !== 'published') {
     return c.html(<NotFoundPage />, 404)
   }
-  return c.html(<ProjectDetailPage project={project} />)
+  const authorProfile = await getAuthorProfile(db)
+  return c.html(<ProjectDetailPage project={project} authorProfile={authorProfile} />)
 })
 
 // GET /feed.xml — RSS 2.0 feed

@@ -2,6 +2,7 @@ import type { FC } from 'hono/jsx'
 import type { InferSelectModel } from 'drizzle-orm'
 import Layout from './layout'
 import type { TocHeading } from '../utils/latex'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type Post = InferSelectModel<typeof import('../db/schema').posts>
 type Tag = InferSelectModel<typeof import('../db/schema').tags>
@@ -23,6 +24,7 @@ interface PostPageProps {
   comments: Comment[]
   prev: PostNav | null
   next: PostNav | null
+  authorProfile?: AuthorProfile
 }
 
 function formatDate(dateStr: string | null): string {
@@ -118,12 +120,13 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null }> = ({ prev, nex
   )
 }
 
-const PostPage: FC<PostPageProps> = ({ post, content, headings, comments, prev, next }) => {
+const PostPage: FC<PostPageProps> = ({ post, content, headings, comments, prev, next, authorProfile }) => {
   return (
     <Layout
       title={post.title}
       description={post.excerpt || post.title}
       type="article"
+      authorProfile={authorProfile}
     >
       <article>
         <h1 class="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{post.title}</h1>

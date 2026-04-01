@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, asc } from 'drizzle-orm'
+import { eq, desc, and, sql, asc, inArray } from 'drizzle-orm'
 import { posts, postTags, tags, siteConfig, projects } from './schema'
 import type { Database } from './index'
 
@@ -167,4 +167,19 @@ export async function updateProject(
 
 export async function deleteProject(db: Database, id: string) {
   await db.delete(projects).where(eq(projects.id, id))
+}
+
+export async function getAuthorProfile(db: Database) {
+  const keys = ['author_avatar', 'author_bio', 'author_github', 'author_email']
+  const results = await db.select().from(siteConfig).where(inArray(siteConfig.key, keys))
+  const map: Record<string, string> = {}
+  for (const r of results) {
+    map[r.key] = r.value
+  }
+  return {
+    avatar: map['author_avatar'] || '',
+    bio: map['author_bio'] || '',
+    github: map['author_github'] || '',
+    email: map['author_email'] || '',
+  }
 }

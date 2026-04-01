@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type Tag = {
   id: string
@@ -33,6 +34,7 @@ type TagPageProps = {
   posts: Post[]
   allTags: Tag[]
   pagination: PaginationData
+  authorProfile?: AuthorProfile
 }
 
 function formatDate(isoDate: string | null): string {
@@ -92,13 +94,14 @@ const Pagination: FC<{ pagination: PaginationData; tagSlug: string }> = ({ pagin
   )
 }
 
-const TagPage: FC<TagPageProps> = ({ tag, posts, allTags, pagination }) => {
+const TagPage: FC<TagPageProps> = ({ tag, posts, allTags, pagination, authorProfile }) => {
   return (
     <Layout
       title={`标签: ${tag.name}`}
       description={`标签"${tag.name}"下的文章`}
       url={`/tags/${tag.slug}`}
       type="website"
+      authorProfile={authorProfile}
     >
       <div class="flex flex-col md:flex-row gap-12">
         <aside class="md:w-56 shrink-0">

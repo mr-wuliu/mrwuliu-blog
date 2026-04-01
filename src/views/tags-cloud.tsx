@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type TagItem = {
   id: string
@@ -16,9 +17,9 @@ function getTagSizeClass(count: number): string {
   return 'text-sm'
 }
 
-const TagsCloudPage: FC<{ tags: TagItem[] }> = ({ tags }) => {
+const TagsCloudPage: FC<{ tags: TagItem[]; authorProfile?: AuthorProfile }> = ({ tags, authorProfile }) => {
   return (
-    <Layout title="标签 - Blog">
+    <Layout title="标签 - Blog" authorProfile={authorProfile}>
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8">
           标签

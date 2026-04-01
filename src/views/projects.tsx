@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type Project = {
   id: string
@@ -66,9 +67,9 @@ const ProjectCard: FC<{ project: Project }> = ({ project }) => {
   )
 }
 
-const ProjectsPage: FC<{ projects: Project[] }> = ({ projects }) => {
+const ProjectsPage: FC<{ projects: Project[]; authorProfile?: AuthorProfile }> = ({ projects, authorProfile }) => {
   return (
-    <Layout title="工程 - Blog">
+    <Layout title="工程 - Blog" authorProfile={authorProfile}>
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8">
           工程

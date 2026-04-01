@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type Tag = {
   id: string
@@ -31,6 +32,7 @@ type PaginationData = {
 type HomeProps = {
   posts: Post[]
   pagination: PaginationData
+  authorProfile?: AuthorProfile
 }
 
 function formatDate(isoDate: string | null): string {
@@ -90,13 +92,14 @@ const Pagination: FC<{ pagination: PaginationData }> = ({ pagination }) => {
   )
 }
 
-const Home: FC<HomeProps> = ({ posts, pagination }) => {
+const Home: FC<HomeProps> = ({ posts, pagination, authorProfile }) => {
   return (
     <Layout
       title="mrwuliu's blog"
       description="个人博客 - 记录技术与生活"
       url="/"
       type="website"
+      authorProfile={authorProfile}
     >
       <div>
         <h1 class="text-4xl font-bold tracking-tight mb-10">最新文章</h1>

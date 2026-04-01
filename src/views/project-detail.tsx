@@ -1,5 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import type { AuthorProfile } from './components/author-sidebar'
 
 type Project = {
   id: string
@@ -17,7 +18,7 @@ function formatDate(dateStr: string) {
   return `${d.getFullYear()}年${String(d.getMonth() + 1).padStart(2, '0')}月${String(d.getDate()).padStart(2, '0')}日`
 }
 
-const ProjectDetailPage: FC<{ project: Project }> = ({ project }) => {
+const ProjectDetailPage: FC<{ project: Project; authorProfile?: AuthorProfile }> = ({ project, authorProfile }) => {
   let techItems: string[] = []
   if (project.techStack) {
     try {
@@ -28,7 +29,7 @@ const ProjectDetailPage: FC<{ project: Project }> = ({ project }) => {
   }
 
   return (
-    <Layout title={`${project.title} - 工程 - Blog`}>
+    <Layout title={`${project.title} - 工程 - Blog`} authorProfile={authorProfile}>
       <div class="flex flex-col lg:flex-row gap-8">
         <div class="lg:w-3/5">
           <h1 class="text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
