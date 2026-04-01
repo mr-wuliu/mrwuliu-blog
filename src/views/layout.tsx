@@ -32,10 +32,10 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
           <nav class="max-w-5xl mx-auto px-4 md:px-8 lg:px-12 py-6 flex justify-between items-center">
             <a href="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
             <div class="flex gap-6 text-base uppercase tracking-widest ml-auto mr-8">
-              <a href="/about" class="hover:underline no-underline text-black">自述</a>
               <a href="/writings" class="hover:underline no-underline text-black">文字</a>
-              <a href="/tags-cloud" class="hover:underline no-underline text-black">标签</a>
               <a href="/projects" class="hover:underline no-underline text-black">工程</a>
+              <a href="/tags-cloud" class="hover:underline no-underline text-black">标签</a>
+              <a href="/about" class="hover:underline no-underline text-black">自述</a>
             </div>
             <a href="/feed.xml" class="text-xs font-bold uppercase tracking-widest border border-black border-opacity-50 px-3 py-1.5 text-black hover:bg-black hover:text-white transition-all no-underline" aria-label="RSS Feed">RSS</a>
           </nav>
