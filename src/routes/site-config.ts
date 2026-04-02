@@ -82,7 +82,7 @@ siteConfigRoutes.post('/avatar-upload', async (c) => {
     const oldAvatarUrl = oldConfig?.value || ''
 
     const extension = extensionFromMimeType(file.type)
-    const r2Key = `avatars/avatar.${extension}`
+    const r2Key = `avatars/avatar-${Date.now()}.${extension}`
     const arrayBuffer = await file.arrayBuffer()
     await c.env.IMAGES.put(r2Key, arrayBuffer, {
       httpMetadata: {
@@ -92,7 +92,7 @@ siteConfigRoutes.post('/avatar-upload', async (c) => {
 
     if (oldAvatarUrl.includes('/images/avatars/')) {
       const oldKey = oldAvatarUrl.replace('/images/', '')
-      if (oldKey !== r2Key) {
+      if (oldKey && oldKey !== r2Key) {
         await c.env.IMAGES.delete(oldKey)
       }
     }
