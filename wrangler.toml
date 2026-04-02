@@ -34,7 +34,7 @@ binding = "DB"
 database_name = "blog-db-prod"
 # Set via: wrangler d1 create blog-db-prod
 # Then paste the returned database_id here
-database_id = ""
+database_id = "7f730221-094a-4f54-99f9-266ea79c5576"
 
 [[env.production.r2_buckets]]
 binding = "IMAGES"
