@@ -50,6 +50,7 @@ export default {
     comments: (count: number) => `Comments (${count})`,
     leaveComment: 'Leave a Comment',
     nameLabel: 'Name *',
+    namePlaceholder: 'Name * (defaults to momo)',
     emailLabel: 'Email (optional)',
     contentLabel: 'Comment *',
     submit: 'Submit',

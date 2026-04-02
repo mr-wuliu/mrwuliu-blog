@@ -5,6 +5,42 @@ import type { TocHeading } from '../utils/latex'
 import type { AuthorProfile } from './components/author-sidebar'
 import { type Lang, t, tf, langPath, formatDateLang } from '../i18n'
 
+function identicon(seed: string, size = 40): string {
+  function hashStr(s: string): number {
+    let h = 0x811c9dc5
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i)
+      h = Math.imul(h, 0x01000193)
+    }
+    return h >>> 0
+  }
+  function rot(x: number, k: number): number {
+    return ((x << k) | (x >>> (32 - k))) >>> 0
+  }
+  const h0 = hashStr(seed)
+  const h1 = hashStr(seed + '#1')
+  const h2 = hashStr(seed + '#2')
+  const hue = (h0 % 360 + 360) % 360
+  const fg = `hsl(${hue},65%,55%)`
+  const cells: string[] = []
+  const gridSize = 5
+  const cellSize = size / gridSize
+  for (let row = 0; row < gridSize; row++) {
+    for (let col = 0; col < 3; col++) {
+      const bit = h1 >>> (row * 3 + col) & 1
+      if (bit) {
+        const x = col * cellSize
+        const y = row * cellSize
+        cells.push(`<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fg}"/>`)
+        if (col < 2) {
+          cells.push(`<rect x="${(gridSize - 1 - col) * cellSize}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fg}"/>`)
+        }
+      }
+    }
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block">${cells.join('')}</svg>`
+}
+
 type Post = InferSelectModel<typeof import('../db/schema').posts>
 type Tag = InferSelectModel<typeof import('../db/schema').tags>
 type Comment = InferSelectModel<typeof import('../db/schema').comments>
@@ -58,33 +94,37 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       {comments.length > 0 && (
         <div class="space-y-4 mb-8">
           {comments.map((c) => (
-            <div class="p-6 bg-white border border-black mb-4" id={`comment-${c.id}`}>
-              <div class="flex items-center gap-3 mb-2">
-                <span class="text-sm font-bold text-black">{c.authorName}</span>
-                <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(c.createdAt, lang)}</span>
+            <div class="p-6 bg-white border border-black mb-4 flex gap-3" id={`comment-${c.id}`}>
+              <div class="flex-shrink-0 mt-0.5 border border-gray-300 h-[40px] w-[40px] overflow-hidden" style="line-height:0;font-size:0" dangerouslySetInnerHTML={{ __html: identicon(c.visitorId || ((c.authorEmail || '') + c.authorName)) }} />
+              <div class="flex-1 min-w-0">
+                <div class="flex items-baseline gap-2 mb-1">
+                  <span class="text-sm font-bold text-black">{c.authorName}</span>
+                  <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(c.createdAt, lang)}</span>
+                </div>
+                <div class="text-sm opacity-70 leading-relaxed">{c.content}</div>
               </div>
-              <div class="mt-2 text-sm opacity-70 leading-relaxed">{c.content}</div>
             </div>
           ))}
         </div>
       )}
 
-      <form id="comment-form" class="p-6 border border-black space-y-4">
-        <h3 class="text-lg font-bold tracking-tight mb-4" data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</h3>
+      <form id="comment-form" class="p-4 border border-black space-y-3">
+        <style>{`#comment-form input::placeholder, #comment-form textarea::placeholder { color: #999; font-weight: 700; }`}</style>
+        <h3 class="text-lg font-bold tracking-tight mb-3" data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</h3>
         <div>
-          <label for="authorName" class="block text-xs font-bold uppercase tracking-widest opacity-50 mb-2" data-t="post.nameLabel">{t(lang, 'post.nameLabel')}</label>
-          <input type="text" id="authorName" name="authorName" required maxlength={50}
-            class="w-full px-4 py-3 border border-black text-sm focus:outline-none focus:border-black" />
+          <input type="text" id="authorName" name="authorName" maxlength={50}
+            placeholder={t(lang, 'post.namePlaceholder')}
+            class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
         </div>
         <div>
-          <label for="authorEmail" class="block text-xs font-bold uppercase tracking-widest opacity-50 mb-2" data-t="post.emailLabel">{t(lang, 'post.emailLabel')}</label>
           <input type="email" id="authorEmail" name="authorEmail" maxlength={100}
-            class="w-full px-4 py-3 border border-black text-sm focus:outline-none focus:border-black" />
+            placeholder={t(lang, 'post.emailLabel')}
+            class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
         </div>
         <div>
-          <label for="content" class="block text-xs font-bold uppercase tracking-widest opacity-50 mb-2" data-t="post.contentLabel">{t(lang, 'post.contentLabel')}</label>
           <textarea id="content" name="content" required maxlength={1000} rows={4}
-            class="w-full px-4 py-3 border border-black text-sm focus:outline-none focus:border-black resize-y"></textarea>
+            placeholder={t(lang, 'post.contentLabel')}
+            class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black resize-y"></textarea>
         </div>
         <button type="submit"
           class="px-8 py-3 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white transition-all" data-t="post.submit">
@@ -114,6 +154,18 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
     }, 4000);
   }
 
+  var savedName = localStorage.getItem('comment_authorName');
+  var savedEmail = localStorage.getItem('comment_authorEmail');
+  var visitorId = localStorage.getItem('comment_visitorId');
+  if (!visitorId) {
+    visitorId = 'v_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+    localStorage.setItem('comment_visitorId', visitorId);
+  }
+  var nameInput = form.querySelector('#authorName');
+  var emailInput = form.querySelector('#authorEmail');
+  if (nameInput && savedName) nameInput.value = savedName;
+  if (emailInput && savedEmail) emailInput.value = savedEmail;
+
   form.addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = form.querySelector('button[type="submit"]');
@@ -121,9 +173,11 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
     btn.disabled = true;
     btn.textContent = '...';
 
+    var authorName = form.querySelector('#authorName').value.trim() || 'momo';
     var data = {
-      authorName: form.querySelector('#authorName').value.trim(),
+      authorName: authorName,
       authorEmail: form.querySelector('#authorEmail').value.trim() || undefined,
+      visitorId: visitorId,
       content: form.querySelector('#content').value.trim()
     };
 
@@ -133,8 +187,12 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       body: JSON.stringify(data)
     }).then(function(res) {
       if (res.ok) {
+        localStorage.setItem('comment_authorName', data.authorName);
+        if (data.authorEmail) localStorage.setItem('comment_authorEmail', data.authorEmail);
         showToast(successMsg, 'success');
         form.reset();
+        if (nameInput) nameInput.value = data.authorName;
+        if (emailInput && data.authorEmail) emailInput.value = data.authorEmail;
       } else {
         return res.json().then(function(d) {
           showToast(d.error || errorMsg, 'error');

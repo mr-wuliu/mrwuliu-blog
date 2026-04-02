@@ -23,7 +23,7 @@ tagRoutes.get('/', async (c) => {
         .select({ count: sql<number>`count(*)` })
         .from(postTags)
         .innerJoin(posts, eq(postTags.postId, posts.id))
-        .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
+        .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
 
       return { ...tag, postCount: result[0]?.count ?? 0 }
     })
@@ -47,7 +47,7 @@ tagRoutes.get('/:slug', async (c) => {
     .select({ post: posts })
     .from(postTags)
     .innerJoin(posts, eq(postTags.postId, posts.id))
-    .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
+    .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
     .orderBy(desc(posts.publishedAt))
     .limit(limit)
     .offset(offset)
@@ -56,7 +56,7 @@ tagRoutes.get('/:slug', async (c) => {
     .select({ count: sql<number>`count(*)` })
     .from(postTags)
     .innerJoin(posts, eq(postTags.postId, posts.id))
-    .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
+    .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
 
   return c.json({
     tag,

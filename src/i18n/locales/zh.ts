@@ -50,6 +50,7 @@ export default {
     comments: (count: number) => `评论 (${count})`,
     leaveComment: '发表评论',
     nameLabel: '昵称 *',
+    namePlaceholder: '昵称 *（默认 momo）',
     emailLabel: '邮箱（可选）',
     contentLabel: '评论内容 *',
     submit: '提交评论',

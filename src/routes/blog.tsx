@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
+import { eq, desc, asc, and, sql, inArray, not } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes } from '../db/schema'
 import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile } from '../db/queries'
@@ -106,7 +106,7 @@ function createBlogRouter(lang: Lang) {
       .select({ post: posts })
       .from(postTags)
       .innerJoin(posts, eq(postTags.postId, posts.id))
-      .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
+      .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
       .orderBy(desc(posts.publishedAt))
       .limit(limit)
       .offset(offset)
@@ -115,7 +115,7 @@ function createBlogRouter(lang: Lang) {
       .select({ count: sql<number>`count(*)` })
       .from(postTags)
       .innerJoin(posts, eq(postTags.postId, posts.id))
-      .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
+      .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
 
     const total = countResult[0]?.count ?? 0
     const totalPages = Math.ceil(total / limit)
@@ -198,17 +198,20 @@ function createBlogRouter(lang: Lang) {
 
     let authorName: string
     let authorEmail: string | undefined
+    let visitorId: string | undefined
     let content: string
 
     if (contentType.includes('application/json')) {
-      const body = await c.req.json<{ authorName: string; authorEmail?: string; content: string }>()
+      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
       authorName = body.authorName
       authorEmail = body.authorEmail
+      visitorId = body.visitorId
       content = body.content
     } else {
-      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; content: string }>()
+      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
       authorName = String(formData.authorName ?? '')
       authorEmail = formData.authorEmail ? String(formData.authorEmail) : undefined
+      visitorId = formData.visitorId ? String(formData.visitorId) : undefined
       content = String(formData.content ?? '')
     }
 
@@ -237,6 +240,7 @@ function createBlogRouter(lang: Lang) {
       postId: post.id,
       authorName: escapeHtml(authorName),
       authorEmail: authorEmail ? escapeHtml(authorEmail) : null,
+      visitorId: visitorId ? escapeHtml(visitorId) : null,
       content: escapeHtml(content),
       status: 'pending',
     })
@@ -265,11 +269,12 @@ function createBlogRouter(lang: Lang) {
       id: tags.id,
       name: tags.name,
       slug: tags.slug,
-      postCount: sql<number>`count(${postTags.postId})`
+      postCount: sql<number>`count(${posts.id})`
     }).from(tags)
       .leftJoin(postTags, eq(tags.id, postTags.tagId))
+      .leftJoin(posts, and(eq(postTags.postId, posts.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
       .groupBy(tags.id)
-      .orderBy(desc(sql`count(${postTags.postId})`))
+      .orderBy(desc(sql`count(${posts.id})`))
 
     const authorProfile = await getAuthorProfile(db)
 
@@ -327,7 +332,7 @@ async function getAdjacentPost(
     const [result] = await db
       .select({ slug: posts.slug, title: posts.title })
       .from(posts)
-      .where(and(eq(posts.status, 'published'), sql`${posts.publishedAt} < ${currentPublishedAt}`))
+      .where(and(eq(posts.status, 'published'), eq(posts.hidden, false), sql`${posts.publishedAt} < ${currentPublishedAt}`))
       .orderBy(desc(posts.publishedAt))
       .limit(1)
     return result ?? null
@@ -336,7 +341,7 @@ async function getAdjacentPost(
   const [result] = await db
     .select({ slug: posts.slug, title: posts.title })
     .from(posts)
-    .where(and(eq(posts.status, 'published'), sql`${posts.publishedAt} > ${currentPublishedAt}`))
+    .where(and(eq(posts.status, 'published'), eq(posts.hidden, false), sql`${posts.publishedAt} > ${currentPublishedAt}`))
     .orderBy(asc(posts.publishedAt))
     .limit(1)
   return result ?? null

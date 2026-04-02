@@ -10,12 +10,16 @@ export const posts = sqliteTable('posts', {
   excerpt: text('excerpt').notNull().default(''),
   coverImageKey: text('cover_image_key'),
   status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+  hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),
+  pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
   publishedAt: text('published_at'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
   posts_status_idx: index('posts_status_idx').on(table.status),
   posts_published_at_idx: index('posts_published_at_idx').on(table.publishedAt),
+  posts_hidden_idx: index('posts_hidden_idx').on(table.hidden),
+  posts_pinned_idx: index('posts_pinned_idx').on(table.pinned),
 }))
 
 // tags table
@@ -41,6 +45,7 @@ export const comments = sqliteTable('comments', {
   postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
   authorName: text('author_name').notNull(),
   authorEmail: text('author_email'),
+  visitorId: text('visitor_id'),
   content: text('content').notNull(),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),

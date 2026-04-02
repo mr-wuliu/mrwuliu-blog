@@ -21,6 +21,8 @@ const createPostSchema = z.object({
   status: z.enum(['draft', 'published']).default('draft'),
   excerpt: z.string().default(''),
   tags: z.array(z.string()).default([]),
+  hidden: z.boolean().default(false),
+  pinned: z.boolean().default(false),
 })
 
 const updatePostSchema = z.object({
@@ -29,6 +31,8 @@ const updatePostSchema = z.object({
   status: z.enum(['draft', 'published']).optional(),
   excerpt: z.string().optional(),
   tags: z.array(z.string()).optional(),
+  hidden: z.boolean().optional(),
+  pinned: z.boolean().optional(),
 })
 
 postRoutes.post('/', zValidator('json', createPostSchema), async (c) => {
@@ -46,6 +50,8 @@ postRoutes.post('/', zValidator('json', createPostSchema), async (c) => {
     content: data.content,
     excerpt: data.excerpt,
     status: data.status,
+    hidden: data.hidden,
+    pinned: data.pinned,
     publishedAt,
   })
 
@@ -101,6 +107,8 @@ postRoutes.put('/:id', zValidator('json', updatePostSchema), async (c) => {
     ...(data.title !== undefined && { title: data.title }),
     ...(data.content !== undefined && { content: data.content }),
     ...(data.excerpt !== undefined && { excerpt: data.excerpt }),
+    ...(data.hidden !== undefined && { hidden: data.hidden }),
+    ...(data.pinned !== undefined && { pinned: data.pinned }),
     status,
     publishedAt,
     updatedAt: now,

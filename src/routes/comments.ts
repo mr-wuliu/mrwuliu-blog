@@ -17,7 +17,7 @@ function isValidEmail(email: string): boolean {
 
 commentRoutes.post('/posts/:postId/comments', async (c) => {
   const postId = c.req.param('postId')
-  const body = await c.req.json<{ authorName: string; authorEmail?: string; content: string }>()
+  const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
 
   if (!body.authorName || body.authorName.length < 1 || body.authorName.length > 50) {
     return c.json({ error: 'Author name must be 1-50 characters' }, 400)
@@ -34,18 +34,32 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   const [post] = await db.select().from(posts).where(eq(posts.id, postId))
   if (!post) return c.json({ error: 'Post not found' }, 404)
 
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;')
+  }
+
   const id = crypto.randomUUID()
+  const escapedName = escapeHtml(body.authorName)
+  const escapedContent = escapeHtml(body.content)
+  const escapedEmail = body.authorEmail ? escapeHtml(body.authorEmail) : null
+  const escapedVisitorId = body.visitorId ? escapeHtml(body.visitorId) : null
 
   await db.insert(comments).values({
     id,
     postId,
-    authorName: body.authorName,
-    authorEmail: body.authorEmail || null,
-    content: body.content,
+    authorName: escapedName,
+    authorEmail: escapedEmail,
+    visitorId: escapedVisitorId,
+    content: escapedContent,
     status: 'pending',
   })
 
-  return c.json({ id, status: 'pending', authorName: body.authorName, content: body.content }, 201)
+  return c.json({ id, status: 'pending', authorName: escapedName, content: escapedContent }, 201)
 })
 
 commentRoutes.get('/posts/:postId/comments', async (c) => {

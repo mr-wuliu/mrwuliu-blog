@@ -11,6 +11,8 @@ interface PostData {
   content: string
   status: string
   excerpt: string
+  hidden: boolean
+  pinned: boolean
   tags: { id: string; name: string; slug: string }[]
 }
 
@@ -35,6 +37,8 @@ export default function EditPost() {
   const [excerpt, setExcerpt] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [content, setContent] = useState('')
+  const [hidden, setHidden] = useState(false)
+  const [pinned, setPinned] = useState(false)
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
 
@@ -47,6 +51,8 @@ export default function EditPost() {
       setExcerpt(post.excerpt ?? '')
       setTagsInput(post.tags.map((tag) => tag.name).join(', '))
       setContent(post.content)
+      setHidden(post.hidden ?? false)
+      setPinned(post.pinned ?? false)
       setLoading(false)
     }).catch(() => {
       setLoading(false)
@@ -78,6 +84,8 @@ export default function EditPost() {
       tags,
       slug: slug || undefined,
       excerpt: excerpt || undefined,
+      hidden,
+      pinned,
     }
 
     try {
@@ -92,7 +100,7 @@ export default function EditPost() {
     } finally {
       setSaving(false)
     }
-  }, [title, content, tagsInput, slug, excerpt, isEdit, id, navigate])
+  }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate])
 
   if (loading) {
     return (
@@ -136,6 +144,27 @@ export default function EditPost() {
           rows={2}
           className="w-full text-sm border border-black px-4 py-2.5 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black"
         />
+
+        <div className="flex items-center gap-6">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-black">
+            <input
+              type="checkbox"
+              checked={hidden}
+              onChange={(e) => setHidden(e.target.checked)}
+              className="w-4 h-4 accent-black"
+            />
+            <span className="font-bold uppercase tracking-widest text-xs opacity-70">{t('editPost.hidden')}</span>
+          </label>
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-black">
+            <input
+              type="checkbox"
+              checked={pinned}
+              onChange={(e) => setPinned(e.target.checked)}
+              className="w-4 h-4 accent-black"
+            />
+            <span className="font-bold uppercase tracking-widest text-xs opacity-70">{t('editPost.pinned')}</span>
+          </label>
+        </div>
 
         <div className="flex-1">
           <Editor content={content} onChange={setContent} />

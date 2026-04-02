@@ -64,15 +64,15 @@ export async function getPublishedPosts(
   const result = await db
     .select()
     .from(posts)
-    .where(eq(posts.status, 'published'))
-    .orderBy(desc(posts.publishedAt))
+    .where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
+    .orderBy(desc(posts.pinned), desc(posts.publishedAt))
     .limit(limit)
     .offset(offset)
 
   const countResult = await db
     .select({ count: sql<number>`count(*)` })
     .from(posts)
-    .where(eq(posts.status, 'published'))
+    .where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
 
   const total = countResult[0]?.count ?? 0
   return { posts: result, total, page, limit }

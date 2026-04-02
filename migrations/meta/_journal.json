@@ -22,6 +22,20 @@
       "when": 1775104512147,
       "tag": "0002_nasty_luke_cage",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1775106170074,
+      "tag": "0003_clear_rage",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1775116757725,
+      "tag": "0004_nasty_gertrude_yorkes",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,8 @@ type Post = {
   excerpt: string
   coverImageKey: string | null
   status: 'draft' | 'published'
+  hidden: boolean
+  pinned: boolean
   publishedAt: string | null
   createdAt: string
   updatedAt: string
@@ -43,7 +45,10 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   return (
     <article class="p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-6">
       <a href={langPath(`/posts/${post.slug}`, lang)} class="no-underline text-black block">
-        <h2 class="text-xl font-bold tracking-tight mb-2">{post.title}</h2>
+        <h2 class="text-xl font-bold tracking-tight mb-2">
+          {post.pinned && <span class="text-red-500 mr-1">📌</span>}
+          {post.title}
+        </h2>
         {post.publishedAt && (
           <time class="text-xs font-bold uppercase tracking-widest opacity-50" datetime={post.publishedAt}>
             {formatDateLang(post.publishedAt, lang)}

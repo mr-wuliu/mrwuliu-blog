@@ -14,6 +14,8 @@ interface Post {
   title: string
   slug: string
   status: 'draft' | 'published'
+  hidden: boolean
+  pinned: boolean
   publishedAt: string | null
   createdAt: string
   updatedAt: string
@@ -72,6 +74,24 @@ export default function Posts() {
     if (!window.confirm(t('posts.confirmDelete'))) return
     try {
       await api.delete(`/posts/${id}`)
+      await fetchPosts()
+    } catch {
+      void 0
+    }
+  }
+
+  const handleToggleHidden = async (id: string, currentHidden: boolean) => {
+    try {
+      await api.put(`/posts/${id}`, { hidden: !currentHidden })
+      await fetchPosts()
+    } catch {
+      void 0
+    }
+  }
+
+  const handleTogglePinned = async (id: string, currentPinned: boolean) => {
+    try {
+      await api.put(`/posts/${id}`, { pinned: !currentPinned })
       await fetchPosts()
     } catch {
       void 0
@@ -190,6 +210,16 @@ export default function Posts() {
                           {t('posts.draft')}
                         </span>
                       )}
+                      {post.hidden && (
+                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-gray-500/20 text-gray-600">
+                          {t('posts.hidden')}
+                        </span>
+                      )}
+                      {post.pinned && (
+                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-red-500/20 text-red-600">
+                          {t('posts.pinned')}
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex gap-1 flex-wrap">
@@ -218,6 +248,20 @@ export default function Posts() {
                         className="text-xs font-bold uppercase tracking-widest text-black opacity-70 hover:opacity-100 mr-3 transition-all"
                       >
                         {t('common.edit')}
+                      </button>
+                      <button
+                        onClick={() => handleToggleHidden(post.id, post.hidden)}
+                        className={`text-xs font-bold uppercase tracking-widest opacity-70 hover:opacity-100 mr-3 transition-all ${post.hidden ? 'text-gray-600' : 'text-gray-400'}`}
+                        title={post.hidden ? t('posts.unhide') : t('posts.hide')}
+                      >
+                        {post.hidden ? t('posts.unhide') : t('posts.hide')}
+                      </button>
+                      <button
+                        onClick={() => handleTogglePinned(post.id, post.pinned)}
+                        className={`text-xs font-bold uppercase tracking-widest opacity-70 hover:opacity-100 mr-3 transition-all ${post.pinned ? 'text-red-600' : 'text-gray-400'}`}
+                        title={post.pinned ? t('posts.unpin') : t('posts.pin')}
+                      >
+                        {post.pinned ? t('posts.unpin') : t('posts.pin')}
                       </button>
                       <button
                         onClick={() => handleDelete(post.id)}
