@@ -95,7 +95,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   const commentCountEn = lang === 'en' ? tf(lang, 'post.comments')(comments.length) : tf(otherL, 'post.comments')(comments.length)
 
   return (
-    <section class="mt-10 pt-6 border-t border-black"
+    <section class="mt-4 pt-8 border-t-2 border-black"
       data-comment-msg={successMsg}
       data-comment-err={errorMsg}
       data-comment-msg-zh={lang === 'zh' ? successMsg : otherSuccessMsg}
@@ -253,7 +253,7 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
   if (!prev && !next) return <></>
 
   return (
-    <nav class="mt-6 pt-4 border-t border-black flex justify-between">
+    <nav class="mt-40 pt-3 border-t-2 border-black flex justify-between">
       <div>
         {prev && (
           <a href={langPath(`/posts/${prev.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5">
@@ -286,7 +286,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
     >
       <article>
         <h1 class="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{post.title}</h1>
-        <div class="mt-4 mb-8 flex items-center gap-4">
+        <div class="mt-4 mb-4 flex items-center gap-4">
           <time datetime={post.publishedAt ?? ''} class="text-xs font-bold uppercase tracking-widest opacity-50">
             {formatDateLang(post.publishedAt, lang)}
           </time>
@@ -300,6 +300,8 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
             </ul>
           )}
         </div>
+
+        <div class="post-body-divider mb-3" />
 
         <Toc headings={headings} lang={lang} />
 
