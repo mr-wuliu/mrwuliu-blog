@@ -15,7 +15,9 @@
     "d1:create": "wrangler d1 create blog-db-prod",
     "r2:create": "wrangler r2 bucket create blog-images",
     "secret:set": "wrangler secret put --env production",
-    "test": "vitest run",
+    "test": "npm run test:api && npm run test:ui",
+    "test:api": "vitest run tests/api",
+    "test:ui": "vitest run tests/ui",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

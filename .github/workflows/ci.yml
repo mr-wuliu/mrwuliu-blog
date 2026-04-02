@@ -22,5 +22,8 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: Test
-        run: npm test
+      - name: API Tests
+        run: npm run test:api
+
+      - name: UI Render Tests
+        run: npm run test:ui

@@ -45,6 +45,16 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script dangerouslySetInnerHTML={{ __html:
+          '(function(){' +
+          'var ts=["default","coffee"];' +
+          'function ok(t){return ts.indexOf(t)!==-1}' +
+          'var p=new URLSearchParams(location.search).get("theme");' +
+          'var s="default";' +
+          'if(ok(p))s=p;else{try{var v=localStorage.getItem("theme");if(ok(v))s=v}catch(e){}}' +
+          'document.documentElement.setAttribute("data-theme",s);' +
+          '})();'
+        }} />
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="stylesheet" href="/css/style.css" />
         <script dangerouslySetInnerHTML={{ __html:
@@ -56,7 +66,11 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
           'document.querySelectorAll("[data-thref]").forEach(function(e){var k=e.getAttribute("data-thref");var b=l==="en"?"/en":"";e.setAttribute("href",b+k)});' +
           'document.querySelectorAll("[data-comment-msg]").forEach(function(e){var o=l==="zh"?"en":"zh";e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+l));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+l));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+l))});' +
           'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+l);if(v)e.textContent=v});' +
-          'var tb=document.querySelector(".lang-toggle-thumb");if(tb){tb.className="lang-toggle-thumb"+(l==="zh"?" lang-toggle-thumb-end":"");tb.textContent=l==="zh"? "\\u4e2d\\u6587":"EN"}' +
+          'document.querySelectorAll(".lang-toggle").forEach(function(tg){' +
+          'var tb=tg.querySelector(".lang-toggle-thumb");if(tb){tb.className="lang-toggle-thumb"+(l==="zh"?" lang-toggle-thumb-end":"");tb.textContent=l==="zh"? "\\u4e2d\\u6587":"EN"}' +
+          'tg.querySelectorAll(".lang-toggle-option").forEach(function(op){op.classList.remove("lang-toggle-option-active")});' +
+          'var ao=tg.querySelector(".lang-toggle-option[data-lang=\\"" + l + "\\"]");if(ao)ao.classList.add("lang-toggle-option-active");' +
+          '});' +
           'document.documentElement.lang=l==="zh"?"zh-CN":"en";' +
           '}'
         }} />
@@ -72,7 +86,7 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
       </head>
       <body class="font-sans text-base leading-relaxed text-black bg-white antialiased min-h-screen flex flex-col">
         <header class="border-b border-black bg-white">
-          <nav class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-6">
+          <nav class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-4">
             {hasSidebar ? (
               <div class="lg:flex lg:gap-16">
                 <div class="flex-1 flex justify-between items-center">
@@ -84,9 +98,13 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
                       <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
                       <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
                     </div>
+                    <select class="theme-select" aria-label="Theme">
+                      <option value="default">Default</option>
+                      <option value="coffee">Coffee</option>
+                    </select>
                     <a href={toggleHref} class="lang-toggle">
-                      <span class="lang-toggle-option">EN</span>
-                      <span class="lang-toggle-option">中文</span>
+                      <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                      <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
                       <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                     </a>
                   </div>
@@ -103,9 +121,13 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
                     <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
                     <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
                   </div>
+                  <select class="theme-select" aria-label="Theme">
+                    <option value="default">Default</option>
+                    <option value="coffee">Coffee</option>
+                  </select>
                   <a href={toggleHref} class="lang-toggle">
-                    <span class="lang-toggle-option">EN</span>
-                    <span class="lang-toggle-option">中文</span>
+                    <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                    <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
                     <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                   </a>
                 </div>
@@ -130,9 +152,31 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
           )}
         </main>
         <footer class="border-t border-black bg-white mt-auto">
-          <p class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-8 text-xs font-bold uppercase tracking-widest opacity-50 text-center" data-t="footer.copyright" data-t-zh={tf(lang, 'footer.copyright')(new Date().getFullYear())} data-t-en={tf(otherLang(lang), 'footer.copyright')(new Date().getFullYear())}>{tf(lang, 'footer.copyright')(new Date().getFullYear())}</p>
+          <p class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-5 text-xs font-bold uppercase tracking-widest opacity-50 text-center" data-t="footer.copyright" data-t-zh={tf(lang, 'footer.copyright')(new Date().getFullYear())} data-t-en={tf(otherLang(lang), 'footer.copyright')(new Date().getFullYear())}>{tf(lang, 'footer.copyright')(new Date().getFullYear())}</p>
         </footer>
         <script dangerouslySetInnerHTML={{ __html:
+          'var __themes=["default","coffee"];' +
+          'function __okTheme(t){return __themes.indexOf(t)!==-1}' +
+          'function __getTheme(){' +
+          'var p=new URLSearchParams(location.search).get("theme");if(__okTheme(p))return p;' +
+          'try{var s=localStorage.getItem("theme");if(__okTheme(s))return s}catch(e){}' +
+          'return "default";' +
+          '}' +
+          'function __applyTheme(t){' +
+          'var th=__okTheme(t)?t:"default";' +
+          'document.documentElement.setAttribute("data-theme",th);' +
+          'document.body.setAttribute("data-theme",th);' +
+          'document.querySelectorAll(".theme-select").forEach(function(s){s.value=th});' +
+          '}' +
+          '__applyTheme(__getTheme());' +
+          'document.querySelectorAll(".theme-select").forEach(function(s){s.addEventListener("change",function(){' +
+          'var th=__okTheme(this.value)?this.value:"default";' +
+          '__applyTheme(th);' +
+          'try{localStorage.setItem("theme",th)}catch(e){}' +
+          'var u=new URL(location.href);' +
+          'if(th==="default")u.searchParams.delete("theme");else u.searchParams.set("theme",th);' +
+          'history.replaceState(null,"",u.pathname+(u.search?u.search:"")+u.hash);' +
+          '})});' +
           'document.addEventListener("click",function(e){' +
           'var tg=e.target.closest(".lang-toggle");' +
           'if(!tg)return;e.preventDefault();' +
@@ -140,7 +184,7 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
           '__applyLang(nl);' +
           'var fb=document.querySelector("[data-t=\\"footer.copyright\\"]");' +
           'if(fb)fb.textContent=fb.getAttribute("data-t-"+nl);' +
-          'history.pushState(null,"",(nl==="en"?"/en":"")+location.pathname.replace(/^\\/en/,""));' +
+          'history.pushState(null,"",(nl==="en"?"/en":"")+location.pathname.replace(/^\\/en/,"")+location.search+location.hash);' +
           '});'
         }} />
       </body>
