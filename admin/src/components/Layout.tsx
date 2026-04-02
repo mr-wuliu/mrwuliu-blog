@@ -1,10 +1,13 @@
 import { useEffect, useState, useCallback } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import LangToggle from './LangToggle'
 
 type CommentsCountResponse = { comments: unknown[]; total: number }
 
 export default function Layout() {
+  const { t } = useTranslation()
   const [pendingCount, setPendingCount] = useState(0)
 
   const fetchPendingCount = useCallback(() => {
@@ -21,7 +24,7 @@ export default function Layout() {
     <div className="min-h-screen flex bg-white">
       <aside className="w-60 bg-white border-r border-black flex flex-col sticky top-0 h-screen">
         <div className="px-6 py-6 border-b border-black">
-          <h1 className="text-lg font-bold tracking-tight text-black">Blog Admin</h1>
+          <h1 className="text-lg font-bold tracking-tight text-black">{t('layout.adminTitle')}</h1>
         </div>
 
         <nav className="flex-1 py-4">
@@ -38,7 +41,7 @@ export default function Layout() {
                   }`
                 }
               >
-                <span>Dashboard</span>
+                <span>{t('layout.dashboard')}</span>
               </NavLink>
             </li>
             <li>
@@ -52,7 +55,7 @@ export default function Layout() {
                   }`
                 }
               >
-                <span>Posts</span>
+                <span>{t('layout.posts')}</span>
               </NavLink>
             </li>
             <li>
@@ -66,7 +69,7 @@ export default function Layout() {
                   }`
                 }
               >
-                <span>Comments</span>
+                <span>{t('layout.comments')}</span>
                 {pendingCount > 0 && (
                   <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 text-[10px] font-black uppercase text-black border border-black border-opacity-50">
                     {pendingCount > 99 ? '99+' : pendingCount}
@@ -85,7 +88,7 @@ export default function Layout() {
                   }`
                 }
               >
-                <span>Site Config</span>
+                <span>{t('layout.siteConfig')}</span>
               </NavLink>
             </li>
             <li>
@@ -99,7 +102,7 @@ export default function Layout() {
                   }`
                 }
               >
-                <span>Projects</span>
+                <span>{t('layout.projects')}</span>
               </NavLink>
             </li>
           </ul>
@@ -107,8 +110,9 @@ export default function Layout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-black flex items-center px-8 bg-white">
-          <span className="text-xs font-bold uppercase tracking-widest opacity-50">Blog Admin Panel</span>
+        <header className="h-14 border-b border-black flex items-center justify-between px-8 bg-white">
+          <span className="text-xs font-bold uppercase tracking-widest opacity-50">{t('layout.adminPanel')}</span>
+          <LangToggle />
         </header>
 
         <main className="flex-1 overflow-auto p-8 bg-white">

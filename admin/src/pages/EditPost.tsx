@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import Editor from '../components/Editor'
 
@@ -25,6 +26,7 @@ function slugify(text: string): string {
 export default function EditPost() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const isEdit = Boolean(id)
 
   const [title, setTitle] = useState('')
@@ -43,7 +45,7 @@ export default function EditPost() {
       setTitle(post.title)
       setSlug(post.slug)
       setExcerpt(post.excerpt ?? '')
-      setTagsInput(post.tags.map((t) => t.name).join(', '))
+      setTagsInput(post.tags.map((tag) => tag.name).join(', '))
       setContent(post.content)
       setLoading(false)
     }).catch(() => {
@@ -67,7 +69,7 @@ export default function EditPost() {
     setSaving(true)
     const tags = tagsInput
       .split(',')
-      .map((t) => t.trim())
+      .map((tag) => tag.trim())
       .filter(Boolean)
     const body = {
       title,
@@ -95,7 +97,7 @@ export default function EditPost() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm opacity-50">Loading...</p>
+        <p className="text-sm opacity-50">{t('editPost.loading')}</p>
       </div>
     )
   }
@@ -107,7 +109,7 @@ export default function EditPost() {
           type="text"
           value={title}
           onChange={(e) => handleTitleChange(e.target.value)}
-          placeholder="文章标题"
+          placeholder={t('editPost.titlePlaceholder')}
           className="w-full text-3xl font-bold bg-transparent border-none outline-none placeholder-black placeholder-opacity-30 text-black"
         />
 
@@ -123,14 +125,14 @@ export default function EditPost() {
           type="text"
           value={tagsInput}
           onChange={(e) => setTagsInput(e.target.value)}
-          placeholder="标签（逗号分隔）"
+          placeholder={t('editPost.tagsPlaceholder')}
           className="w-full text-sm border border-black px-4 py-2.5 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black"
         />
 
         <textarea
           value={excerpt}
           onChange={(e) => setExcerpt(e.target.value)}
-          placeholder="摘要（可选）"
+          placeholder={t('editPost.excerptPlaceholder')}
           rows={2}
           className="w-full text-sm border border-black px-4 py-2.5 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black"
         />
@@ -148,7 +150,7 @@ export default function EditPost() {
             disabled={saving || !title}
             className="px-6 py-2.5 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            发布
+            {t('editPost.publish')}
           </button>
           <button
             type="button"
@@ -156,7 +158,7 @@ export default function EditPost() {
             disabled={saving || !title}
             className="px-6 py-2.5 font-bold text-sm border border-black border-opacity-50 rounded-none uppercase tracking-widest text-black hover:border-opacity-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
           >
-            保存草稿
+            {t('editPost.saveDraft')}
           </button>
           {isEdit && (
             <button
@@ -165,7 +167,7 @@ export default function EditPost() {
               disabled={saving || !title}
               className="px-6 py-2.5 font-bold text-sm border border-green-600 rounded-none uppercase tracking-widest text-green-600 hover:bg-green-600 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
-              更新
+              {t('editPost.update')}
             </button>
           )}
           <button
@@ -173,9 +175,9 @@ export default function EditPost() {
             onClick={() => navigate('/posts')}
             className="px-6 py-2.5 font-bold text-sm text-black opacity-70 hover:opacity-100 transition-all cursor-pointer"
           >
-            取消
+            {t('editPost.cancel')}
           </button>
-          {saving && <span className="text-xs font-bold uppercase tracking-widest opacity-50">保存中...</span>}
+          {saving && <span className="text-xs font-bold uppercase tracking-widest opacity-50">{t('editPost.saving')}</span>}
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { type Lang, t, langPath } from '../i18n'
 
 type Project = {
   id: string
@@ -11,7 +12,7 @@ type Project = {
   techStack: string | null
 }
 
-const ProjectCard: FC<{ project: Project }> = ({ project }) => {
+const ProjectCard: FC<{ project: Project; lang: Lang }> = ({ project, lang }) => {
   let techItems: string[] = []
   if (project.techStack) {
     try {
@@ -47,10 +48,11 @@ const ProjectCard: FC<{ project: Project }> = ({ project }) => {
       )}
       <div class="flex border-t-2 border-black">
         <a
-          href={`/projects/${project.id}`}
+          href={langPath(`/projects/${project.id}`, lang)}
           class="flex-1 px-4 py-3 text-sm uppercase tracking-widest hover:bg-black hover:text-white transition-colors no-underline text-black text-center border-r-2 border-black"
+          data-t="projects.detail"
         >
-          DETAIL →
+          {t(lang, 'projects.detail')}
         </a>
         {project.url && (
           <a
@@ -58,8 +60,9 @@ const ProjectCard: FC<{ project: Project }> = ({ project }) => {
             target="_blank"
             rel="noopener noreferrer"
             class="flex-1 px-4 py-3 text-sm uppercase tracking-widest hover:bg-black hover:text-white transition-colors no-underline text-black text-center"
+            data-t="projects.visit"
           >
-            VISIT →
+            {t(lang, 'projects.visit')}
           </a>
         )}
       </div>
@@ -67,21 +70,21 @@ const ProjectCard: FC<{ project: Project }> = ({ project }) => {
   )
 }
 
-const ProjectsPage: FC<{ projects: Project[]; authorProfile?: AuthorProfile }> = ({ projects, authorProfile }) => {
+const ProjectsPage: FC<{ lang: Lang; projects: Project[]; authorProfile?: AuthorProfile }> = ({ lang, projects, authorProfile }) => {
   return (
-    <Layout title="工程 - Blog" authorProfile={authorProfile}>
+    <Layout title={t(lang, 'projects.pageTitle')} authorProfile={authorProfile} lang={lang} currentPath="/projects">
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8">
-          工程
+        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="projects.title">
+          {t(lang, 'projects.title')}
         </h1>
         {projects.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
-            <p>暂无项目</p>
+            <p data-t="projects.noProjects">{t(lang, 'projects.noProjects')}</p>
           </div>
         ) : (
           <div class="sm:columns-2 lg:columns-3 gap-6" style="columns: 1">
             {projects.map((project) => (
-              <ProjectCard project={project} />
+              <ProjectCard project={project} lang={lang} />
             ))}
           </div>
         )}

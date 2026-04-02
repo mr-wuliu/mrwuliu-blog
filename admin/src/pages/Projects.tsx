@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 
 interface Project {
@@ -15,6 +16,7 @@ interface Project {
 }
 
 export default function Projects() {
+  const { t } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Project | null>(null)
@@ -82,29 +84,29 @@ export default function Projects() {
       resetForm()
       fetchProjects()
     } catch {
-      alert('保存失败')
+      alert(t('common.saveFailed'))
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('确定删除此项目？')) return
+    if (!confirm(t('projects.confirmDelete'))) return
     try {
       await api.delete(`/projects/${id}`)
       fetchProjects()
     } catch {
-      alert('删除失败')
+      alert(t('common.deleteFailed'))
     }
   }
 
   return (
     <div>
       <div className="flex justify-between items-center mb-8 border-b-2 border-black pb-4">
-        <h1 className="text-2xl font-bold uppercase tracking-widest">PROJECTS</h1>
+        <h1 className="text-2xl font-bold uppercase tracking-widest">{t('projects.title')}</h1>
         <button
           onClick={() => { resetForm(); setShowForm(true) }}
           className="border-2 border-black px-6 py-2.5 text-sm font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors cursor-pointer"
         >
-          + NEW
+          {t('projects.newProject')}
         </button>
       </div>
 
@@ -112,11 +114,11 @@ export default function Projects() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white border-2 border-black p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold uppercase tracking-widest mb-6 border-b-2 border-black pb-2">
-              {editing ? 'EDIT PROJECT' : 'NEW PROJECT'}
+              {editing ? t('projects.editProject') : t('projects.newProjectTitle')}
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-1">Title</label>
+                <label className="block text-xs uppercase tracking-widest mb-1">{t('projects.titleLabel')}</label>
                 <input
                   type="text"
                   value={title}
@@ -125,7 +127,7 @@ export default function Projects() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-1">Description</label>
+                <label className="block text-xs uppercase tracking-widest mb-1">{t('projects.descriptionLabel')}</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -133,7 +135,7 @@ export default function Projects() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-1">URL</label>
+                <label className="block text-xs uppercase tracking-widest mb-1">{t('projects.urlLabel')}</label>
                 <input
                   type="text"
                   value={url}
@@ -143,7 +145,7 @@ export default function Projects() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-1">Tech Stack (comma separated)</label>
+                <label className="block text-xs uppercase tracking-widest mb-1">{t('projects.techStackLabel')}</label>
                 <input
                   type="text"
                   value={techStack}
@@ -153,7 +155,7 @@ export default function Projects() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-1">Sort Order</label>
+                <label className="block text-xs uppercase tracking-widest mb-1">{t('projects.sortOrderLabel')}</label>
                 <input
                   type="number"
                   value={sortOrder}
@@ -162,14 +164,14 @@ export default function Projects() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest mb-1">Status</label>
+                <label className="block text-xs uppercase tracking-widest mb-1">{t('projects.statusLabel')}</label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as 'draft' | 'published')}
                   className="w-full border-2 border-black px-3 py-2 text-sm"
                 >
-                  <option value="draft">Draft</option>
-                  <option value="published">Published</option>
+                  <option value="draft">{t('projects.draft')}</option>
+                  <option value="published">{t('projects.published')}</option>
                 </select>
               </div>
             </div>
@@ -178,13 +180,13 @@ export default function Projects() {
                 onClick={handleSave}
                 className="flex-1 border-2 border-black px-6 py-2.5 text-sm font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors cursor-pointer"
               >
-                SAVE
+                {t('projects.save')}
               </button>
               <button
                 onClick={resetForm}
                 className="flex-1 border-2 border-black px-6 py-2.5 text-sm font-bold uppercase tracking-widest hover:bg-gray-100 transition-colors cursor-pointer"
               >
-                CANCEL
+                {t('projects.cancel')}
               </button>
             </div>
           </div>
@@ -192,17 +194,17 @@ export default function Projects() {
       )}
 
       {loading ? (
-        <div className="p-8 text-sm opacity-50">Loading...</div>
+        <div className="p-8 text-sm opacity-50">{t('projects.loading')}</div>
       ) : projects.length === 0 ? (
-        <div className="p-8 text-center text-gray-500 uppercase tracking-widest text-sm">No projects yet</div>
+        <div className="p-8 text-center text-gray-500 uppercase tracking-widest text-sm">{t('projects.noProjects')}</div>
       ) : (
         <table className="w-full border-2 border-black">
           <thead>
             <tr className="border-b-2 border-black">
-              <th className="text-left px-4 py-2 text-xs uppercase tracking-widest">Title</th>
-              <th className="text-left px-4 py-2 text-xs uppercase tracking-widest">Status</th>
-              <th className="text-left px-4 py-2 text-xs uppercase tracking-widest">Order</th>
-              <th className="text-right px-4 py-2 text-xs uppercase tracking-widest">Actions</th>
+              <th className="text-left px-4 py-2 text-xs uppercase tracking-widest">{t('projects.tableTitle')}</th>
+              <th className="text-left px-4 py-2 text-xs uppercase tracking-widest">{t('projects.tableStatus')}</th>
+              <th className="text-left px-4 py-2 text-xs uppercase tracking-widest">{t('projects.tableOrder')}</th>
+              <th className="text-right px-4 py-2 text-xs uppercase tracking-widest">{t('projects.tableActions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -217,7 +219,7 @@ export default function Projects() {
                         : 'border-gray-400 text-gray-500'
                     }`}
                   >
-                    {project.status}
+                    {project.status === 'published' ? t('projects.published') : t('projects.draft')}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-sm">{project.sortOrder}</td>
@@ -226,13 +228,13 @@ export default function Projects() {
                     onClick={() => handleEdit(project)}
                     className="text-xs uppercase tracking-widest hover:underline mr-4 cursor-pointer"
                   >
-                    Edit
+                    {t('common.edit')}
                   </button>
                   <button
                     onClick={() => handleDelete(project.id)}
                     className="text-xs uppercase tracking-widest hover:underline text-red-600 cursor-pointer"
                   >
-                    Delete
+                    {t('common.delete')}
                   </button>
                 </td>
               </tr>

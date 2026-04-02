@@ -14,6 +14,7 @@ import TagsCloudPage from '../views/tags-cloud'
 import ProjectsPage from '../views/projects'
 import ProjectDetailPage from '../views/project-detail'
 import { generateRSS } from '../utils/rss'
+import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
   DB: D1Database
@@ -26,253 +27,260 @@ type Bindings = {
 
 const blogRoutes = new Hono<{ Bindings: Bindings }>()
 
-blogRoutes.get('/', async (c) => {
-  const db = createDb(c.env.DB)
-  const page = Math.max(1, Number(c.req.query('page')) || 1)
-  const limit = 10
+function createBlogRouter(lang: Lang) {
+  const router = new Hono<{ Bindings: Bindings }>()
 
-  const result = await getPublishedPosts(db, { page, limit })
-  const authorProfile = await getAuthorProfile(db)
+  router.get('/', async (c) => {
+    const db = createDb(c.env.DB)
+    const page = Math.max(1, Number(c.req.query('page')) || 1)
+    const limit = 10
 
-  const postsWithTags = await Promise.all(
-    result.posts.map(async (post) => {
-      const postWithTags = await getPostWithTags(db, post.id)
-      return {
-        ...post,
-        tags: postWithTags?.tags ?? [],
-      }
-    })
-  )
+    const result = await getPublishedPosts(db, { page, limit })
+    const authorProfile = await getAuthorProfile(db)
 
-  const totalPages = Math.ceil(result.total / limit)
+    const postsWithTags = await Promise.all(
+      result.posts.map(async (post) => {
+        const postWithTags = await getPostWithTags(db, post.id)
+        return {
+          ...post,
+          tags: postWithTags?.tags ?? [],
+        }
+      })
+    )
 
-  return c.html(
-    <Home
-      posts={postsWithTags}
-      pagination={{
-        page: result.page,
-        limit: result.limit,
-        total: result.total,
-        totalPages,
-      }}
-      authorProfile={authorProfile}
-    />
-  )
-})
+    const totalPages = Math.ceil(result.total / limit)
 
-blogRoutes.get('/tags', (c) => {
-  return c.redirect('/')
-})
-
-// GET /tags/:slug — Tag page with published posts
-blogRoutes.get('/tags/:slug', async (c) => {
-  const db = createDb(c.env.DB)
-  const slug = c.req.param('slug')
-
-  const [tag] = await db.select().from(tags).where(eq(tags.slug, slug))
-  if (!tag) return c.notFound()
-
-  const page = Math.max(1, Number(c.req.query('page')) || 1)
-  const limit = 10
-  const offset = (page - 1) * limit
-
-  const tagPosts = await db
-    .select({ post: posts })
-    .from(postTags)
-    .innerJoin(posts, eq(postTags.postId, posts.id))
-    .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
-    .orderBy(desc(posts.publishedAt))
-    .limit(limit)
-    .offset(offset)
-
-  const countResult = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(postTags)
-    .innerJoin(posts, eq(postTags.postId, posts.id))
-    .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
-
-  const total = countResult[0]?.count ?? 0
-  const totalPages = Math.ceil(total / limit)
-
-  const postsWithTags = await Promise.all(
-    tagPosts.map(async ({ post }) => {
-      const postWithTags = await getPostWithTags(db, post.id)
-      return {
-        ...post,
-        tags: postWithTags?.tags ?? [],
-      }
-    })
-  )
-
-  const allTags = await db.select().from(tags)
-  const authorProfile = await getAuthorProfile(db)
-
-  return c.html(
-    <TagPage
-      tag={tag}
-      posts={postsWithTags}
-      allTags={allTags}
-      pagination={{
-        page,
-        limit,
-        total,
-        totalPages,
-      }}
-      authorProfile={authorProfile}
-    />
-  )
-})
-
-// GET /posts/:slug — Post detail page
-blogRoutes.get('/posts/:slug', async (c) => {
-  const slug = c.req.param('slug')
-  const db = createDb(c.env.DB)
-
-  const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
-  if (!post || post.status !== 'published') {
-    return c.html(<NotFoundPage />, 404)
-  }
-
-  const postWithTags = await getPostWithTags(db, post.id)
-  if (!postWithTags) {
-    return c.html(<NotFoundPage />, 404)
-  }
-
-  const approvedComments = await db
-    .select()
-    .from(comments)
-    .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
-    .orderBy(asc(comments.createdAt))
-
-  let renderedContent = renderLatex(postWithTags.content)
-  const { html: tocHtml, headings } = generateToc(renderedContent)
-
-  const prevPost = await getAdjacentPost(db, postWithTags.publishedAt, 'prev')
-  const nextPost = await getAdjacentPost(db, postWithTags.publishedAt, 'next')
-  const authorProfile = await getAuthorProfile(db)
-
-  return c.html(
-    <PostPage
-      post={postWithTags}
-      content={tocHtml}
-      headings={headings}
-      comments={approvedComments}
-      prev={prevPost}
-      next={nextPost}
-      authorProfile={authorProfile}
-    />
-  )
-})
-
-blogRoutes.post('/posts/:slug/comments', async (c) => {
-  const slug = c.req.param('slug')
-  const db = createDb(c.env.DB)
-  const contentType = c.req.header('Content-Type') ?? ''
-
-  let authorName: string
-  let authorEmail: string | undefined
-  let content: string
-
-  if (contentType.includes('application/json')) {
-    const body = await c.req.json<{ authorName: string; authorEmail?: string; content: string }>()
-    authorName = body.authorName
-    authorEmail = body.authorEmail
-    content = body.content
-  } else {
-    const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; content: string }>()
-    authorName = String(formData.authorName ?? '')
-    authorEmail = formData.authorEmail ? String(formData.authorEmail) : undefined
-    content = String(formData.content ?? '')
-  }
-
-  if (!authorName || authorName.length < 1 || authorName.length > 50) {
-    return c.redirect(`/posts/${slug}`)
-  }
-  if (!content || content.length < 1 || content.length > 1000) {
-    return c.redirect(`/posts/${slug}`)
-  }
-
-  const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
-  if (!post) return c.redirect(`/posts/${slug}`)
-
-  function escapeHtml(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-  }
-
-  const id = crypto.randomUUID()
-  await db.insert(comments).values({
-    id,
-    postId: post.id,
-    authorName: escapeHtml(authorName),
-    authorEmail: authorEmail ? escapeHtml(authorEmail) : null,
-    content: escapeHtml(content),
-    status: 'pending',
+    return c.html(
+      <Home
+        lang={lang}
+        posts={postsWithTags}
+        pagination={{
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          totalPages,
+        }}
+        authorProfile={authorProfile}
+      />
+    )
   })
 
-  return c.redirect(`/posts/${slug}`)
-})
+  router.get('/tags', (c) => {
+    return c.redirect(langPath('/', lang))
+  })
 
-// GET /writings — All articles list
-blogRoutes.get('/writings', async (c) => {
-  const db = createDb(c.env.DB)
-  const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
-  const authorProfile = await getAuthorProfile(db)
-  return c.html(<WritingsPage posts={result.posts} authorProfile={authorProfile} />)
-})
+  router.get('/tags/:slug', async (c) => {
+    const db = createDb(c.env.DB)
+    const slug = c.req.param('slug')
 
-// GET /about — About page
-blogRoutes.get('/about', async (c) => {
-  const db = createDb(c.env.DB)
-  const aboutConfig = await getSiteConfig(db, 'about')
-  const content = aboutConfig?.value || '<p>暂无内容</p>'
-  const authorProfile = await getAuthorProfile(db)
-  return c.html(<AboutPage content={content} authorProfile={authorProfile} />)
-})
+    const [tag] = await db.select().from(tags).where(eq(tags.slug, slug))
+    if (!tag) return c.notFound()
 
-// GET /tags-cloud — Tags cloud page
-blogRoutes.get('/tags-cloud', async (c) => {
-  const db = createDb(c.env.DB)
-  const allTags = await db.select({
-    id: tags.id,
-    name: tags.name,
-    slug: tags.slug,
-    postCount: sql<number>`count(${postTags.postId})`
-  }).from(tags)
-    .leftJoin(postTags, eq(tags.id, postTags.tagId))
-    .groupBy(tags.id)
-    .orderBy(desc(sql`count(${postTags.postId})`))
+    const page = Math.max(1, Number(c.req.query('page')) || 1)
+    const limit = 10
+    const offset = (page - 1) * limit
 
-  const authorProfile = await getAuthorProfile(db)
+    const tagPosts = await db
+      .select({ post: posts })
+      .from(postTags)
+      .innerJoin(posts, eq(postTags.postId, posts.id))
+      .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
+      .orderBy(desc(posts.publishedAt))
+      .limit(limit)
+      .offset(offset)
 
-  return c.html(<TagsCloudPage tags={allTags} authorProfile={authorProfile} />)
-})
+    const countResult = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(postTags)
+      .innerJoin(posts, eq(postTags.postId, posts.id))
+      .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published')))
 
-// GET /projects — Projects page
-blogRoutes.get('/projects', async (c) => {
-  const db = createDb(c.env.DB)
-  const publishedProjects = await getPublishedProjects(db)
-  const authorProfile = await getAuthorProfile(db)
-  return c.html(<ProjectsPage projects={publishedProjects} authorProfile={authorProfile} />)
-})
+    const total = countResult[0]?.count ?? 0
+    const totalPages = Math.ceil(total / limit)
 
-// GET /projects/:id — Project detail page
-blogRoutes.get('/projects/:id', async (c) => {
-  const db = createDb(c.env.DB)
-  const id = c.req.param('id')
-  const project = await getProjectById(db, id)
-  if (!project || project.status !== 'published') {
-    return c.html(<NotFoundPage />, 404)
-  }
-  const authorProfile = await getAuthorProfile(db)
-  return c.html(<ProjectDetailPage project={project} authorProfile={authorProfile} />)
-})
+    const postsWithTags = await Promise.all(
+      tagPosts.map(async ({ post }) => {
+        const postWithTags = await getPostWithTags(db, post.id)
+        return {
+          ...post,
+          tags: postWithTags?.tags ?? [],
+        }
+      })
+    )
 
-// GET /feed.xml — RSS 2.0 feed
+    const allTags = await db.select().from(tags)
+    const authorProfile = await getAuthorProfile(db)
+
+    return c.html(
+      <TagPage
+        lang={lang}
+        tag={tag}
+        posts={postsWithTags}
+        allTags={allTags}
+        pagination={{
+          page,
+          limit,
+          total,
+          totalPages,
+        }}
+        authorProfile={authorProfile}
+      />
+    )
+  })
+
+  router.get('/posts/:slug', async (c) => {
+    const slug = c.req.param('slug')
+    const db = createDb(c.env.DB)
+
+    const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
+    if (!post || post.status !== 'published') {
+      return c.html(<NotFoundPage lang={lang} />, 404)
+    }
+
+    const postWithTags = await getPostWithTags(db, post.id)
+    if (!postWithTags) {
+      return c.html(<NotFoundPage lang={lang} />, 404)
+    }
+
+    const approvedComments = await db
+      .select()
+      .from(comments)
+      .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
+      .orderBy(asc(comments.createdAt))
+
+    let renderedContent = renderLatex(postWithTags.content)
+    const { html: tocHtml, headings } = generateToc(renderedContent)
+
+    const prevPost = await getAdjacentPost(db, postWithTags.publishedAt, 'prev')
+    const nextPost = await getAdjacentPost(db, postWithTags.publishedAt, 'next')
+    const authorProfile = await getAuthorProfile(db)
+
+    return c.html(
+      <PostPage
+        lang={lang}
+        post={postWithTags}
+        content={tocHtml}
+        headings={headings}
+        comments={approvedComments}
+        prev={prevPost}
+        next={nextPost}
+        authorProfile={authorProfile}
+      />
+    )
+  })
+
+  router.post('/posts/:slug/comments', async (c) => {
+    const slug = c.req.param('slug')
+    const db = createDb(c.env.DB)
+    const contentType = c.req.header('Content-Type') ?? ''
+
+    let authorName: string
+    let authorEmail: string | undefined
+    let content: string
+
+    if (contentType.includes('application/json')) {
+      const body = await c.req.json<{ authorName: string; authorEmail?: string; content: string }>()
+      authorName = body.authorName
+      authorEmail = body.authorEmail
+      content = body.content
+    } else {
+      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; content: string }>()
+      authorName = String(formData.authorName ?? '')
+      authorEmail = formData.authorEmail ? String(formData.authorEmail) : undefined
+      content = String(formData.content ?? '')
+    }
+
+    if (!authorName || authorName.length < 1 || authorName.length > 50) {
+      return c.redirect(langPath(`/posts/${slug}`, lang))
+    }
+    if (!content || content.length < 1 || content.length > 1000) {
+      return c.redirect(langPath(`/posts/${slug}`, lang))
+    }
+
+    const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
+    if (!post) return c.redirect(langPath(`/posts/${slug}`, lang))
+
+    function escapeHtml(str: string): string {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+    }
+
+    const id = crypto.randomUUID()
+    await db.insert(comments).values({
+      id,
+      postId: post.id,
+      authorName: escapeHtml(authorName),
+      authorEmail: authorEmail ? escapeHtml(authorEmail) : null,
+      content: escapeHtml(content),
+      status: 'pending',
+    })
+
+    return c.redirect(langPath(`/posts/${slug}`, lang))
+  })
+
+  router.get('/writings', async (c) => {
+    const db = createDb(c.env.DB)
+    const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<WritingsPage lang={lang} posts={result.posts} authorProfile={authorProfile} />)
+  })
+
+  router.get('/about', async (c) => {
+    const db = createDb(c.env.DB)
+    const aboutConfig = await getSiteConfig(db, 'about')
+    const content = aboutConfig?.value || `<p>${t(lang, 'about.noContent')}</p>`
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<AboutPage lang={lang} content={content} authorProfile={authorProfile} />)
+  })
+
+  router.get('/tags-cloud', async (c) => {
+    const db = createDb(c.env.DB)
+    const allTags = await db.select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+      postCount: sql<number>`count(${postTags.postId})`
+    }).from(tags)
+      .leftJoin(postTags, eq(tags.id, postTags.tagId))
+      .groupBy(tags.id)
+      .orderBy(desc(sql`count(${postTags.postId})`))
+
+    const authorProfile = await getAuthorProfile(db)
+
+    return c.html(<TagsCloudPage lang={lang} tags={allTags} authorProfile={authorProfile} />)
+  })
+
+  router.get('/projects', async (c) => {
+    const db = createDb(c.env.DB)
+    const publishedProjects = await getPublishedProjects(db)
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<ProjectsPage lang={lang} projects={publishedProjects} authorProfile={authorProfile} />)
+  })
+
+  router.get('/projects/:id', async (c) => {
+    const db = createDb(c.env.DB)
+    const id = c.req.param('id')
+    const project = await getProjectById(db, id)
+    if (!project || project.status !== 'published') {
+      return c.html(<NotFoundPage lang={lang} />, 404)
+    }
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<ProjectDetailPage lang={lang} project={project} authorProfile={authorProfile} />)
+  })
+
+  return router
+}
+
+blogRoutes.route('/', createBlogRouter('zh'))
+blogRoutes.route('/en', createBlogRouter('en'))
+
+// Redirect trailing slash: /en/ → /en (Hono doesn't match /en/ via route('/en', ...))
+blogRoutes.get('/en/', (c) => c.redirect('/en'))
+
 blogRoutes.get('/feed.xml', async (c) => {
   const db = createDb(c.env.DB)
 

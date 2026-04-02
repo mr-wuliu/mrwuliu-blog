@@ -1,0 +1,70 @@
+export default {
+  nav: {
+    writings: '文字',
+    projects: '工程',
+    tags: '标签',
+    about: '自述',
+  },
+  home: {
+    title: '最新文章',
+    noPosts: '暂无文章',
+    description: '个人博客 - 记录技术与生活',
+    pageTitle: "mrwuliu's blog",
+  },
+  pagination: {
+    prev: '← 上一页',
+    next: '下一页 →',
+    pageInfo: (p: number, t: number) => `第 ${p} 页 / 共 ${t} 页`,
+  },
+  writings: {
+    title: '文字',
+    noPosts: '暂无文章',
+    pageTitle: '文字 - Blog',
+  },
+  projects: {
+    title: '工程',
+    noProjects: '暂无项目',
+    detail: '详细 →',
+    visit: '访问 →',
+    pageTitle: '工程 - Blog',
+  },
+  projectDetail: {
+    techStack: '技术栈',
+    backToProjects: '← 返回工程列表',
+    created: '创建日期',
+    updated: '更新日期',
+  },
+  tagsCloud: {
+    title: '标签',
+    noTags: '暂无标签',
+    pageTitle: '标签 - Blog',
+  },
+  tag: {
+    allTags: '所有标签',
+    pageTitle: (name: string) => `标签: ${name}`,
+    pageDescription: (name: string) => `标签"${name}"下的文章`,
+    noPosts: '该标签下暂无文章',
+  },
+  post: {
+    toc: '目录',
+    comments: (count: number) => `评论 (${count})`,
+    leaveComment: '发表评论',
+    nameLabel: '昵称 *',
+    emailLabel: '邮箱（可选）',
+    contentLabel: '评论内容 *',
+    submit: '提交评论',
+  },
+  about: {
+    title: '自述',
+    pageTitle: '自述 - Blog',
+    noContent: '暂无内容',
+  },
+  notFound: {
+    title: '404 — 页面未找到',
+    message: '页面未找到',
+    backHome: '← 返回首页',
+  },
+  footer: {
+    copyright: (year: number) => `© ${year} Blog. Powered by Cloudflare Workers.`,
+  },
+}

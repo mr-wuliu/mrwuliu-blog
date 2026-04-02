@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 
 type CommentStatus = 'pending' | 'approved' | 'rejected'
@@ -22,30 +23,10 @@ interface CommentsResponse {
 
 type FilterTab = 'all' | 'pending' | 'approved' | 'rejected'
 
-const TABS: { key: FilterTab; label: string }[] = [
-  { key: 'all', label: '全部' },
-  { key: 'pending', label: '待审核' },
-  { key: 'approved', label: '已通过' },
-  { key: 'rejected', label: '已拒绝' },
-]
-
-const STATUS_LABEL: Record<CommentStatus, string> = {
-  pending: '待审核',
-  approved: '已通过',
-  rejected: '已拒绝',
-}
-
 const STATUS_BADGE: Record<CommentStatus, string> = {
   pending: 'bg-yellow-500/20 text-yellow-600 border-black',
   approved: 'bg-green-500/20 text-green-600 border-black',
   rejected: 'bg-red-500/20 text-red-600 border-black',
-}
-
-const FILTER_EMPTY: Record<FilterTab, string> = {
-  all: '暂无评论',
-  pending: '暂无待审核评论',
-  approved: '暂无已通过评论',
-  rejected: '暂无已拒绝评论',
 }
 
 function formatDate(iso: string): string {
@@ -59,6 +40,7 @@ function truncate(text: string, max: number): string {
 }
 
 export default function Comments() {
+  const { t } = useTranslation()
   const [filter, setFilter] = useState<FilterTab>('all')
   const [page, setPage] = useState(1)
   const [comments, setComments] = useState<Comment[]>([])
@@ -66,6 +48,26 @@ export default function Comments() {
   const [loading, setLoading] = useState(true)
 
   const totalPages = Math.max(1, Math.ceil(total / 20))
+
+  const TABS: { key: FilterTab; label: string }[] = [
+    { key: 'all', label: t('comments.all') },
+    { key: 'pending', label: t('comments.pending') },
+    { key: 'approved', label: t('comments.approved') },
+    { key: 'rejected', label: t('comments.rejected') },
+  ]
+
+  const STATUS_LABEL: Record<CommentStatus, string> = {
+    pending: t('comments.pending'),
+    approved: t('comments.approved'),
+    rejected: t('comments.rejected'),
+  }
+
+  const FILTER_EMPTY: Record<FilterTab, string> = {
+    all: t('comments.noComments'),
+    pending: t('comments.noPending'),
+    approved: t('comments.noApproved'),
+    rejected: t('comments.noRejected'),
+  }
 
   const fetchComments = useCallback(async () => {
     setLoading(true)
@@ -96,14 +98,14 @@ export default function Comments() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('确定要删除这条评论吗？')) return
+    if (!window.confirm(t('comments.confirmDelete'))) return
     await api.delete(`/admin/comments/${id}`)
     await fetchComments()
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold tracking-tight text-black">评论管理</h1>
+      <h1 className="text-xl font-bold tracking-tight text-black">{t('comments.title')}</h1>
 
       <div className="flex gap-2 mb-6">
         {TABS.map((tab) => (
@@ -122,7 +124,7 @@ export default function Comments() {
       </div>
 
       {loading && (
-        <div className="text-center opacity-50 py-16 text-sm">加载中...</div>
+        <div className="text-center opacity-50 py-16 text-sm">{t('common.loading')}</div>
       )}
 
       {!loading && comments.length === 0 && (
@@ -144,7 +146,7 @@ export default function Comments() {
                   <span className="text-xs font-bold uppercase tracking-widest opacity-50">{formatDate(comment.createdAt)}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold uppercase tracking-widest opacity-50">文章 #{comment.postId}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-50">{t('comments.post', { id: comment.postId })}</span>
                   <span className={`text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 ${STATUS_BADGE[comment.status]}`}>
                     {STATUS_LABEL[comment.status]}
                   </span>
@@ -161,7 +163,7 @@ export default function Comments() {
                     onClick={() => updateStatus(comment.id, 'approved')}
                     className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-green-600 text-green-600 hover:bg-green-600 hover:text-white transition-all"
                   >
-                    通过
+                    {t('comments.approve')}
                   </button>
                 )}
                 {comment.status !== 'rejected' && (
@@ -169,14 +171,14 @@ export default function Comments() {
                     onClick={() => updateStatus(comment.id, 'rejected')}
                     className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all"
                   >
-                    拒绝
+                    {t('comments.reject')}
                   </button>
                 )}
                 <button
                   onClick={() => handleDelete(comment.id)}
                   className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest border border-black opacity-70 hover:opacity-100 hover:bg-black hover:text-white transition-all"
                 >
-                  删除
+                  {t('common.delete')}
                 </button>
               </div>
             </div>
@@ -191,17 +193,17 @@ export default function Comments() {
             disabled={page <= 1}
             className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            上一页
+            {t('common.previous')}
           </button>
           <span className="text-xs font-bold uppercase tracking-widest opacity-50">
-            第 {page} 页 / 共 {totalPages} 页
+            {t('common.pageInfo', { page, total: totalPages })}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
             className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
           >
-            下一页
+            {t('common.next')}
           </button>
         </div>
       )}

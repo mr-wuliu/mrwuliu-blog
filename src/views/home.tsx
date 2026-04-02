@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { type Lang, t, tf, langPath, formatDateLang } from '../i18n'
 
 type Tag = {
   id: string
@@ -30,28 +31,20 @@ type PaginationData = {
 }
 
 type HomeProps = {
+  lang: Lang
   posts: Post[]
   pagination: PaginationData
   authorProfile?: AuthorProfile
 }
 
-function formatDate(isoDate: string | null): string {
-  if (!isoDate) return ''
-  const date = new Date(isoDate)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}年${month}月${day}日`
-}
-
-const PostCard: FC<{ post: Post }> = ({ post }) => {
+const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   return (
     <article class="p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-6 cursor-pointer">
-      <a href={`/posts/${post.slug}`} class="no-underline text-black block">
+      <a href={langPath(`/posts/${post.slug}`, lang)} class="no-underline text-black block">
         <h2 class="text-xl font-bold tracking-tight mb-2">{post.title}</h2>
         {post.publishedAt && (
           <time class="text-xs font-bold uppercase tracking-widest opacity-50" datetime={post.publishedAt}>
-            {formatDate(post.publishedAt)}
+            {formatDateLang(post.publishedAt, lang)}
           </time>
         )}
         {post.excerpt && <p class="mt-3 opacity-70 text-lg leading-relaxed">{post.excerpt}</p>}
@@ -59,7 +52,7 @@ const PostCard: FC<{ post: Post }> = ({ post }) => {
       {post.tags && post.tags.length > 0 && (
         <div class="mt-4 flex flex-wrap gap-2">
           {post.tags.map((tag) => (
-            <a href={`/tags/${tag.slug}`} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
+            <a href={langPath(`/tags/${tag.slug}`, lang)} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
           ))}
         </div>
       )}
@@ -67,54 +60,56 @@ const PostCard: FC<{ post: Post }> = ({ post }) => {
   )
 }
 
-const Pagination: FC<{ pagination: PaginationData }> = ({ pagination }) => {
+const Pagination: FC<{ pagination: PaginationData; lang: Lang }> = ({ pagination, lang }) => {
   const { page, totalPages } = pagination
   if (totalPages <= 1) return null
 
   return (
-    <nav class="mt-12 pt-8 border-t border-black" aria-label="文章分页">
+    <nav class="mt-12 pt-8 border-t border-black" aria-label="pagination">
       <div class="flex justify-between">
         {page > 1 && (
-          <a href={`/?page=${page - 1}`} class="text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline">
-            ← 上一页
+          <a href={langPath(`/?page=${page - 1}`, lang)} class="text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.prev">
+            {t(lang, 'pagination.prev')}
           </a>
         )}
         {page < totalPages && (
-          <a href={`/?page=${page + 1}`} class="ml-auto text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline">
-            下一页 →
+          <a href={langPath(`/?page=${page + 1}`, lang)} class="ml-auto text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.next">
+            {t(lang, 'pagination.next')}
           </a>
         )}
       </div>
       <span class="block mt-4 text-center text-xs font-bold uppercase tracking-widest opacity-50">
-        第 {page} 页 / 共 {totalPages} 页
+        {tf(lang, 'pagination.pageInfo')(page, totalPages)}
       </span>
     </nav>
   )
 }
 
-const Home: FC<HomeProps> = ({ posts, pagination, authorProfile }) => {
+const Home: FC<HomeProps> = ({ lang, posts, pagination, authorProfile }) => {
   return (
     <Layout
-      title="mrwuliu's blog"
-      description="个人博客 - 记录技术与生活"
-      url="/"
+      title={t(lang, 'home.pageTitle')}
+      description={t(lang, 'home.description')}
+      url={langPath('/', lang)}
       type="website"
       authorProfile={authorProfile}
+      lang={lang}
+      currentPath="/"
     >
       <div>
-        <h1 class="text-4xl font-bold tracking-tight mb-10">最新文章</h1>
+        <h1 class="text-4xl font-bold tracking-tight mb-10" data-t="home.title">{t(lang, 'home.title')}</h1>
         {posts.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
-            <p>暂无文章</p>
+            <p data-t="home.noPosts">{t(lang, 'home.noPosts')}</p>
           </div>
         ) : (
           <>
             <div>
               {posts.map((post) => (
-                <PostCard post={post} />
+                <PostCard post={post} lang={lang} />
               ))}
             </div>
-            <Pagination pagination={pagination} />
+            <Pagination pagination={pagination} lang={lang} />
           </>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 
 type Post = {
@@ -30,13 +31,6 @@ type Stats = {
   pendingComments: number
 }
 
-const statCards: { key: keyof Stats; label: string; color: string }[] = [
-  { key: 'totalPosts', label: 'Total Posts', color: 'bg-black' },
-  { key: 'published', label: 'Published', color: 'bg-green-500' },
-  { key: 'drafts', label: 'Drafts', color: 'bg-yellow-500' },
-  { key: 'pendingComments', label: 'Pending Comments', color: 'bg-red-500' },
-]
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -46,10 +40,18 @@ function formatDate(iso: string): string {
 }
 
 export default function Dashboard() {
+  const { t } = useTranslation()
   const [stats, setStats] = useState<Stats>({ totalPosts: 0, published: 0, drafts: 0, pendingComments: 0 })
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [recentComments, setRecentComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
+
+  const statCards: { key: keyof Stats; label: string; color: string }[] = [
+    { key: 'totalPosts', label: t('dashboard.totalPosts'), color: 'bg-black' },
+    { key: 'published', label: t('dashboard.published'), color: 'bg-green-500' },
+    { key: 'drafts', label: t('dashboard.drafts'), color: 'bg-yellow-500' },
+    { key: 'pendingComments', label: t('dashboard.pendingComments'), color: 'bg-red-500' },
+  ]
 
   useEffect(() => {
     const postsPromise = api.get<PostsResponse>('/posts?limit=1000')
@@ -87,12 +89,12 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold tracking-tight text-black">Dashboard</h2>
+        <h2 className="text-xl font-bold tracking-tight text-black">{t('dashboard.title')}</h2>
         <Link
           to="/posts/new"
           className="px-6 py-2.5 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white transition-all"
         >
-          New Post
+          {t('dashboard.newPost')}
         </Link>
       </div>
 
@@ -111,11 +113,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white border border-black">
           <div className="px-6 py-4 border-b border-black flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-widest opacity-50">Recent Posts</h3>
-            <Link to="/posts" className="text-xs font-bold uppercase tracking-widest text-black opacity-70 hover:opacity-100">View all</Link>
+            <h3 className="text-xs font-bold uppercase tracking-widest opacity-50">{t('dashboard.recentPosts')}</h3>
+            <Link to="/posts" className="text-xs font-bold uppercase tracking-widest text-black opacity-70 hover:opacity-100">{t('dashboard.viewAll')}</Link>
           </div>
           {recentPosts.length === 0 ? (
-            <p className="px-6 py-10 text-sm opacity-50 text-center">No posts yet</p>
+            <p className="px-6 py-10 text-sm opacity-50 text-center">{t('dashboard.noPosts')}</p>
           ) : (
             <ul className="divide-y divide-black">
               {recentPosts.map((post) => (
@@ -141,11 +143,11 @@ export default function Dashboard() {
 
         <div className="bg-white border border-black">
           <div className="px-6 py-4 border-b border-black flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-widest opacity-50">Pending Comments</h3>
-            <Link to="/comments" className="text-xs font-bold uppercase tracking-widest text-black opacity-70 hover:opacity-100">View all</Link>
+            <h3 className="text-xs font-bold uppercase tracking-widest opacity-50">{t('dashboard.pendingCommentsTitle')}</h3>
+            <Link to="/comments" className="text-xs font-bold uppercase tracking-widest text-black opacity-70 hover:opacity-100">{t('dashboard.viewAll')}</Link>
           </div>
           {recentComments.length === 0 ? (
-            <p className="px-6 py-10 text-sm opacity-50 text-center">No pending comments</p>
+            <p className="px-6 py-10 text-sm opacity-50 text-center">{t('dashboard.noPendingComments')}</p>
           ) : (
             <ul className="divide-y divide-black">
               {recentComments.map((comment) => (
