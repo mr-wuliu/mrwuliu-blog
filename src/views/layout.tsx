@@ -33,9 +33,27 @@ type LayoutProps = PropsWithChildren<{
   authorProfile?: AuthorProfile
   lang: Lang
   currentPath?: string
+  publishedTime?: string
+  modifiedTime?: string
+  authorName?: string
+  extraHead?: unknown
 }>
 
-const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'website', authorProfile, lang, currentPath = '/', children }) => {
+const Layout: FC<LayoutProps> = ({
+  title,
+  description,
+  url,
+  image,
+  type = 'website',
+  authorProfile,
+  lang,
+  currentPath = '/',
+  publishedTime,
+  modifiedTime,
+  authorName,
+  extraHead,
+  children,
+}) => {
   const hasSidebar = !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email))
   const toggleHref = langPath(currentPath, otherLang(lang))
   const year = new Date().getFullYear()
@@ -66,7 +84,7 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
           'document.querySelectorAll("[data-t]").forEach(function(e){var v=__t(e.getAttribute("data-t"));if(v)e.textContent=v});' +
           'document.querySelectorAll("[data-placeholder]").forEach(function(e){var v=__t(e.getAttribute("data-placeholder"));if(v)e.setAttribute("placeholder",v)});' +
           'document.querySelectorAll("[data-thref]").forEach(function(e){var k=e.getAttribute("data-thref");var b=l==="en"?"/en":"";e.setAttribute("href",b+k)});' +
-          'document.querySelectorAll("[data-comment-msg]").forEach(function(e){var o=l==="zh"?"en":"zh";e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+l));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+l));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+l))});' +
+          'document.querySelectorAll("[data-comment-msg]").forEach(function(e){var o=l==="en"?"en":"zh";e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+l));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+l));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+l))});' +
           'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+l);if(v)e.textContent=v});' +
           'document.querySelectorAll(".lang-toggle").forEach(function(tg){' +
           'var tb=tg.querySelector(".lang-toggle-thumb");if(tb){tb.className="lang-toggle-thumb"+(l==="zh"?" lang-toggle-thumb-end":"");tb.textContent=l==="zh"? "\\u4e2d\\u6587":"EN"}' +
@@ -84,7 +102,19 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
             crossorigin="anonymous"
           />
         )}
-        <SEO title={title} description={description} url={url} image={image} type={type} lang={lang} />
+        <SEO
+          title={title}
+          description={description}
+          url={url}
+          image={image}
+          type={type}
+          lang={lang}
+          currentPath={currentPath}
+          publishedTime={publishedTime}
+          modifiedTime={modifiedTime}
+          authorName={authorName}
+        />
+        {extraHead}
       </head>
       <body class="font-sans text-base leading-relaxed text-black bg-white antialiased min-h-screen flex flex-col">
         <header class="border-b border-black bg-white">

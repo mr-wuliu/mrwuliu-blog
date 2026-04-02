@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { OrganizationSchema, WebSiteSchema } from './components/structured-data'
 import { type Lang, t, tf, langPath, formatDateLang } from '../i18n'
 
 type Tag = {
@@ -116,6 +117,12 @@ const Home: FC<HomeProps> = ({ lang, posts, pagination, authorProfile }) => {
       authorProfile={authorProfile}
       lang={lang}
       currentPath="/"
+      extraHead={
+        <>
+          <OrganizationSchema github={authorProfile?.github} email={authorProfile?.email} />
+          <WebSiteSchema />
+        </>
+      }
     >
       <div>
         <h1 class="text-4xl font-bold tracking-tight mb-10" data-t="home.title">{t(lang, 'home.title')}</h1>

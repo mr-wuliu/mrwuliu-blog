@@ -15,6 +15,7 @@ import TagsCloudPage from '../views/tags-cloud'
 import ProjectsPage from '../views/projects'
 import ProjectDetailPage from '../views/project-detail'
 import { generateRSS } from '../utils/rss'
+import { generateSitemap } from '../utils/sitemap'
 import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
@@ -327,6 +328,16 @@ blogRoutes.get('/feed.xml', async (c) => {
   return c.body(rssXml, 200, {
     'Content-Type': 'application/xml',
   })
+
+blogRoutes.get('/sitemap.xml', async (c) => {
+  const db = createDb(c.env.DB)
+  const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
+  const baseUrl = new URL(c.req.url).origin
+  const sitemapXml = generateSitemap(result.posts, baseUrl)
+  return c.body(sitemapXml, 200, {
+    'Content-Type': 'application/xml',
+  })
+})
 })
 
 async function getAdjacentPost(

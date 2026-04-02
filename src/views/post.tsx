@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import type { InferSelectModel } from 'drizzle-orm'
 import Layout from './layout'
+import { ArticleSchema, BreadcrumbSchema } from './components/structured-data'
 import type { TocHeading } from '../utils/latex'
 import type { AuthorProfile } from './components/author-sidebar'
 import { type Lang, t, tf, langPath, formatDateLang, otherLang } from '../i18n'
@@ -275,14 +276,39 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
 }
 
 const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, prev, next, authorProfile }) => {
+  const postUrl = langPath(`/posts/${post.slug}`, lang)
+  const publishedTime = post.publishedAt ?? post.createdAt
+  const modifiedTime = post.updatedAt !== publishedTime ? post.updatedAt : undefined
+
   return (
     <Layout
       title={post.title}
       description={post.excerpt || post.title}
+      url={postUrl}
       type="article"
       authorProfile={authorProfile}
       lang={lang}
       currentPath={`/posts/${post.slug}`}
+      publishedTime={publishedTime}
+      modifiedTime={modifiedTime}
+      authorName="mrwuliu"
+      extraHead={
+        <>
+          <ArticleSchema data={{
+            title: post.title,
+            description: post.excerpt || post.title,
+            url: postUrl,
+            datePublished: publishedTime,
+            dateModified: modifiedTime,
+            authorName: 'mrwuliu',
+          }} />
+          <BreadcrumbSchema items={[
+            { name: lang === 'zh' ? '首页' : 'Home', url: langPath('/', lang) },
+            { name: lang === 'zh' ? '文章' : 'Writings', url: langPath('/writings', lang) },
+            { name: post.title, url: postUrl },
+          ]} />
+        </>
+      }
     >
       <article>
         <h1 class="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{post.title}</h1>
@@ -290,6 +316,11 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
           <time datetime={post.publishedAt ?? ''} class="text-xs font-bold uppercase tracking-widest opacity-50">
             {formatDateLang(post.publishedAt, lang)}
           </time>
+          {modifiedTime && (
+            <span class="text-xs font-bold uppercase tracking-widest opacity-30">
+              {lang === 'zh' ? `更新于 ${formatDateLang(modifiedTime, lang)}` : `Updated ${formatDateLang(modifiedTime, lang)}`}
+            </span>
+          )}
           {post.tags.length > 0 && (
             <ul class="flex flex-wrap gap-1.5 list-none p-0 m-0">
               {post.tags.map((pt) => (
