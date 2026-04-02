@@ -1,0 +1,32 @@
+# mrwuliu's blog
+
+> Personal blog by mrwuliu. Topics include software engineering, web development, cloud computing, and technology. Available in Chinese and English.
+
+## About
+
+This is a personal blog powered by Cloudflare Workers, built with Hono framework, D1 database, and R2 storage. Content covers software engineering practices, web technologies, and developer tools.
+
+## Structure
+
+- [Home](/): Latest blog posts with pagination
+- [Writings](/writings): Complete archive of all published posts
+- [Projects](/projects): Side projects and open-source work
+- [Tags](/tags-cloud): Browse posts by topic tags
+- [About](/about): About the author
+
+## Feed
+
+- RSS: https://mrwuliu.top/feed.xml
+
+## Languages
+
+- Chinese (default): https://mrwuliu.top/
+- English: https://mrwuliu.top/en/
+
+## Technical Details
+
+- Runtime: Cloudflare Workers (edge)
+- Framework: Hono
+- Database: D1 (SQLite)
+- Storage: R2
+- SSR: hono/jsx server-side rendering
