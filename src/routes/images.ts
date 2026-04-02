@@ -48,11 +48,10 @@ export default imageRoutes
 
 export const imageServeRoutes = new Hono<{ Bindings: Bindings }>()
 
-imageServeRoutes.get('/:key+', async (c) => {
-  // Hono catch-all params are exposed as "key" (without "+") in most versions.
-  // Keep a fallback to avoid broken image URLs when router param behavior changes.
+imageServeRoutes.get('/*', async (c) => {
+  // Derive R2 key directly from request path to avoid framework param differences.
   const rawPath = c.req.path
-  let key = c.req.param('key') || c.req.param('key+') || rawPath.replace(/^\/+/, '')
+  let key = rawPath.replace(/^\/+/, '')
   key = key.replace(/^\/+/, '')
   if (key.startsWith('images/')) {
     key = key.slice('images/'.length)
