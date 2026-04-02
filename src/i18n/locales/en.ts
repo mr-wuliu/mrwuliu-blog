@@ -53,6 +53,8 @@ export default {
     emailLabel: 'Email (optional)',
     contentLabel: 'Comment *',
     submit: 'Submit',
+    commentSuccess: 'Comment submitted. It will appear after manual review.',
+    commentError: 'Failed to submit comment. Please try again later.',
   },
   about: {
     title: 'About',

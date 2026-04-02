@@ -82,3 +82,13 @@ export const projects = sqliteTable('projects', {
   projects_status_idx: index('projects_status_idx').on(table.status),
   projects_sort_order_idx: index('projects_sort_order_idx').on(table.sortOrder),
 }))
+
+export const postLikes = sqliteTable('post_likes', {
+  id: text('id').primaryKey(),
+  postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  fingerprint: text('fingerprint').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  post_likes_post_id_idx: index('post_likes_post_id_idx').on(table.postId),
+  post_likes_unique: uniqueIndex('post_likes_unique').on(table.postId, table.fingerprint),
+}))

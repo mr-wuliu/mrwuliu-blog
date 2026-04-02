@@ -65,7 +65,6 @@
     "noPending": "No pending comments",
     "noApproved": "No approved comments",
     "noRejected": "No rejected comments",
-    "post": "Post #{{id}}",
     "approve": "Approve",
     "reject": "Reject",
     "confirmDelete": "Delete this comment?"

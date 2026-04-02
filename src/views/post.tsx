@@ -47,6 +47,10 @@ const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => 
 }
 
 const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> = ({ comments, postSlug, lang }) => {
+  const submitUrl = langPath(`/posts/${postSlug}/comments`, lang)
+  const successMsg = t(lang, 'post.commentSuccess')
+  const errorMsg = t(lang, 'post.commentError')
+
   return (
     <section class="mt-4 pt-4 border-t border-black">
       <h2 class="text-xl font-bold tracking-tight mb-6">{tf(lang, 'post.comments')(comments.length)}</h2>
@@ -65,7 +69,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
         </div>
       )}
 
-      <form class="p-6 border border-black space-y-4" method="post" action={langPath(`/posts/${postSlug}/comments`, lang)}>
+      <form id="comment-form" class="p-6 border border-black space-y-4">
         <h3 class="text-lg font-bold tracking-tight mb-4" data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</h3>
         <div>
           <label for="authorName" class="block text-xs font-bold uppercase tracking-widest opacity-50 mb-2" data-t="post.nameLabel">{t(lang, 'post.nameLabel')}</label>
@@ -87,6 +91,66 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
           {t(lang, 'post.submit')}
         </button>
       </form>
+
+      <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  var form = document.getElementById('comment-form');
+  if (!form) return;
+  var successMsg = ${JSON.stringify(successMsg)};
+  var errorMsg = ${JSON.stringify(errorMsg)};
+  var submitUrl = ${JSON.stringify(submitUrl)};
+
+  function showToast(msg, type) {
+    var el = document.createElement('div');
+    el.className = 'comment-toast comment-toast--' + type;
+    el.textContent = msg;
+    document.body.appendChild(el);
+    requestAnimationFrame(function() {
+      el.classList.add('comment-toast--visible');
+    });
+    setTimeout(function() {
+      el.classList.remove('comment-toast--visible');
+      setTimeout(function() { el.remove(); }, 300);
+    }, 4000);
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var btn = form.querySelector('button[type="submit"]');
+    var orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    var data = {
+      authorName: form.querySelector('#authorName').value.trim(),
+      authorEmail: form.querySelector('#authorEmail').value.trim() || undefined,
+      content: form.querySelector('#content').value.trim()
+    };
+
+    fetch(submitUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function(res) {
+      if (res.ok) {
+        showToast(successMsg, 'success');
+        form.reset();
+      } else {
+        return res.json().then(function(d) {
+          showToast(d.error || errorMsg, 'error');
+        }).catch(function() {
+          showToast(errorMsg, 'error');
+        });
+      }
+    }).catch(function() {
+      showToast(errorMsg, 'error');
+    }).finally(function() {
+      btn.disabled = false;
+      btn.textContent = orig;
+    });
+  });
+})();
+      ` }} />
     </section>
   )
 }

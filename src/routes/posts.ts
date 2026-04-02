@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { createDb } from '../db'
-import { posts, postTags, tags } from '../db/schema'
+import { posts, postTags, tags, postLikes } from '../db/schema'
 import { getPostsWithPagination, getPostWithTags } from '../db/queries'
 import { slugify, generateUniqueSlug } from '../utils/slugify'
 
@@ -136,6 +136,37 @@ postRoutes.delete('/:id', async (c) => {
 
   await db.delete(posts).where(eq(posts.id, id))
   return c.json({ success: true })
+})
+
+postRoutes.post('/:id/like', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json<{ fingerprint: string }>().catch(() => ({ fingerprint: '' }))
+  const fingerprint = body.fingerprint || c.req.header('x-fingerprint') || ''
+  if (!fingerprint || fingerprint.length > 100) {
+    return c.json({ error: 'Invalid fingerprint' }, 400)
+  }
+
+  const db = createDb(c.env.DB)
+  const [post] = await db.select({ id: posts.id }).from(posts).where(eq(posts.id, id))
+  if (!post) return c.json({ error: 'Post not found' }, 404)
+
+  const [existing] = await db
+    .select()
+    .from(postLikes)
+    .where(and(eq(postLikes.postId, id), eq(postLikes.fingerprint, fingerprint)))
+
+  if (existing) {
+    await db.delete(postLikes).where(eq(postLikes.id, existing.id))
+    return c.json({ liked: false })
+  }
+
+  await db.insert(postLikes).values({
+    id: crypto.randomUUID(),
+    postId: id,
+    fingerprint,
+  })
+
+  return c.json({ liked: true })
 })
 
 export default postRoutes

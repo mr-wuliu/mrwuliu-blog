@@ -227,3 +227,46 @@ a[class*="hover:bg-black"]:hover {
 .lang-toggle-thumb-end {
   transform: translateX(38px);
 }
+
+.comment-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  padding: 1.25rem 2rem;
+  border: 1px solid #000;
+  font-size: 0.875rem;
+  font-weight: 500;
+  max-width: 24rem;
+  text-align: center;
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.comment-toast--visible {
+  opacity: 1;
+}
+
+.comment-toast--success {
+  background: #000;
+  color: #fff;
+}
+
+.comment-toast--error {
+  background: #fff;
+  color: #c00;
+  border-color: #c00;
+}
+
+.like-btn {
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.like-btn:disabled {
+  cursor: wait;
+}

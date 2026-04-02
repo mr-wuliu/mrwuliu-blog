@@ -53,6 +53,8 @@ export default {
     emailLabel: '邮箱（可选）',
     contentLabel: '评论内容 *',
     submit: '提交评论',
+    commentSuccess: '评论已提交，需要人工审核后才会显示。',
+    commentError: '评论提交失败，请稍后再试。',
   },
   about: {
     title: '自述',

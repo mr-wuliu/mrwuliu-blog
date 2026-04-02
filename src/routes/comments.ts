@@ -11,15 +11,6 @@ type Bindings = {
 
 const commentRoutes = new Hono<{ Bindings: Bindings }>()
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;')
-}
-
 function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
@@ -45,19 +36,16 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
 
   const id = crypto.randomUUID()
 
-  const safeContent = escapeHtml(body.content)
-  const safeName = escapeHtml(body.authorName)
-
   await db.insert(comments).values({
     id,
     postId,
-    authorName: safeName,
-    authorEmail: body.authorEmail ? escapeHtml(body.authorEmail) : null,
-    content: safeContent,
+    authorName: body.authorName,
+    authorEmail: body.authorEmail || null,
+    content: body.content,
     status: 'pending',
   })
 
-  return c.json({ id, status: 'pending', authorName: safeName, content: safeContent }, 201)
+  return c.json({ id, status: 'pending', authorName: body.authorName, content: body.content }, 201)
 })
 
 commentRoutes.get('/posts/:postId/comments', async (c) => {
@@ -83,8 +71,19 @@ commentRoutes.get('/admin/comments', async (c) => {
   const conditions = status ? [eq(comments.status, status)] : []
 
   const result = await db
-    .select()
+    .select({
+      id: comments.id,
+      postId: comments.postId,
+      authorName: comments.authorName,
+      authorEmail: comments.authorEmail,
+      content: comments.content,
+      status: comments.status,
+      createdAt: comments.createdAt,
+      postSlug: posts.slug,
+      postTitle: posts.title,
+    })
     .from(comments)
+    .leftJoin(posts, eq(comments.postId, posts.id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(comments.createdAt))
     .limit(limit)

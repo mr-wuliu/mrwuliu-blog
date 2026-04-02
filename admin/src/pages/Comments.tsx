@@ -7,6 +7,8 @@ type CommentStatus = 'pending' | 'approved' | 'rejected'
 interface Comment {
   id: string
   postId: string
+  postSlug: string | null
+  postTitle: string | null
   authorName: string
   authorEmail: string | null
   content: string
@@ -41,7 +43,7 @@ function truncate(text: string, max: number): string {
 
 export default function Comments() {
   const { t } = useTranslation()
-  const [filter, setFilter] = useState<FilterTab>('all')
+  const [filter, setFilter] = useState<FilterTab>('pending')
   const [page, setPage] = useState(1)
   const [comments, setComments] = useState<Comment[]>([])
   const [total, setTotal] = useState(0)
@@ -146,7 +148,11 @@ export default function Comments() {
                   <span className="text-xs font-bold uppercase tracking-widest opacity-50">{formatDate(comment.createdAt)}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold uppercase tracking-widest opacity-50">{t('comments.post', { id: comment.postId })}</span>
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-50">
+                    <a href={`/posts/${comment.postSlug}`} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                      {comment.postTitle || comment.postId}
+                    </a>
+                  </span>
                   <span className={`text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 ${STATUS_BADGE[comment.status]}`}>
                     {STATUS_LABEL[comment.status]}
                   </span>

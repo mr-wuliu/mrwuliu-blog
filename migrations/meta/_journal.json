@@ -15,6 +15,13 @@
       "when": 1774984209184,
       "tag": "0001_keen_ultron",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1775104512147,
+      "tag": "0002_nasty_luke_cage",
+      "breakpoints": true
     }
   ]
 }

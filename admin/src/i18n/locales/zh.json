@@ -65,7 +65,6 @@
     "noPending": "暂无待审核评论",
     "noApproved": "暂无已通过评论",
     "noRejected": "暂无已拒绝评论",
-    "post": "文章 #{{id}}",
     "approve": "通过",
     "reject": "拒绝",
     "confirmDelete": "确定要删除这条评论吗？"

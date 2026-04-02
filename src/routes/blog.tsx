@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
-import { eq, desc, asc, and, sql } from 'drizzle-orm'
+import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
-import { posts, tags, postTags, comments } from '../db/schema'
+import { posts, tags, postTags, comments, postLikes } from '../db/schema'
 import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import Home from '../views/home'
@@ -38,12 +38,34 @@ function createBlogRouter(lang: Lang) {
     const result = await getPublishedPosts(db, { page, limit })
     const authorProfile = await getAuthorProfile(db)
 
+    const postIds = result.posts.map(p => p.id)
+
+    const commentCounts = postIds.length ? Object.fromEntries(
+      (await db
+        .select({ postId: comments.postId, count: sql<number>`count(*)` })
+        .from(comments)
+        .where(and(inArray(comments.postId, postIds), eq(comments.status, 'approved')))
+        .groupBy(comments.postId)
+      ).map(r => [r.postId, r.count])
+    ) : {}
+
+    const likeCounts = postIds.length ? Object.fromEntries(
+      (await db
+        .select({ postId: postLikes.postId, count: sql<number>`count(*)` })
+        .from(postLikes)
+        .where(inArray(postLikes.postId, postIds))
+        .groupBy(postLikes.postId)
+      ).map(r => [r.postId, r.count])
+    ) : {}
+
     const postsWithTags = await Promise.all(
       result.posts.map(async (post) => {
         const postWithTags = await getPostWithTags(db, post.id)
         return {
           ...post,
           tags: postWithTags?.tags ?? [],
+          commentCount: commentCounts[post.id] ?? 0,
+          likeCount: likeCounts[post.id] ?? 0,
         }
       })
     )
