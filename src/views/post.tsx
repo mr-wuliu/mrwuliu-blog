@@ -3,7 +3,7 @@ import type { InferSelectModel } from 'drizzle-orm'
 import Layout from './layout'
 import type { TocHeading } from '../utils/latex'
 import type { AuthorProfile } from './components/author-sidebar'
-import { type Lang, t, tf, langPath, formatDateLang } from '../i18n'
+import { type Lang, t, tf, langPath, formatDateLang, otherLang } from '../i18n'
 
 function identicon(seed: string, size = 40): string {
   function hashStr(s: string): number {
@@ -84,12 +84,33 @@ const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => 
 
 const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> = ({ comments, postSlug, lang }) => {
   const submitUrl = langPath(`/posts/${postSlug}/comments`, lang)
+  const otherL = otherLang(lang)
   const successMsg = t(lang, 'post.commentSuccess')
   const errorMsg = t(lang, 'post.commentError')
+  const otherSuccessMsg = t(otherL, 'post.commentSuccess')
+  const otherErrorMsg = t(otherL, 'post.commentError')
+  const otherSubmitUrl = langPath(`/posts/${postSlug}/comments`, otherL)
+
+  const commentCountZh = lang === 'zh' ? tf(lang, 'post.comments')(comments.length) : tf(otherL, 'post.comments')(comments.length)
+  const commentCountEn = lang === 'en' ? tf(lang, 'post.comments')(comments.length) : tf(otherL, 'post.comments')(comments.length)
 
   return (
-    <section class="mt-10 pt-6 border-t border-black">
-      <h2 class="text-xl font-bold tracking-tight mb-4">{tf(lang, 'post.comments')(comments.length)}</h2>
+    <section class="mt-10 pt-6 border-t border-black"
+      data-comment-msg={successMsg}
+      data-comment-err={errorMsg}
+      data-comment-msg-zh={lang === 'zh' ? successMsg : otherSuccessMsg}
+      data-comment-msg-en={lang === 'en' ? successMsg : otherSuccessMsg}
+      data-comment-err-zh={lang === 'zh' ? errorMsg : otherErrorMsg}
+      data-comment-err-en={lang === 'en' ? errorMsg : otherErrorMsg}
+      data-comment-url={submitUrl}
+      data-comment-url-zh={lang === 'zh' ? submitUrl : otherSubmitUrl}
+      data-comment-url-en={lang === 'en' ? submitUrl : otherSubmitUrl}
+    >
+      <h2 class="text-xl font-bold tracking-tight mb-4"
+        data-comment-count={comments.length}
+        data-comment-count-zh={commentCountZh}
+        data-comment-count-en={commentCountEn}
+      >{tf(lang, 'post.comments')(comments.length)}</h2>
 
       {comments.length > 0 && (
         <div class="space-y-4 mb-8">
@@ -109,7 +130,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       )}
 
       {comments.length === 0 && (
-        <div class="mb-8 px-4 py-3 border border-gray-300 bg-gray-100 text-sm text-gray-600">
+        <div class="mb-8 px-4 py-3 border border-gray-300 bg-gray-100 text-sm text-gray-600" data-t="post.noComments">
           {t(lang, 'post.noComments')}
         </div>
       )}
@@ -124,16 +145,19 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
           <div>
             <input type="text" id="authorName" name="authorName" maxlength={50}
               placeholder={t(lang, 'post.namePlaceholder')}
+              data-placeholder="post.namePlaceholder"
               class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
           </div>
           <div>
             <input type="email" id="authorEmail" name="authorEmail" maxlength={100}
               placeholder={t(lang, 'post.emailLabel')}
+              data-placeholder="post.emailLabel"
               class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
           </div>
           <div>
             <textarea id="content" name="content" required maxlength={1000} rows={4}
               placeholder={t(lang, 'post.contentLabel')}
+              data-placeholder="post.contentLabel"
               class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black resize-y"></textarea>
           </div>
           <button type="submit"
@@ -147,9 +171,10 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
 (function() {
   var form = document.getElementById('comment-form');
   if (!form) return;
-  var successMsg = ${JSON.stringify(successMsg)};
-  var errorMsg = ${JSON.stringify(errorMsg)};
-  var submitUrl = ${JSON.stringify(submitUrl)};
+  var section = form.closest('section');
+  function getMsg() { return section.getAttribute('data-comment-msg'); }
+  function getErr() { return section.getAttribute('data-comment-err'); }
+  function getUrl() { return section.getAttribute('data-comment-url'); }
 
   function showToast(msg, type) {
     var el = document.createElement('div');
@@ -192,7 +217,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       content: form.querySelector('#content').value.trim()
     };
 
-    fetch(submitUrl, {
+    fetch(getUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -200,19 +225,19 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       if (res.ok) {
         localStorage.setItem('comment_authorName', data.authorName);
         if (data.authorEmail) localStorage.setItem('comment_authorEmail', data.authorEmail);
-        showToast(successMsg, 'success');
+        showToast(getMsg(), 'success');
         form.reset();
         if (nameInput) nameInput.value = data.authorName;
         if (emailInput && data.authorEmail) emailInput.value = data.authorEmail;
       } else {
         return res.json().then(function(d) {
-          showToast(d.error || errorMsg, 'error');
+          showToast(d.error || getErr(), 'error');
         }).catch(function() {
-          showToast(errorMsg, 'error');
+          showToast(getErr(), 'error');
         });
       }
     }).catch(function() {
-      showToast(errorMsg, 'error');
+      showToast(getErr(), 'error');
     }).finally(function() {
       btn.disabled = false;
       btn.textContent = orig;

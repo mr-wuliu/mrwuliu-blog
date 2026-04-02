@@ -21,7 +21,7 @@ function toRFC822(dateStr: string): string {
 
 export function generateRSS(posts: RSSPost[], baseUrl: string): string {
   const siteTitle = 'Blog'
-  const siteDescription = '个人博客'
+  const siteDescription = 'Personal Blog - Tech & Life'
   const siteUrl = baseUrl.replace(/\/$/, '')
   const lastBuildDate = new Date().toUTCString()
 
