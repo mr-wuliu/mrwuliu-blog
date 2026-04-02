@@ -1,4 +1,5 @@
 import type { FC } from 'hono/jsx'
+import { type Lang, t } from '../../i18n'
 
 const SITE_NAME = "mrwuliu's blog"
 const BASE_URL = 'https://mrwuliu.top'
@@ -14,7 +15,7 @@ type SEOProps = {
   modifiedTime?: string
   authorName?: string
   currentPath?: string
-  lang?: 'zh' | 'en'
+  lang?: Lang
 }
 
 const SEO: FC<SEOProps> = ({
@@ -30,7 +31,7 @@ const SEO: FC<SEOProps> = ({
   currentPath,
   lang = 'zh',
 }) => {
-  const desc = description || ''
+  const desc = description || t(lang, 'home.description')
   const fullTitle = title === siteName ? title : `${title} | ${siteName}`
   const canonicalUrl = url ? `${BASE_URL}${url}` : (currentPath ? `${BASE_URL}${currentPath}` : BASE_URL)
   const imageUrl = image?.startsWith('http') ? image : image ? `${BASE_URL}${image}` : undefined

@@ -328,17 +328,41 @@ blogRoutes.get('/feed.xml', async (c) => {
   return c.body(rssXml, 200, {
     'Content-Type': 'application/xml',
   })
+})
 
 blogRoutes.get('/sitemap.xml', async (c) => {
   const db = createDb(c.env.DB)
-  const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
+  const result = await getAllPublishedPostsForSitemap(db)
   const baseUrl = new URL(c.req.url).origin
-  const sitemapXml = generateSitemap(result.posts, baseUrl)
+  const sitemapXml = generateSitemap(result, baseUrl)
   return c.body(sitemapXml, 200, {
     'Content-Type': 'application/xml',
   })
 })
-})
+
+async function getAllPublishedPostsForSitemap(
+  db: ReturnType<typeof createDb>
+): Promise<{ slug: string; publishedAt: string | null; updatedAt: string | null }[]> {
+  const pageSize = 200
+  let page = 1
+  const allPosts: { slug: string; publishedAt: string | null; updatedAt: string | null }[] = []
+
+  while (true) {
+    const result = await getPublishedPosts(db, { page, limit: pageSize })
+    allPosts.push(...result.posts.map((post) => ({
+      slug: post.slug,
+      publishedAt: post.publishedAt,
+      updatedAt: post.updatedAt,
+    })))
+
+    if (result.posts.length < pageSize || allPosts.length >= result.total) {
+      break
+    }
+    page += 1
+  }
+
+  return allPosts
+}
 
 async function getAdjacentPost(
   db: ReturnType<typeof createDb>,
