@@ -19,6 +19,23 @@ const ALLOWED_AVATAR_TYPES = new Set([
 
 const MAX_AVATAR_SIZE = 5 * 1024 * 1024
 
+function extensionFromMimeType(mimeType: string): string {
+  switch (mimeType) {
+    case 'image/jpeg':
+      return 'jpg'
+    case 'image/png':
+      return 'png'
+    case 'image/gif':
+      return 'gif'
+    case 'image/webp':
+      return 'webp'
+    case 'image/svg+xml':
+      return 'svg'
+    default:
+      return 'bin'
+  }
+}
+
 const siteConfigRoutes = new Hono<{ Bindings: Bindings }>()
 
 siteConfigRoutes.get('/', async (c) => {
@@ -64,7 +81,7 @@ siteConfigRoutes.post('/avatar-upload', async (c) => {
     const oldConfig = await getSiteConfig(db, 'author_avatar')
     const oldAvatarUrl = oldConfig?.value || ''
 
-    const extension = file.type.split('/')[1] || 'bin'
+    const extension = extensionFromMimeType(file.type)
     const r2Key = `avatars/avatar.${extension}`
     const arrayBuffer = await file.arrayBuffer()
     await c.env.IMAGES.put(r2Key, arrayBuffer, {

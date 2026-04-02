@@ -49,7 +49,13 @@ export default imageRoutes
 export const imageServeRoutes = new Hono<{ Bindings: Bindings }>()
 
 imageServeRoutes.get('/:key+', async (c) => {
-  const key = c.req.param('key+')
+  // Hono catch-all params are exposed as "key" (without "+") in most versions.
+  // Keep a fallback to avoid broken image URLs when router param behavior changes.
+  const rawPath = c.req.path
+  const key = c.req.param('key') || c.req.param('key+') || rawPath.replace(/^\/+/, '')
+  if (!key) {
+    return new Response('Not Found', { status: 404 })
+  }
   const response = await serveImage(c.env, key)
   return response
 })
