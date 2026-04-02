@@ -78,7 +78,21 @@ export async function serveImage(
   env: Bindings,
   key: string,
 ): Promise<Response> {
-  const object = await env.IMAGES.get(key)
+  let object = await env.IMAGES.get(key)
+
+  // Backward compatibility for author avatar key extension changes.
+  // If /images/avatars/avatar.<ext> is stale, try common alternatives.
+  if (!object) {
+    const avatarMatch = key.match(/^avatars\/avatar\.(png|jpg|jpeg|webp|gif|svg)$/)
+    if (avatarMatch) {
+      const candidates = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg']
+      for (const ext of candidates) {
+        if (`avatars/avatar.${ext}` === key) continue
+        object = await env.IMAGES.get(`avatars/avatar.${ext}`)
+        if (object) break
+      }
+    }
+  }
 
   if (!object) {
     return new Response('Not Found', { status: 404 })
