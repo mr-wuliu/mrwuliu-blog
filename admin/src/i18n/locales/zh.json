@@ -53,6 +53,12 @@
     "tableActions": "操作",
     "published": "已发布",
     "draft": "草稿",
+    "hidden": "已隐藏",
+    "pinned": "已置顶",
+    "hide": "隐藏",
+    "unhide": "取消隐藏",
+    "pin": "置顶",
+    "unpin": "取消置顶",
     "confirmDelete": "确认删除这篇文章？此操作不可恢复。"
   },
   "comments": {
@@ -79,7 +85,12 @@
     "saveAuthor": "保存作者信息",
     "avatarLabel": "头像链接",
     "avatarPlaceholder": "https://example.com/avatar.jpg",
-    "avatarHint": "输入头像图片的 URL 地址",
+    "avatarHint": "上传图片或手动输入头像 URL 地址",
+    "avatarUploading": "上传中...",
+    "avatarDropHint": "点击或拖拽图片到此处上传头像",
+    "avatarInvalidType": "请上传图片文件",
+    "avatarTooLarge": "文件大小不能超过 5MB",
+    "avatarUploadFailed": "头像上传失败",
     "bioLabel": "简介",
     "bioPlaceholder": "一句话介绍自己...",
     "githubLabel": "GitHub 链接",
@@ -124,6 +135,8 @@
     "update": "更新",
     "cancel": "取消",
     "saving": "保存中...",
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "hidden": "隐藏文章",
+    "pinned": "置顶文章"
   }
 }

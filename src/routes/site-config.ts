@@ -9,6 +9,16 @@ type Bindings = {
   ASSETS: Fetcher
 }
 
+const ALLOWED_AVATAR_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+])
+
+const MAX_AVATAR_SIZE = 5 * 1024 * 1024
+
 const siteConfigRoutes = new Hono<{ Bindings: Bindings }>()
 
 siteConfigRoutes.get('/', async (c) => {
@@ -31,6 +41,53 @@ siteConfigRoutes.put('/', async (c) => {
   if (!key) return c.json({ error: 'Key is required' }, 400)
   const config = await upsertSiteConfig(db, { key, value })
   return c.json(config)
+})
+
+siteConfigRoutes.post('/avatar-upload', async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+
+    if (!file || !(file instanceof File)) {
+      return c.json({ error: 'No file provided. Use multipart/form-data with "file" field.' }, 400)
+    }
+
+    if (!ALLOWED_AVATAR_TYPES.has(file.type)) {
+      return c.json({ error: `Invalid file type: ${file.type}` }, 400)
+    }
+
+    if (file.size > MAX_AVATAR_SIZE) {
+      return c.json({ error: 'File too large. Maximum: 5MB' }, 400)
+    }
+
+    const db = createDb(c.env.DB)
+    const oldConfig = await getSiteConfig(db, 'author_avatar')
+    const oldAvatarUrl = oldConfig?.value || ''
+
+    const extension = file.type.split('/')[1] || 'bin'
+    const r2Key = `avatars/avatar.${extension}`
+    const arrayBuffer = await file.arrayBuffer()
+    await c.env.IMAGES.put(r2Key, arrayBuffer, {
+      httpMetadata: {
+        contentType: file.type,
+      },
+    })
+
+    if (oldAvatarUrl.includes('/images/avatars/')) {
+      const oldKey = oldAvatarUrl.replace('/images/', '')
+      if (oldKey !== r2Key) {
+        await c.env.IMAGES.delete(oldKey)
+      }
+    }
+
+    const avatarUrl = `/images/${r2Key}`
+    await upsertSiteConfig(db, { key: 'author_avatar', value: avatarUrl })
+
+    return c.json({ url: avatarUrl })
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'Upload failed'
+    return c.json({ error: message }, 400)
+  }
 })
 
 export default siteConfigRoutes

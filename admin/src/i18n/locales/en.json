@@ -53,6 +53,12 @@
     "tableActions": "Actions",
     "published": "Published",
     "draft": "Draft",
+    "hidden": "Hidden",
+    "pinned": "Pinned",
+    "hide": "Hide",
+    "unhide": "Unhide",
+    "pin": "Pin",
+    "unpin": "Unpin",
     "confirmDelete": "Confirm delete this post? This cannot be undone."
   },
   "comments": {
@@ -79,7 +85,12 @@
     "saveAuthor": "Save Author Info",
     "avatarLabel": "Avatar URL",
     "avatarPlaceholder": "https://example.com/avatar.jpg",
-    "avatarHint": "Enter avatar image URL",
+    "avatarHint": "Upload an image or enter avatar URL manually",
+    "avatarUploading": "Uploading...",
+    "avatarDropHint": "Click or drag and drop an image to upload avatar",
+    "avatarInvalidType": "Please upload an image file",
+    "avatarTooLarge": "File size must not exceed 5MB",
+    "avatarUploadFailed": "Avatar upload failed",
     "bioLabel": "Bio",
     "bioPlaceholder": "Brief introduction...",
     "githubLabel": "GitHub URL",
@@ -124,6 +135,8 @@
     "update": "Update",
     "cancel": "Cancel",
     "saving": "Saving...",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "hidden": "Hidden",
+    "pinned": "Pinned"
   }
 }
