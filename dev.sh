@@ -8,6 +8,12 @@ PID_FILE="$PID_DIR/dev.pid"
 PORT=8787
 LOG_DIR="$PROJECT_DIR/.wrangler/logs"
 
+LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+if [ -n "$LAN_IP" ]; then
+  export no_proxy="${no_proxy:+$no_proxy,}$LAN_IP"
+  export NO_PROXY="${NO_PROXY:+$NO_PROXY,}$LAN_IP"
+fi
+
 # ── Helpers ─────────────────────────────────────────────
 info()  { echo -e "\033[1;34m[dev]\033[0m $*"; }
 ok()    { echo -e "\033[1;32m[ok]\033[0m $*"; }

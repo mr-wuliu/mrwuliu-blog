@@ -18,6 +18,38 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', logger())
 
+app.use('*', async (c, next) => {
+  await next()
+  const res = c.res
+  const headers = new Headers(res.headers)
+  headers.set('X-Content-Type-Options', 'nosniff')
+  headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  headers.set('X-Frame-Options', 'DENY')
+  headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+  headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  c.res = new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+})
+
+app.use('/api/*', async (c, next) => {
+  if (c.req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': 'https://mrwuliu.top',
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '86400',
+      },
+    })
+  }
+  await next()
+  const res = c.res
+  const headers = new Headers(res.headers)
+  headers.set('Access-Control-Allow-Origin', 'https://mrwuliu.top')
+  headers.set('Access-Control-Allow-Credentials', 'true')
+  c.res = new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+})
+
 app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
@@ -34,8 +66,8 @@ app.route('/api/projects', projectsRoutes)
 
 app.get('/admin/*', async (c) => {
   const url = new URL(c.req.url)
-  if (url.pathname === '/admin' || url.pathname === '/admin/') {
-    return c.redirect('/admin/login')
+  if (url.pathname === '/admin') {
+    return c.redirect('/admin/')
   }
   if (url.pathname.includes('/assets/')) {
     return c.env.ASSETS.fetch(c.req.raw)

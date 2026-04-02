@@ -199,7 +199,7 @@ function createBlogRouter(lang: Lang) {
 
     const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
     if (!allowed) {
-      return c.redirect(langPath(`/posts/${slug}`, lang))
+      return c.json({ error: 'Rate limit exceeded. Try again later.' }, 429)
     }
 
     const contentType = c.req.header('Content-Type') ?? ''
