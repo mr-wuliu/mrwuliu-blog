@@ -90,19 +90,8 @@ export default function SiteConfig() {
         </div>
       </div>
 
-      <div className="border-2 border-black">
-        <div className="border-b border-black px-4 py-2 bg-gray-50">
-          <span className="text-xs uppercase tracking-widest text-gray-600">{t('siteConfig.aboutContent')}</span>
-        </div>
-        <Editor content={content} onChange={setContent} />
-      </div>
-
-      <div className="mt-4 text-xs text-gray-500 uppercase tracking-widest">
-        {t('siteConfig.aboutHint')}
-      </div>
-
       {/* Author Profile Section */}
-      <div className="mt-8">
+      <div>
         <div className="flex justify-between items-center mb-6 border-b-2 border-black pb-4">
           <h2 className="text-xl font-bold uppercase tracking-widest">{t('siteConfig.authorProfile')}</h2>
           <button
@@ -172,6 +161,17 @@ export default function SiteConfig() {
         <div className="mt-4 text-xs text-gray-500 uppercase tracking-widest">
           {t('siteConfig.authorHint')}
         </div>
+      </div>
+
+      <div className="mt-8 border-2 border-black">
+        <div className="border-b border-black px-4 py-2 bg-gray-50">
+          <span className="text-xs uppercase tracking-widest text-gray-600">{t('siteConfig.aboutContent')}</span>
+        </div>
+        <Editor content={content} onChange={setContent} />
+      </div>
+
+      <div className="mt-4 text-xs text-gray-500 uppercase tracking-widest">
+        {t('siteConfig.aboutHint')}
       </div>
     </div>
   )

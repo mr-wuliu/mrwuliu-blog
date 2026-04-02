@@ -43,15 +43,15 @@ const AuthorSidebar: FC<{ profile: AuthorProfile }> = ({ profile }) => {
         >
           RSS
         </a>
-        {email && (
-          <a
-            href={`mailto:${email}`}
-            class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline"
-          >
-            Email
-          </a>
-        )}
       </div>
+      {email && (
+        <a
+          href={`mailto:${email}`}
+          class="block text-sm font-bold text-gray-400 hover:text-gray-600 transition-colors no-underline"
+        >
+          {email}
+        </a>
+      )}
     </div>
   )
 }
