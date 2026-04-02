@@ -88,8 +88,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   const errorMsg = t(lang, 'post.commentError')
 
   return (
-    <section class="mt-4 pt-4 border-t border-black">
-      <h2 class="text-xl font-bold tracking-tight mb-6">{tf(lang, 'post.comments')(comments.length)}</h2>
+    <section class="mt-2 pt-2 border-t border-black">
+      <h2 class="text-xl font-bold tracking-tight mb-4">{tf(lang, 'post.comments')(comments.length)}</h2>
 
       {comments.length > 0 && (
         <div class="space-y-4 mb-8">
@@ -105,6 +105,12 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {comments.length === 0 && (
+        <div class="mb-8 px-4 py-3 border border-gray-300 bg-gray-100 text-sm text-gray-600">
+          {t(lang, 'post.noComments')}
         </div>
       )}
 

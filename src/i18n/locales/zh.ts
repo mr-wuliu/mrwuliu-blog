@@ -48,6 +48,7 @@ export default {
   post: {
     toc: '目录',
     comments: (count: number) => `评论 (${count})`,
+    noComments: '暂无评论',
     leaveComment: '发表评论',
     nameLabel: '昵称 *',
     namePlaceholder: '昵称 *（默认 momo）',

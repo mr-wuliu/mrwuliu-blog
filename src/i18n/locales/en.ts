@@ -48,6 +48,7 @@ export default {
   post: {
     toc: 'Table of Contents',
     comments: (count: number) => `Comments (${count})`,
+    noComments: 'No comments yet',
     leaveComment: 'Leave a Comment',
     nameLabel: 'Name *',
     namePlaceholder: 'Name * (defaults to momo)',
