@@ -52,10 +52,16 @@ imageServeRoutes.get('/:key+', async (c) => {
   // Hono catch-all params are exposed as "key" (without "+") in most versions.
   // Keep a fallback to avoid broken image URLs when router param behavior changes.
   const rawPath = c.req.path
-  const key = c.req.param('key') || c.req.param('key+') || rawPath.replace(/^\/+/, '')
+  let key = c.req.param('key') || c.req.param('key+') || rawPath.replace(/^\/+/, '')
+  key = key.replace(/^\/+/, '')
+  if (key.startsWith('images/')) {
+    key = key.slice('images/'.length)
+  }
+
   if (!key) {
     return new Response('Not Found', { status: 404 })
   }
+
   const response = await serveImage(c.env, key)
   return response
 })

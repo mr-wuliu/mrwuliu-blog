@@ -80,6 +80,10 @@ export async function serveImage(
 ): Promise<Response> {
   let object = await env.IMAGES.get(key)
 
+  if (!object && key.startsWith('images/')) {
+    object = await env.IMAGES.get(key.slice('images/'.length))
+  }
+
   // Backward compatibility for author avatar key extension changes.
   // If /images/avatars/avatar.<ext> is stale, try common alternatives.
   if (!object) {
@@ -91,6 +95,15 @@ export async function serveImage(
         object = await env.IMAGES.get(`avatars/avatar.${ext}`)
         if (object) break
       }
+    }
+  }
+
+  // Final fallback: if avatar key suffix is stale, pick any existing avatar object.
+  if (!object && key.startsWith('avatars/avatar.')) {
+    const listed = await env.IMAGES.list({ prefix: 'avatars/avatar.' })
+    const existing = listed.objects[0]?.key
+    if (existing) {
+      object = await env.IMAGES.get(existing)
     }
   }
 
