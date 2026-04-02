@@ -8,8 +8,6 @@ export function slugify(title: string): string {
     .replace(/^-|-$/g, '')
 }
 
-export function generateUniqueSlug(title: string): string {
-  const base = slugify(title)
-  const suffix = crypto.randomUUID().slice(0, 6)
-  return base ? `${base}-${suffix}` : suffix
+export function generateUniqueSlug(_title: string): string {
+  return crypto.randomUUID().slice(0, 8)
 }
