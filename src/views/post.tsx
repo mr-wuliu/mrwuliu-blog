@@ -88,7 +88,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   const errorMsg = t(lang, 'post.commentError')
 
   return (
-    <section class="mt-2 pt-2 border-t border-black">
+    <section class="mt-10 pt-6 border-t border-black">
       <h2 class="text-xl font-bold tracking-tight mb-4">{tf(lang, 'post.comments')(comments.length)}</h2>
 
       {comments.length > 0 && (
@@ -114,29 +114,34 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
         </div>
       )}
 
-      <form id="comment-form" class="p-4 border border-black space-y-3">
-        <style>{`#comment-form input::placeholder, #comment-form textarea::placeholder { color: #999; font-weight: 700; }`}</style>
-        <h3 class="text-lg font-bold tracking-tight mb-3" data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</h3>
-        <div>
-          <input type="text" id="authorName" name="authorName" maxlength={50}
-            placeholder={t(lang, 'post.namePlaceholder')}
-            class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
-        </div>
-        <div>
-          <input type="email" id="authorEmail" name="authorEmail" maxlength={100}
-            placeholder={t(lang, 'post.emailLabel')}
-            class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
-        </div>
-        <div>
-          <textarea id="content" name="content" required maxlength={1000} rows={4}
-            placeholder={t(lang, 'post.contentLabel')}
-            class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black resize-y"></textarea>
-        </div>
-        <button type="submit"
-          class="px-8 py-3 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white transition-all" data-t="post.submit">
-          {t(lang, 'post.submit')}
-        </button>
-      </form>
+      <details class="border border-black group">
+        <summary class="list-none cursor-pointer px-4 py-3 text-sm font-bold uppercase tracking-widest select-none flex items-center justify-between">
+          <span data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</span>
+          <span class="transition-transform group-open:rotate-45">+</span>
+        </summary>
+        <form id="comment-form" class="p-4 border-t border-black space-y-3">
+          <style>{`#comment-form input::placeholder, #comment-form textarea::placeholder { color: #999; font-weight: 700; }`}</style>
+          <div>
+            <input type="text" id="authorName" name="authorName" maxlength={50}
+              placeholder={t(lang, 'post.namePlaceholder')}
+              class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
+          </div>
+          <div>
+            <input type="email" id="authorEmail" name="authorEmail" maxlength={100}
+              placeholder={t(lang, 'post.emailLabel')}
+              class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
+          </div>
+          <div>
+            <textarea id="content" name="content" required maxlength={1000} rows={4}
+              placeholder={t(lang, 'post.contentLabel')}
+              class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black resize-y"></textarea>
+          </div>
+          <button type="submit"
+            class="px-8 py-3 font-bold text-sm border border-black rounded-none uppercase tracking-widest hover:bg-black hover:text-white transition-all" data-t="post.submit">
+            {t(lang, 'post.submit')}
+          </button>
+        </form>
+      </details>
 
       <script dangerouslySetInnerHTML={{ __html: `
 (function() {
