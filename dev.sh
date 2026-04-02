@@ -48,6 +48,11 @@ ensure_log_dir() {
 cmd_start() {
   ensure_log_dir
 
+  # --- Ensure git hooks are installed ---
+  if [ -d "$PROJECT_DIR/hooks" ]; then
+    git config core.hooksPath "$PROJECT_DIR/hooks"
+  fi
+
   # --- Ensure admin SPA is built ---
   if [ ! -f "$PROJECT_DIR/public/admin/index.html" ]; then
     info "Admin SPA not built, building now..."
