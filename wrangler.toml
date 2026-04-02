@@ -20,7 +20,7 @@ bucket_name = "blog-images"
 directory = "./public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/images/*", "/admin/*"]
+run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/images/*", "/admin/*", "/favicon.ico"]
 
 # ============================================================
 # Production
@@ -44,7 +44,7 @@ bucket_name = "blog-images"
 directory = "./public"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
-run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/images/*", "/admin/*"]
+run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/images/*", "/admin/*", "/favicon.ico"]
 
 [[env.production.routes]]
 pattern = "mrwuliu.top"

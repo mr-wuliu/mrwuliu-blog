@@ -45,6 +45,8 @@ const Layout: FC<LayoutProps> = ({ title, description, url, image, type = 'websi
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+        <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
         <script dangerouslySetInnerHTML={{ __html:
           '(function(){' +
           'var ts=["default","coffee"];' +

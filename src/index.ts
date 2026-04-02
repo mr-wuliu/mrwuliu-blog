@@ -54,6 +54,10 @@ app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+app.get('/favicon.ico', (c) => {
+  return c.redirect('/favicon.svg', 301)
+})
+
 app.route('/', blogRoutes)
 
 app.route('/api/tags', tagRoutes)
