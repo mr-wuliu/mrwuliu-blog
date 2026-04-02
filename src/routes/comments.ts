@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { eq, and, desc, sql } from 'drizzle-orm'
 import { createDb } from '../db'
 import { comments, posts } from '../db/schema'
+import { checkRateLimit } from '../utils/rate-limit'
 
 type Bindings = {
   DB: D1Database
@@ -17,6 +18,14 @@ function isValidEmail(email: string): boolean {
 
 commentRoutes.post('/posts/:postId/comments', async (c) => {
   const postId = c.req.param('postId')
+  const db = createDb(c.env.DB)
+  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+
+  const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
+  if (!allowed) {
+    return c.json({ error: 'Too many requests. Please try again later.' }, 429)
+  }
+
   const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
 
   if (!body.authorName || body.authorName.length < 1 || body.authorName.length > 50) {
@@ -28,8 +37,6 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   if (body.authorEmail && !isValidEmail(body.authorEmail)) {
     return c.json({ error: 'Invalid email format' }, 400)
   }
-
-  const db = createDb(c.env.DB)
 
   const [post] = await db.select().from(posts).where(eq(posts.id, postId))
   if (!post) return c.json({ error: 'Post not found' }, 404)

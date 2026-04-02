@@ -97,3 +97,11 @@ export const postLikes = sqliteTable('post_likes', {
   post_likes_post_id_idx: index('post_likes_post_id_idx').on(table.postId),
   post_likes_unique: uniqueIndex('post_likes_unique').on(table.postId, table.fingerprint),
 }))
+
+export const rateLimits = sqliteTable('rate_limits', {
+  ip: text('ip').notNull(),
+  action: text('action').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  rate_limits_lookup_idx: index('rate_limits_lookup_idx').on(table.ip, table.action, table.createdAt),
+}))

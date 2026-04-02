@@ -1,9 +1,10 @@
 import { Hono } from 'hono'
-import { eq, desc, asc, and, sql, inArray, not } from 'drizzle-orm'
+import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes } from '../db/schema'
 import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
+import { checkRateLimit } from '../utils/rate-limit'
 import Home from '../views/home'
 import TagPage from '../views/tag'
 import PostPage from '../views/post'
@@ -194,6 +195,13 @@ function createBlogRouter(lang: Lang) {
   router.post('/posts/:slug/comments', async (c) => {
     const slug = c.req.param('slug')
     const db = createDb(c.env.DB)
+    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+
+    const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
+    if (!allowed) {
+      return c.redirect(langPath(`/posts/${slug}`, lang))
+    }
+
     const contentType = c.req.header('Content-Type') ?? ''
 
     let authorName: string
