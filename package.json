@@ -28,6 +28,8 @@
   "devDependencies": {
     "@cloudflare/vitest-pool-workers": "^0.13.5",
     "@cloudflare/workers-types": "^4.20260329.1",
+    "@emnapi/core": "1.9.1",
+    "@emnapi/runtime": "1.9.1",
     "@types/katex": "^0.16.8",
     "drizzle-kit": "^0.30.6",
     "esbuild": "^0.27.5",
