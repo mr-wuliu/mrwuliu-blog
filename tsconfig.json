@@ -8,13 +8,13 @@
     "skipLibCheck": true,
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",
-    "types": ["@cloudflare/workers-types"],
+    "types": ["@cloudflare/workers-types", "@cloudflare/vitest-pool-workers/types"],
     "outDir": "dist",
     "rootDir": "src",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "admin"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "worker-configuration.d.ts"],
+  "exclude": ["node_modules", "admin", ".wrangler"]
 }
