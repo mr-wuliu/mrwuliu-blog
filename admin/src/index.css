@@ -7,6 +7,41 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+/* Editor — tighten prose spacing for WYSIWYG feel */
+.prose .tiptap {
+  line-height: 1.5;
+}
+.prose .tiptap p {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.prose .tiptap h1, .prose .tiptap h2, .prose .tiptap h3 {
+  margin-top: 0.5em;
+  margin-bottom: 0.25em;
+}
+.prose .tiptap h1:first-child,
+.prose .tiptap h2:first-child,
+.prose .tiptap h3:first-child,
+.prose .tiptap p:first-child {
+  margin-top: 0;
+}
+.prose .tiptap ul, .prose .tiptap ol {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.prose .tiptap blockquote {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+.prose .tiptap hr {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+.prose .tiptap pre {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
 /* Block math — rendered mode */
 .tiptap [data-type="block-math"] {
   margin: 1rem 0;
