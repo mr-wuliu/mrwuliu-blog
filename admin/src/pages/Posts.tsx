@@ -17,6 +17,8 @@ interface Post {
   hidden: boolean
   pinned: boolean
   publishedAt: string | null
+  viewCount: number
+  uniqueViewCount: number
   createdAt: string
   updatedAt: string
   tags?: Tag[]
@@ -181,6 +183,9 @@ export default function Posts() {
                   <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     {t('posts.tableDate')}
                   </th>
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
+                    {t('posts.tableViews')}
+                  </th>
                   <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left text-right">
                     {t('posts.tableActions')}
                   </th>
@@ -241,6 +246,16 @@ export default function Posts() {
                           ? post.publishedAt
                           : post.createdAt,
                       )}
+                    </td>
+                    <td className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-70 whitespace-nowrap">
+                      <div className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center justify-center h-6 w-9 border border-black bg-blue-500/20 text-blue-700 text-[10px] font-black tracking-widest leading-none">
+                          {post.viewCount ?? 0}
+                        </span>
+                        <span className="inline-flex items-center justify-center h-6 w-9 border border-black bg-cyan-500/20 text-cyan-700 text-[10px] font-black tracking-widest leading-none">
+                          {post.uniqueViewCount ?? 0}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-3 text-right whitespace-nowrap">
                       <button

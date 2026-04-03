@@ -30,7 +30,12 @@
     "published": "Published",
     "drafts": "Drafts",
     "pendingComments": "Pending Comments",
+    "totalViews": "Total Views",
+    "totalUniqueViews": "Unique Visitors",
+    "pv": "PV",
+    "uv": "UV",
     "recentPosts": "Recent Posts",
+    "postViews": "PV {{pv}} / UV {{uv}}",
     "viewAll": "View all",
     "noPosts": "No posts yet",
     "pendingCommentsTitle": "Pending Comments",
@@ -50,6 +55,7 @@
     "tableStatus": "Status",
     "tableTags": "Tags",
     "tableDate": "Date",
+    "tableViews": "Views (PV/UV)",
     "tableActions": "Actions",
     "published": "Published",
     "draft": "Draft",
@@ -73,7 +79,9 @@
     "noRejected": "No rejected comments",
     "approve": "Approve",
     "reject": "Reject",
-    "confirmDelete": "Delete this comment?"
+    "confirmDelete": "Delete this comment?",
+    "ipInfo": "IP",
+    "unknown": "unknown"
   },
   "siteConfig": {
     "title": "SITE CONFIG",

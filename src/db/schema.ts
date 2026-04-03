@@ -46,12 +46,17 @@ export const comments = sqliteTable('comments', {
   authorName: text('author_name').notNull(),
   authorEmail: text('author_email'),
   visitorId: text('visitor_id'),
+  ipHash: text('ip_hash'),
+  ipMasked: text('ip_masked'),
+  country: text('country'),
+  userAgent: text('user_agent'),
   content: text('content').notNull(),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
   comments_post_id_idx: index('comments_post_id_idx').on(table.postId),
   comments_status_idx: index('comments_status_idx').on(table.status),
+  comments_ip_hash_idx: index('comments_ip_hash_idx').on(table.ipHash),
 }))
 
 // images table (tracks R2 objects)
@@ -104,4 +109,34 @@ export const rateLimits = sqliteTable('rate_limits', {
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
   rate_limits_lookup_idx: index('rate_limits_lookup_idx').on(table.ip, table.action, table.createdAt),
+}))
+
+export const postViewEvents = sqliteTable('post_view_events', {
+  id: text('id').primaryKey(),
+  postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  ipHash: text('ip_hash').notNull(),
+  userAgentHash: text('user_agent_hash').notNull(),
+  country: text('country'),
+  referrerHost: text('referrer_host'),
+  viewDate: text('view_date').notNull().default(sql`(date('now'))`),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  post_view_events_post_id_idx: index('post_view_events_post_id_idx').on(table.postId),
+  post_view_events_view_date_idx: index('post_view_events_view_date_idx').on(table.viewDate),
+  post_view_events_ip_hash_idx: index('post_view_events_ip_hash_idx').on(table.ipHash),
+  post_view_events_unique_daily: uniqueIndex('post_view_events_unique_daily').on(
+    table.postId,
+    table.ipHash,
+    table.userAgentHash,
+    table.viewDate,
+  ),
+}))
+
+export const postStats = sqliteTable('post_stats', {
+  postId: text('post_id').primaryKey().references(() => posts.id, { onDelete: 'cascade' }),
+  viewCount: integer('view_count').notNull().default(0),
+  uniqueViewCount: integer('unique_view_count').notNull().default(0),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  post_stats_view_count_idx: index('post_stats_view_count_idx').on(table.viewCount),
 }))

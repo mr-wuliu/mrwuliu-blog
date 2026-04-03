@@ -11,6 +11,9 @@ interface Comment {
   postTitle: string | null
   authorName: string
   authorEmail: string | null
+  ipHash: string | null
+  ipMasked: string | null
+  country: string | null
   content: string
   status: CommentStatus
   createdAt: string
@@ -162,6 +165,11 @@ export default function Comments() {
               <p className="opacity-70 text-sm leading-relaxed mb-4">
                 {truncate(comment.content, 100)}
               </p>
+
+              <div className="text-xs font-bold uppercase tracking-widest opacity-50 mb-4">
+                {t('comments.ipInfo')}: {comment.ipMasked || t('comments.unknown')}
+                {comment.country ? ` · ${comment.country}` : ''}
+              </div>
 
               <div className="flex gap-2">
                 {comment.status !== 'approved' && (

@@ -30,7 +30,12 @@
     "published": "已发布",
     "drafts": "草稿",
     "pendingComments": "待审核评论",
+    "totalViews": "总浏览量",
+    "totalUniqueViews": "独立访客",
+    "pv": "PV",
+    "uv": "UV",
     "recentPosts": "最新文章",
+    "postViews": "PV {{pv}} / UV {{uv}}",
     "viewAll": "查看全部",
     "noPosts": "暂无文章",
     "pendingCommentsTitle": "待审核评论",
@@ -50,6 +55,7 @@
     "tableStatus": "状态",
     "tableTags": "标签",
     "tableDate": "日期",
+    "tableViews": "浏览量 (PV/UV)",
     "tableActions": "操作",
     "published": "已发布",
     "draft": "草稿",
@@ -73,7 +79,9 @@
     "noRejected": "暂无已拒绝评论",
     "approve": "通过",
     "reject": "拒绝",
-    "confirmDelete": "确定要删除这条评论吗？"
+    "confirmDelete": "确定要删除这条评论吗？",
+    "ipInfo": "IP",
+    "unknown": "未知"
   },
   "siteConfig": {
     "title": "站点配置",

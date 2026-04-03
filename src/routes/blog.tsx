@@ -17,6 +17,7 @@ import ProjectsPage from '../views/projects'
 import ProjectDetailPage from '../views/project-detail'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
+import { getClientIp, getVisitorFingerprint, trackPostView } from '../utils/analytics'
 import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
@@ -167,6 +168,27 @@ function createBlogRouter(lang: Lang) {
       return c.html(<NotFoundPage lang={lang} />, 404)
     }
 
+    const ip = getClientIp(c.req.raw.headers)
+    const userAgent = c.req.header('user-agent') || 'unknown'
+    const referrer = c.req.header('referer')
+    let referrerHost: string | undefined
+    if (referrer) {
+      try {
+        referrerHost = new URL(referrer).hostname
+      } catch {
+        referrerHost = undefined
+      }
+    }
+    const cf = c.req.raw as Request & { cf?: { country?: string } }
+    await trackPostView(db, {
+      postId: post.id,
+      ip,
+      userAgent,
+      country: cf.cf?.country,
+      referrerHost,
+      salt: c.env.JWT_SECRET,
+    })
+
     const approvedComments = await db
       .select()
       .from(comments)
@@ -198,7 +220,7 @@ function createBlogRouter(lang: Lang) {
   router.post('/posts/:slug/comments', async (c) => {
     const slug = c.req.param('slug')
     const db = createDb(c.env.DB)
-    const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const ip = getClientIp(c.req.raw.headers)
 
     const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
     if (!allowed) {
@@ -246,12 +268,20 @@ function createBlogRouter(lang: Lang) {
     }
 
     const id = crypto.randomUUID()
+    const userAgent = c.req.header('user-agent') || 'unknown'
+    const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
+    const cf = c.req.raw as Request & { cf?: { country?: string } }
+
     await db.insert(comments).values({
       id,
       postId: post.id,
       authorName: escapeHtml(authorName),
       authorEmail: authorEmail ? escapeHtml(authorEmail) : null,
       visitorId: visitorId ? escapeHtml(visitorId) : null,
+      ipHash,
+      ipMasked,
+      country: cf.cf?.country,
+      userAgent: userAgent.slice(0, 500),
       content: escapeHtml(content),
       status: 'pending',
     })

@@ -1,5 +1,5 @@
 import { eq, desc, and, sql, asc, inArray } from 'drizzle-orm'
-import { posts, postTags, tags, siteConfig, projects } from './schema'
+import { posts, postTags, tags, siteConfig, projects, postStats } from './schema'
 import type { Database } from './index'
 
 // Get posts with pagination (admin - all statuses)
@@ -14,8 +14,13 @@ export async function getPostsWithPagination(
   const conditions = options.status ? [eq(posts.status, options.status)] : []
 
   const result = await db
-    .select()
+    .select({
+      post: posts,
+      viewCount: sql<number>`coalesce(${postStats.viewCount}, 0)`,
+      uniqueViewCount: sql<number>`coalesce(${postStats.uniqueViewCount}, 0)`,
+    })
     .from(posts)
+    .leftJoin(postStats, eq(postStats.postId, posts.id))
     .where(conditions.length ? and(...conditions) : undefined)
     .orderBy(desc(posts.createdAt))
     .limit(limit)
@@ -29,7 +34,16 @@ export async function getPostsWithPagination(
 
   const total = countResult[0]?.count ?? 0
 
-  return { posts: result, total, page, limit }
+  return {
+    posts: result.map(({ post, viewCount, uniqueViewCount }) => ({
+      ...post,
+      viewCount,
+      uniqueViewCount,
+    })),
+    total,
+    page,
+    limit,
+  }
 }
 
 // Get post by slug (for public pages)

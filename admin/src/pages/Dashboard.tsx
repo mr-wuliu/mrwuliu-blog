@@ -8,6 +8,8 @@ type Post = {
   title: string
   slug: string
   status: 'draft' | 'published'
+  viewCount: number
+  uniqueViewCount: number
   createdAt: string
   updatedAt: string
 }
@@ -29,6 +31,8 @@ type Stats = {
   published: number
   drafts: number
   pendingComments: number
+  totalViews: number
+  totalUniqueViews: number
 }
 
 function formatDate(iso: string): string {
@@ -41,7 +45,14 @@ function formatDate(iso: string): string {
 
 export default function Dashboard() {
   const { t } = useTranslation()
-  const [stats, setStats] = useState<Stats>({ totalPosts: 0, published: 0, drafts: 0, pendingComments: 0 })
+  const [stats, setStats] = useState<Stats>({
+    totalPosts: 0,
+    published: 0,
+    drafts: 0,
+    pendingComments: 0,
+    totalViews: 0,
+    totalUniqueViews: 0,
+  })
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [recentComments, setRecentComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -51,6 +62,8 @@ export default function Dashboard() {
     { key: 'published', label: t('dashboard.published'), color: 'bg-green-500' },
     { key: 'drafts', label: t('dashboard.drafts'), color: 'bg-yellow-500' },
     { key: 'pendingComments', label: t('dashboard.pendingComments'), color: 'bg-red-500' },
+    { key: 'totalViews', label: t('dashboard.totalViews'), color: 'bg-blue-500' },
+    { key: 'totalUniqueViews', label: t('dashboard.totalUniqueViews'), color: 'bg-cyan-500' },
   ]
 
   useEffect(() => {
@@ -63,6 +76,8 @@ export default function Dashboard() {
           totalPosts: posts.length,
           published,
           drafts: posts.length - published,
+          totalViews: posts.reduce((sum, p) => sum + (p.viewCount ?? 0), 0),
+          totalUniqueViews: posts.reduce((sum, p) => sum + (p.uniqueViewCount ?? 0), 0),
         }))
         setRecentPosts(posts.slice(0, 5))
       })
@@ -98,7 +113,7 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map((card) => (
           <div key={card.key} className="bg-white border border-black p-6">
             <div className="flex items-center gap-2 mb-3">
@@ -119,16 +134,31 @@ export default function Dashboard() {
           {recentPosts.length === 0 ? (
             <p className="px-6 py-10 text-sm opacity-50 text-center">{t('dashboard.noPosts')}</p>
           ) : (
-            <ul className="divide-y divide-black">
+            <>
+              <div className="px-6 py-2 border-b border-black grid grid-cols-[minmax(0,1fr)_36px_36px_96px] items-center gap-2">
+                <span />
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-50 text-center">{t('dashboard.pv')}</span>
+                <span className="text-[10px] font-black uppercase tracking-widest opacity-50 text-center">{t('dashboard.uv')}</span>
+                <span />
+              </div>
+              <ul className="divide-y divide-black">
               {recentPosts.map((post) => (
-                <li key={post.id} className="px-6 py-3 flex items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <Link to={`/posts/${post.id}/edit`} className="text-sm font-medium text-black hover:opacity-70 truncate block">
+                <li key={post.id} className="px-6 py-3 grid grid-cols-[minmax(0,1fr)_36px_36px_96px] items-center gap-2">
+                  <div className="min-w-0 overflow-hidden">
+                    <Link
+                      to={`/posts/${post.id}/edit`}
+                      className="text-sm font-medium text-black hover:opacity-70 truncate block min-w-0"
+                    >
                       {post.title}
                     </Link>
-                    <p className="text-xs font-bold uppercase tracking-widest opacity-50 mt-0.5">{formatDate(post.createdAt)}</p>
                   </div>
-                  <span className={`ml-3 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 ${
+                  <span className="inline-flex items-center justify-center h-6 w-9 border border-black bg-blue-500/20 text-blue-700 text-[10px] font-black tracking-widest leading-none">
+                    {post.viewCount ?? 0}
+                  </span>
+                  <span className="inline-flex items-center justify-center h-6 w-9 border border-black bg-cyan-500/20 text-cyan-700 text-[10px] font-black tracking-widest leading-none">
+                    {post.uniqueViewCount ?? 0}
+                  </span>
+                  <span className={`inline-flex items-center justify-center h-6 w-24 justify-self-start text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 ${
                     post.status === 'published'
                       ? 'bg-green-500/20 text-green-600'
                       : 'bg-yellow-500/20 text-yellow-600'
@@ -137,7 +167,8 @@ export default function Dashboard() {
                   </span>
                 </li>
               ))}
-            </ul>
+              </ul>
+            </>
           )}
         </div>
 

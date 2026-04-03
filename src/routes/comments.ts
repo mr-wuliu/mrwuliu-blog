@@ -3,11 +3,13 @@ import { eq, and, desc, sql } from 'drizzle-orm'
 import { createDb } from '../db'
 import { comments, posts } from '../db/schema'
 import { checkRateLimit } from '../utils/rate-limit'
+import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
 
 type Bindings = {
   DB: D1Database
   IMAGES: R2Bucket
   ASSETS: Fetcher
+  JWT_SECRET: string
 }
 
 const commentRoutes = new Hono<{ Bindings: Bindings }>()
@@ -19,7 +21,7 @@ function isValidEmail(email: string): boolean {
 commentRoutes.post('/posts/:postId/comments', async (c) => {
   const postId = c.req.param('postId')
   const db = createDb(c.env.DB)
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+  const ip = getClientIp(c.req.raw.headers)
 
   const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
   if (!allowed) {
@@ -55,6 +57,9 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   const escapedContent = escapeHtml(body.content)
   const escapedEmail = body.authorEmail ? escapeHtml(body.authorEmail) : null
   const escapedVisitorId = body.visitorId ? escapeHtml(body.visitorId) : null
+  const userAgent = c.req.header('user-agent') || 'unknown'
+  const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
+  const cf = c.req.raw as Request & { cf?: { country?: string } }
 
   await db.insert(comments).values({
     id,
@@ -62,6 +67,10 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     authorName: escapedName,
     authorEmail: escapedEmail,
     visitorId: escapedVisitorId,
+    ipHash,
+    ipMasked,
+    country: cf.cf?.country,
+    userAgent: userAgent.slice(0, 500),
     content: escapedContent,
     status: 'pending',
   })
@@ -100,6 +109,9 @@ commentRoutes.get('/admin/comments', async (c) => {
       content: comments.content,
       status: comments.status,
       createdAt: comments.createdAt,
+      ipHash: comments.ipHash,
+      ipMasked: comments.ipMasked,
+      country: comments.country,
       postSlug: posts.slug,
       postTitle: posts.title,
     })
