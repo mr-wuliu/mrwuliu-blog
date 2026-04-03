@@ -240,6 +240,42 @@ body {
   border-color: #000;
 }
 
+/* Table editing */
+.prose .tiptap table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0.75rem 0;
+  overflow: hidden;
+}
+
+.prose .tiptap th,
+.prose .tiptap td {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  min-width: 80px;
+  padding: 0.4rem 0.55rem;
+  vertical-align: top;
+  position: relative;
+}
+
+.prose .tiptap th {
+  font-weight: 700;
+  background: #f6f7f9;
+}
+
+.prose .tiptap td p,
+.prose .tiptap th p {
+  margin: 0;
+}
+
+.prose .tiptap .selectedCell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+}
+
 /* Snazzy Light — Syntax highlighting tokens (highlight.js classes) */
 .code-block-wrapper .hljs-comment,
 .code-block-wrapper .hljs-quote,

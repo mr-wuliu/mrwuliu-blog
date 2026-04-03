@@ -1,13 +1,17 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useEffect, useState } from 'react'
 import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
 import Placeholder from '@tiptap/extension-placeholder'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { Table } from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableCell from '@tiptap/extension-table-cell'
+import TableHeader from '@tiptap/extension-table-header'
 import { common, createLowlight } from 'lowlight'
 import { Mathematics, BlockMath, InlineMath } from '@tiptap/extension-mathematics'
-import { InputRule } from '@tiptap/core'
+import { Extension, InputRule } from '@tiptap/core'
 import { Plugin, TextSelection } from '@tiptap/pm/state'
 import 'katex/dist/katex.min.css'
 import BlockMathView from './math/BlockMathView'
@@ -34,6 +38,38 @@ const LANGUAGE_KEYWORDS: Record<string, string[]> = {
   go: ['func', 'package', 'import', 'type', 'struct', 'interface', 'if', 'else', 'for', 'range', 'switch', 'case', 'defer', 'go', 'return'],
   rust: ['fn', 'let', 'mut', 'struct', 'enum', 'impl', 'trait', 'if', 'else', 'for', 'while', 'match', 'use', 'pub', 'return', 'Result', 'Option'],
 }
+
+function promptTableSize() {
+  const rowsInput = window.prompt('Table rows', '4')
+  if (rowsInput === null) return null
+
+  const colsInput = window.prompt('Table columns', '3')
+  if (colsInput === null) return null
+
+  const rows = Number.parseInt(rowsInput, 10)
+  const cols = Number.parseInt(colsInput, 10)
+  if (!Number.isFinite(rows) || !Number.isFinite(cols) || rows < 1 || cols < 1) {
+    return null
+  }
+
+  return {
+    rows: Math.min(rows, 50),
+    cols: Math.min(cols, 20),
+  }
+}
+
+const TableShortcut = Extension.create({
+  name: 'table-shortcut',
+  addKeyboardShortcuts() {
+    return {
+      'Mod-Alt-t': () => {
+        const size = promptTableSize()
+        if (!size) return true
+        return this.editor.chain().focus().insertTable({ rows: size.rows, cols: size.cols, withHeaderRow: true }).run()
+      },
+    }
+  },
+})
 
 const CustomMathematics = Mathematics.extend({
   addExtensions() {
@@ -158,6 +194,7 @@ interface EditorProps {
 
 export default function Editor({ content, onChange }: EditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showTableTools, setShowTableTools] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -368,6 +405,13 @@ export default function Editor({ content, onChange }: EditorProps) {
           return ReactNodeViewRenderer(CodeBlockNodeView)
         },
       }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TableShortcut,
       Link.configure({ openOnClick: false }),
       Image,
       Placeholder.configure({ placeholder: '开始写作...' }),
@@ -419,6 +463,34 @@ export default function Editor({ content, onChange }: EditorProps) {
     editor.chain().focus().insertBlockMath({ latex: '' }).run()
   }, [editor])
 
+  const addTable = useCallback(() => {
+    if (!editor) return
+    const size = promptTableSize()
+    if (!size) return
+    editor.chain().focus().insertTable({ rows: size.rows, cols: size.cols, withHeaderRow: true }).run()
+  }, [editor])
+
+  useEffect(() => {
+    if (!editor) return
+
+    const sync = () => {
+      const inTable =
+        editor.isActive('table')
+        || editor.isActive('tableRow')
+        || editor.isActive('tableCell')
+        || editor.isActive('tableHeader')
+      setShowTableTools(inTable)
+    }
+    sync()
+    editor.on('selectionUpdate', sync)
+    editor.on('transaction', sync)
+
+    return () => {
+      editor.off('selectionUpdate', sync)
+      editor.off('transaction', sync)
+    }
+  }, [editor])
+
   if (!editor) return null
 
   type Btn = {
@@ -442,10 +514,19 @@ export default function Editor({ content, onChange }: EditorProps) {
     { label: '—', onClick: () => editor.chain().focus().setHorizontalRule().run() },
     { label: '🔗', active: editor.isActive('link'), onClick: addLink },
     { label: '📷', onClick: () => fileInputRef.current?.click() },
+    { label: 'Tbl', active: editor.isActive('table'), onClick: addTable },
     { label: '∑', onClick: addMathBlock },
   ]
+  const tableButtons: Btn[] = editor.isActive('table') ? [
+    { label: '+R', onClick: () => editor.chain().focus().addRowAfter().run() },
+    { label: '-R', onClick: () => editor.chain().focus().deleteRow().run() },
+    { label: '+C', onClick: () => editor.chain().focus().addColumnAfter().run() },
+    { label: '-C', onClick: () => editor.chain().focus().deleteColumn().run() },
+    { label: 'Hdr', onClick: () => editor.chain().focus().toggleHeaderRow().run() },
+    { label: 'DelTbl', onClick: () => editor.chain().focus().deleteTable().run() },
+  ] : []
   return (
-    <div className="border border-black rounded-none overflow-hidden">
+    <div className="relative border border-black rounded-none overflow-hidden">
       <div className="flex flex-wrap gap-1 bg-white border-b border-black px-2 py-1.5">
         {buttons.map((btn) => (
           <button
@@ -475,6 +556,28 @@ export default function Editor({ content, onChange }: EditorProps) {
         editor={editor}
         className="prose max-w-none min-h-[400px] px-4 py-3 bg-white text-black focus:outline-none [&_.tiptap]:min-h-[400px] [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-black [&_.tiptap_p.is-editor-empty:first-child::before]:opacity-30 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
       />
+      {showTableTools && (
+        <div className="fixed right-4 bottom-4 z-40 bg-white border border-black shadow-sm p-2 w-[220px]">
+          <div className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-2">Table Tools</div>
+          <div className="grid grid-cols-3 gap-1">
+            {tableButtons.map((btn) => (
+              <button
+                key={`float-table-${btn.label}`}
+                type="button"
+                onClick={btn.onClick}
+                disabled={btn.disabled}
+                className={`px-2 py-1 text-xs font-mono border border-black transition-colors ${
+                  btn.active
+                    ? 'bg-black text-white'
+                    : 'text-black hover:bg-black hover:text-white'
+                } ${btn.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                {btn.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

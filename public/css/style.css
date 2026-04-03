@@ -242,6 +242,8 @@ a[class*="hover:bg-black"]:hover {
   margin-bottom: 1rem;
   border-collapse: collapse;
   font-size: 0.9375rem;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 .post-content th,
@@ -252,8 +254,9 @@ a[class*="hover:bg-black"]:hover {
 }
 
 .post-content th {
-  border-bottom: 2px solid #000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   font-weight: 600;
+  background: #f6f7f9;
 }
 
 .post-content img {
@@ -611,6 +614,21 @@ a[class*="hover:bg-black"]:hover {
 
 [data-theme="coffee"] .post-content pre .hljs-addition {
   color: #238744;
+}
+
+[data-theme="coffee"] .post-content table {
+  border-color: rgba(121, 85, 72, 0.35);
+  border-top: 4px solid #795548;
+}
+
+[data-theme="coffee"] .post-content th,
+[data-theme="coffee"] .post-content td {
+  border-color: rgba(121, 85, 72, 0.35);
+}
+
+[data-theme="coffee"] .post-content th {
+  border-bottom: 1px solid rgba(121, 85, 72, 0.35);
+  background: #efe4dd;
 }
 
 [data-theme="coffee"] .post-content a {
