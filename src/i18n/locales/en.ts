@@ -47,6 +47,9 @@ export default {
   },
   post: {
     toc: 'Table of Contents',
+    copyCode: 'COPY',
+    copiedCode: 'COPIED',
+    copyCodeFailed: 'FAILED',
     comments: (count: number) => `Comments (${count})`,
     noComments: 'No comments yet',
     leaveComment: 'Leave a Comment',

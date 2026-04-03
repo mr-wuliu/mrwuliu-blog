@@ -4,6 +4,7 @@ import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes } from '../db/schema'
 import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
+import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
 import Home from '../views/home'
 import TagPage from '../views/tag'
@@ -173,6 +174,7 @@ function createBlogRouter(lang: Lang) {
       .orderBy(asc(comments.createdAt))
 
     let renderedContent = renderLatex(postWithTags.content)
+    renderedContent = highlightCode(renderedContent)
     const { html: tocHtml, headings } = generateToc(renderedContent)
 
     const prevPost = await getAdjacentPost(db, postWithTags.publishedAt, 'prev')

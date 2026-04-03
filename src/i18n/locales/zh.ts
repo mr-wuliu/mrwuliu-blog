@@ -47,6 +47,9 @@ export default {
   },
   post: {
     toc: '目录',
+    copyCode: '复制',
+    copiedCode: '已复制',
+    copyCodeFailed: '复制失败',
     comments: (count: number) => `评论 (${count})`,
     noComments: '暂无评论',
     leaveComment: '发表评论',

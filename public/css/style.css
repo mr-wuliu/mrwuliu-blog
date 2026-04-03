@@ -73,19 +73,162 @@ a[class*="hover:bg-black"]:hover {
 
 .post-content pre {
   margin: 1rem 0;
-  padding: 1rem;
+  padding: 2.1rem 1rem 1rem;
   overflow-x: auto;
   background-color: #fafafa;
   border-radius: 0;
   border: 1px solid #000;
+  position: relative;
 }
 
 .post-content pre code {
   padding: 0;
   background: none;
+  border: none;
   border-radius: 0;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+  font-size: 0.98rem;
+  line-height: 1.68;
+}
+
+/* Code block — language label */
+.post-content pre[data-language]::before,
+.post-content pre .language-label {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.45rem;
+  left: 0.65rem;
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  color: rgba(86, 88, 105, 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Snazzy Light — Syntax highlighting tokens */
+.post-content pre .hljs-comment,
+.post-content pre .hljs-quote {
+  color: #ADB1C2;
+  font-style: italic;
+}
+
+.post-content pre .hljs-keyword,
+.post-content pre .hljs-selector-tag {
+  color: #F767BB;
+}
+
+.post-content pre .hljs-type,
+.post-content pre .hljs-literal,
+.post-content pre .hljs-constant {
+  color: #2DAE58;
+}
+
+.post-content pre .hljs-title,
+.post-content pre .hljs-title.function_ {
+  color: #09A1ED;
+}
+
+.post-content pre .hljs-string,
+.post-content pre .hljs-symbol,
+.post-content pre .hljs-bullet {
+  color: #CF9C00;
+}
+
+.post-content pre .hljs-number {
+  color: #FF5C57;
+}
+
+.post-content pre .hljs-variable,
+.post-content pre .hljs-template-variable,
+.post-content pre .hljs-params {
+  color: #565869;
+}
+
+.post-content pre .hljs-built_in {
+  color: #11658F;
+}
+
+.post-content pre .hljs-attr,
+.post-content pre .hljs-attribute {
+  color: #FF8380;
+}
+
+.post-content pre .hljs-tag {
+  color: #13BBB7;
+}
+
+.post-content pre .hljs-name {
+  color: #13BBB7;
+}
+
+.post-content pre .hljs-selector-class {
+  color: #F767BB;
+}
+
+.post-content pre .hljs-selector-id {
+  color: #F767BB;
+}
+
+.post-content pre .hljs-regexp {
+  color: #13BBB7;
+}
+
+.post-content pre .hljs-meta {
+  color: #ADB1C2;
+}
+
+.post-content pre .hljs-deletion {
+  color: #FF5C56;
+}
+
+.post-content pre .hljs-addition {
+  color: #2DAE58;
+}
+
+.post-content pre .hljs-emphasis {
+  font-style: italic;
+}
+
+.post-content pre .hljs-strong {
+  font-weight: bold;
+}
+
+.post-content pre .code-copy-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.34rem 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.post-content pre .code-copy-btn:hover {
+  background: #000;
+  color: #fff;
+}
+
+.post-content pre .code-copy-btn.is-copied {
+  background: #2DAE58;
+  color: #fff;
+  border-color: #2DAE58;
+}
+
+.post-content pre .code-copy-btn.is-failed {
+  background: #FF5C56;
+  color: #fff;
+  border-color: #FF5C56;
 }
 
 .post-content hr {
@@ -163,8 +306,8 @@ a[class*="hover:bg-black"]:hover {
   .post-content h3 { font-size: 1.125rem; }
 
   .post-content pre {
-    padding: 0.75rem;
-    font-size: 0.8125rem;
+    padding: 2rem 0.75rem 0.75rem;
+    font-size: 0.92rem;
   }
 }
 
@@ -366,6 +509,108 @@ a[class*="hover:bg-black"]:hover {
 [data-theme="coffee"] .post-content pre {
   background-color: #f7efea;
   border-color: #795548;
+}
+
+[data-theme="coffee"] .post-content pre[data-language]::before,
+[data-theme="coffee"] .post-content pre .language-label {
+  color: rgba(62, 39, 35, 0.62);
+}
+
+[data-theme="coffee"] .post-content pre .code-copy-btn {
+  background: #fffdfb;
+  color: #3e2723;
+  border-color: #795548;
+  border-width: 1.5px;
+}
+
+[data-theme="coffee"] .post-content pre .code-copy-btn:hover {
+  background: #4e342e;
+  color: #fff;
+  border-color: #4e342e;
+}
+
+[data-theme="coffee"] .post-content pre .code-copy-btn.is-copied {
+  background: #6d4c41;
+  color: #fff;
+  border-color: #6d4c41;
+}
+
+[data-theme="coffee"] .post-content pre .code-copy-btn.is-failed {
+  background: #8d6e63;
+  color: #fff;
+  border-color: #8d6e63;
+}
+
+[data-theme="coffee"] .post-content pre code {
+  color: #3e2723;
+  border: none;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-comment,
+[data-theme="coffee"] .post-content pre .hljs-quote {
+  color: #9e9e9e;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-keyword,
+[data-theme="coffee"] .post-content pre .hljs-selector-tag {
+  color: #c25193;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-type,
+[data-theme="coffee"] .post-content pre .hljs-literal,
+[data-theme="coffee"] .post-content pre .hljs-constant {
+  color: #238744;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-title,
+[data-theme="coffee"] .post-content pre .hljs-title.function_ {
+  color: #09A1ED;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-string,
+[data-theme="coffee"] .post-content pre .hljs-symbol,
+[data-theme="coffee"] .post-content pre .hljs-bullet {
+  color: #b38700;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-number {
+  color: #d94e4a;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-variable,
+[data-theme="coffee"] .post-content pre .hljs-template-variable,
+[data-theme="coffee"] .post-content pre .hljs-params {
+  color: #3e2723;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-built_in {
+  color: #11658F;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-attr,
+[data-theme="coffee"] .post-content pre .hljs-attribute {
+  color: #e57373;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-tag,
+[data-theme="coffee"] .post-content pre .hljs-name {
+  color: #13BBB7;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-regexp {
+  color: #00A39F;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-meta {
+  color: #9e9e9e;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-deletion {
+  color: #d94e4a;
+}
+
+[data-theme="coffee"] .post-content pre .hljs-addition {
+  color: #238744;
 }
 
 [data-theme="coffee"] .post-content a {

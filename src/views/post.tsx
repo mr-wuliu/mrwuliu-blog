@@ -340,6 +340,105 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
           class="post-content"
           dangerouslySetInnerHTML={{ __html: content }}
         />
+        <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  function label(kind) {
+    if (typeof window.__t === 'function') {
+      if (kind === 'copy') return window.__t('post.copyCode') || 'Copy';
+      if (kind === 'copied') return window.__t('post.copiedCode') || 'Copied';
+      return window.__t('post.copyCodeFailed') || 'Failed';
+    }
+    return kind === 'copy' ? 'Copy' : kind === 'copied' ? 'Copied' : 'Failed';
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function(resolve, reject) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        ta.remove();
+        if (ok) resolve();
+        else reject(new Error('copy failed'));
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  function mountCopyButtons() {
+    var blocks = document.querySelectorAll('.post-content pre');
+    blocks.forEach(function(pre) {
+      if (pre.querySelector('.code-copy-btn')) return;
+      var code = pre.querySelector('code');
+      if (!code) return;
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy-btn';
+      btn.textContent = label('copy');
+
+      btn.addEventListener('click', function() {
+        var text = code.textContent || '';
+        copyText(text).then(function() {
+          btn.textContent = label('copied');
+          btn.classList.remove('is-failed');
+          btn.classList.add('is-copied');
+          setTimeout(function() {
+            btn.textContent = label('copy');
+            btn.classList.remove('is-copied');
+          }, 1400);
+        }).catch(function() {
+          btn.textContent = label('failed');
+          btn.classList.add('is-failed');
+          setTimeout(function() {
+            btn.textContent = label('copy');
+            btn.classList.remove('is-failed');
+          }, 1400);
+        });
+      });
+
+      pre.appendChild(btn);
+    });
+  }
+
+  function refreshCopyButtonLabels() {
+    document.querySelectorAll('.post-content .code-copy-btn').forEach(function(btn) {
+      if (btn.classList.contains('is-copied') || btn.classList.contains('is-failed')) return;
+      btn.textContent = label('copy');
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      mountCopyButtons();
+      refreshCopyButtonLabels();
+    });
+  } else {
+    mountCopyButtons();
+    refreshCopyButtonLabels();
+  }
+
+  var html = document.documentElement;
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === 'lang') {
+        refreshCopyButtonLabels();
+        break;
+      }
+    }
+  });
+  observer.observe(html, { attributes: true, attributeFilter: ['lang'] });
+})();
+      ` }} />
       </article>
 
       <PostNav prev={prev} next={next} lang={lang} />

@@ -37,10 +37,7 @@ body {
   margin-top: 0.5em;
   margin-bottom: 0.5em;
 }
-.prose .tiptap pre {
-  margin-top: 0.25em;
-  margin-bottom: 0.25em;
-}
+
 
 /* Block math — rendered mode */
 .tiptap [data-type="block-math"] {
@@ -181,4 +178,181 @@ body {
 
 .lang-toggle-thumb-end {
   transform: translateX(38px);
+}
+
+/* Code block — override Tailwind prose dark background */
+.prose .tiptap pre {
+  background: #FAFBFC;
+  color: #565869;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 0;
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+/* Code block — language selector */
+.code-block-wrapper {
+  position: relative;
+  margin: 0.5em 0;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #FAFBFC;
+  border-radius: 0;
+}
+
+.code-block-wrapper pre {
+  margin: 0 !important;
+  padding: 1rem;
+  padding-top: 2rem;
+  background: #FAFBFC !important;
+  color: #565869;
+  border: none !important;
+  overflow-x: auto;
+  border-radius: 0 !important;
+}
+
+.code-block-wrapper pre code {
+  font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: #565869;
+  background: none !important;
+  border: none !important;
+}
+
+.code-block-lang-select {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 0.65rem;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  padding: 2px 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: #fff;
+  color: #565869;
+  cursor: pointer;
+  z-index: 1;
+  outline: none;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.code-block-lang-select:focus {
+  border-color: #000;
+}
+
+/* Snazzy Light — Syntax highlighting tokens (highlight.js classes) */
+.code-block-wrapper .hljs-comment,
+.code-block-wrapper .hljs-quote,
+.prose .tiptap pre .hljs-comment,
+.prose .tiptap pre .hljs-quote {
+  color: #ADB1C2;
+  font-style: italic;
+}
+
+.code-block-wrapper .hljs-keyword,
+.code-block-wrapper .hljs-selector-tag,
+.prose .tiptap pre .hljs-keyword,
+.prose .tiptap pre .hljs-selector-tag {
+  color: #F767BB;
+}
+
+.code-block-wrapper .hljs-type,
+.code-block-wrapper .hljs-literal,
+.code-block-wrapper .hljs-constant,
+.prose .tiptap pre .hljs-type,
+.prose .tiptap pre .hljs-literal,
+.prose .tiptap pre .hljs-constant {
+  color: #2DAE58;
+}
+
+.code-block-wrapper .hljs-title,
+.code-block-wrapper .hljs-title.function_,
+.prose .tiptap pre .hljs-title,
+.prose .tiptap pre .hljs-title.function_ {
+  color: #09A1ED;
+}
+
+.code-block-wrapper .hljs-string,
+.code-block-wrapper .hljs-symbol,
+.code-block-wrapper .hljs-bullet,
+.prose .tiptap pre .hljs-string,
+.prose .tiptap pre .hljs-symbol,
+.prose .tiptap pre .hljs-bullet {
+  color: #CF9C00;
+}
+
+.code-block-wrapper .hljs-number,
+.prose .tiptap pre .hljs-number {
+  color: #FF5C57;
+}
+
+.code-block-wrapper .hljs-variable,
+.code-block-wrapper .hljs-template-variable,
+.code-block-wrapper .hljs-params,
+.prose .tiptap pre .hljs-variable,
+.prose .tiptap pre .hljs-template-variable,
+.prose .tiptap pre .hljs-params {
+  color: #565869;
+}
+
+.code-block-wrapper .hljs-built_in,
+.prose .tiptap pre .hljs-built_in {
+  color: #11658F;
+}
+
+.code-block-wrapper .hljs-attr,
+.code-block-wrapper .hljs-attribute,
+.prose .tiptap pre .hljs-attr,
+.prose .tiptap pre .hljs-attribute {
+  color: #FF8380;
+}
+
+.code-block-wrapper .hljs-tag,
+.prose .tiptap pre .hljs-tag {
+  color: #13BBB7;
+}
+
+.code-block-wrapper .hljs-name,
+.prose .tiptap pre .hljs-name {
+  color: #13BBB7;
+}
+
+.code-block-wrapper .hljs-selector-class,
+.prose .tiptap pre .hljs-selector-class {
+  color: #F767BB;
+}
+
+.code-block-wrapper .hljs-selector-id,
+.prose .tiptap pre .hljs-selector-id {
+  color: #F767BB;
+}
+
+.code-block-wrapper .hljs-regexp,
+.prose .tiptap pre .hljs-regexp {
+  color: #13BBB7;
+}
+
+.code-block-wrapper .hljs-meta,
+.prose .tiptap pre .hljs-meta {
+  color: #ADB1C2;
+}
+
+.code-block-wrapper .hljs-deletion,
+.prose .tiptap pre .hljs-deletion {
+  color: #FF5C56;
+}
+
+.code-block-wrapper .hljs-addition,
+.prose .tiptap pre .hljs-addition {
+  color: #2DAE58;
+}
+
+.code-block-wrapper .hljs-emphasis,
+.prose .tiptap pre .hljs-emphasis {
+  font-style: italic;
+}
+
+.code-block-wrapper .hljs-strong,
+.prose .tiptap pre .hljs-strong {
+  font-weight: bold;
 }
