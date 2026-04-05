@@ -2,6 +2,8 @@
 
 A personal blog powered by [Cloudflare Workers](https://workers.cloudflare.com/), built with [Hono](https://hono.dev/), D1, R2, and React.
 
+Live site: [https://mrwuliu.top/](https://mrwuliu.top/)
+
 ## Tech Stack
 
 | Layer | Technology |
