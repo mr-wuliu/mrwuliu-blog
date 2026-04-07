@@ -58,6 +58,22 @@ function promptTableSize() {
   }
 }
 
+async function uploadImage(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await fetch('/api/images', {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Upload failed' }))
+    throw new Error(err.error || 'Upload failed')
+  }
+  const data: { id: string; url: string } = await response.json()
+  return data.url
+}
+
 const TableShortcut = Extension.create({
   name: 'table-shortcut',
   addKeyboardShortcuts() {
@@ -68,6 +84,40 @@ const TableShortcut = Extension.create({
         return this.editor.chain().focus().insertTable({ rows: size.rows, cols: size.cols, withHeaderRow: true }).run()
       },
     }
+  },
+})
+
+const ImagePaste = Extension.create({
+  name: 'image-paste',
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        props: {
+          handlePaste: (view, event) => {
+            const items = event.clipboardData?.items
+            if (!items) return false
+
+            for (const item of items) {
+              if (item.type.startsWith('image/')) {
+                const file = item.getAsFile()
+                if (!file) continue
+
+                const pos = view.state.selection.from
+                uploadImage(file)
+                  .then((url) => {
+                    const { tr } = view.state
+                    const node = view.state.schema.nodes.image.create({ src: url })
+                    view.dispatch(tr.insert(pos, node))
+                  })
+                  .catch(() => {})
+                return true
+              }
+            }
+            return false
+          },
+        },
+      }),
+    ]
   },
 })
 
@@ -414,6 +464,7 @@ export default function Editor({ content, onChange }: EditorProps) {
       TableShortcut,
       Link.configure({ openOnClick: false }),
       Image,
+      ImagePaste,
       Placeholder.configure({ placeholder: '开始写作...' }),
       CustomMathematics,
     ],
@@ -423,33 +474,17 @@ export default function Editor({ content, onChange }: EditorProps) {
     },
   })
 
-  const handleImageUpload = useCallback(async (file: File) => {
-    const formData = new FormData()
-    formData.append('file', file)
-    const response = await fetch('/api/images', {
-      method: 'POST',
-      credentials: 'include',
-      body: formData,
-    })
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: 'Upload failed' }))
-      throw new Error(err.error || 'Upload failed')
-    }
-    const data: { id: string; url: string } = await response.json()
-    return data.url
-  }, [])
-
   const onFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !editor) return
     try {
-      const url = await handleImageUpload(file)
+      const url = await uploadImage(file)
       editor.chain().focus().setImage({ src: url }).run()
     } catch {
       // Image upload failed
     }
     e.target.value = ''
-  }, [editor, handleImageUpload])
+  }, [editor])
 
   const addLink = useCallback(() => {
     if (!editor) return

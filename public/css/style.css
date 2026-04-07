@@ -302,6 +302,49 @@ a[class*="hover:bg-black"]:hover {
   font-size: 0.875em;
 }
 
+/* Mermaid diagram containers */
+.post-content .mermaid-source {
+  margin: 1rem 0;
+  position: relative;
+  border: 1px solid #000;
+  background: #fafafa;
+}
+
+.post-content .mermaid-source pre {
+  margin: 0;
+  border: none;
+  background: transparent;
+}
+
+.post-content .mermaid-diagram {
+  padding: 1.5rem 1rem;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+.post-content .mermaid-diagram svg {
+  max-width: 100%;
+}
+
+.post-content .mermaid-source[data-language]::before,
+.post-content .mermaid-source .language-label {
+  content: attr(data-language);
+  position: absolute;
+  top: 0.45rem;
+  left: 0.65rem;
+  display: inline-block;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  color: rgba(86, 88, 105, 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* Responsive adjustments for post content */
 @media (max-width: 768px) {
   .post-content h1 { font-size: 1.625rem; }
@@ -647,4 +690,14 @@ a[class*="hover:bg-black"]:hover {
   border-top-color: #795548 !important;
   border-radius: 2px;
   box-shadow: 0 4px 12px rgba(62, 39, 35, 0.12);
+}
+
+[data-theme="coffee"] .post-content .mermaid-source,
+[data-theme="coffee"] .post-content .mermaid-diagram {
+  background-color: #f7efea;
+  border-color: #795548;
+}
+
+[data-theme="coffee"] .post-content .mermaid-source[data-language]::before {
+  color: rgba(62, 39, 35, 0.62);
 }

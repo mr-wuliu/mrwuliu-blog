@@ -21,6 +21,7 @@ export const CODE_BLOCK_LANGUAGES = [
   { label: 'YAML', value: 'yaml' },
   { label: 'Markdown', value: 'markdown' },
   { label: 'XML', value: 'xml' },
+  { label: 'Mermaid', value: 'mermaid' },
 ]
 
 const LANGUAGE_ALIAS_MAP: Record<string, string> = {

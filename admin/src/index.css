@@ -32,6 +32,7 @@ body {
 .prose .tiptap blockquote {
   margin-top: 0.25em;
   margin-bottom: 0.25em;
+  quotes: none;
 }
 .prose .tiptap hr {
   margin-top: 0.5em;
@@ -391,4 +392,46 @@ body {
 .code-block-wrapper .hljs-strong,
 .prose .tiptap pre .hljs-strong {
   font-weight: bold;
+}
+
+/* Mermaid diagram live preview */
+.mermaid-preview {
+  margin: 0;
+  padding: 12px;
+  background: #fafafa;
+  border-top: 1px dashed rgba(0, 0, 0, 0.15);
+  text-align: center;
+  overflow-x: auto;
+}
+
+.mermaid-preview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-preview-label {
+  font-size: 0.6rem;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(0, 0, 0, 0.3);
+  margin-bottom: 8px;
+}
+
+.mermaid-preview-error {
+  color: #dc2626;
+  font-family: monospace;
+  font-size: 13px;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.mermaid-preview-loading,
+.mermaid-preview-empty {
+  color: rgba(0, 0, 0, 0.3);
+  font-size: 0.75rem;
+  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }

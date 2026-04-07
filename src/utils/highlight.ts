@@ -98,6 +98,12 @@ export function highlightCode(html: string): string {
       const lang = className?.match(/(?:^|\s)language-([a-zA-Z0-9_+-]+)(?:\s|$)/)?.[1]
       const decodedCode = decodeHtmlEntities(code).trim()
 
+      // Skip highlighting for mermaid — render as client-side mermaid diagram
+      if (lang === 'mermaid') {
+        const escapedCode = decodedCode.replace(/"/g, '&quot;')
+        return `<div class="mermaid-source" data-mermaid="${escapedCode}" data-language="Mermaid"><pre><code class="language-mermaid">${decodedCode}</code></pre></div>`
+      }
+
       try {
         let result: string
         let finalLang = lang

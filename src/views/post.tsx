@@ -438,8 +438,70 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
   });
   observer.observe(html, { attributes: true, attributeFilter: ['lang'] });
 })();
-      ` }} />
-      </article>
+       ` }} />
+
+       <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  function renderMermaid() {
+    var sources = document.querySelectorAll('.post-content .mermaid-source');
+    if (!sources.length) return;
+    if (typeof mermaid === 'undefined') return;
+
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'strict',
+      fontFamily: 'inherit',
+    });
+
+    sources.forEach(function(el) {
+      var code = el.getAttribute('data-mermaid');
+      if (!code) return;
+
+      var id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
+
+      mermaid.render(id, code).then(function(result) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'mermaid-diagram';
+        wrapper.innerHTML = result.svg;
+
+        var svg = wrapper.querySelector('svg');
+        if (svg) {
+          var vb = svg.getAttribute('viewBox');
+          if (vb && svg.getAttribute('width') === '100%') {
+            var vw = vb.split(' ')[2];
+            if (vw) svg.setAttribute('width', vw);
+          }
+          svg.removeAttribute('style');
+          svg.style.maxWidth = '100%';
+          svg.style.height = 'auto';
+        }
+
+        var pre = el.querySelector('pre');
+        if (pre) pre.style.display = 'none';
+
+        el.insertBefore(wrapper, pre);
+        el.classList.add('mermaid-rendered');
+      }).catch(function() {
+        // Rendering failed — leave the code block visible as fallback
+      });
+    });
+  }
+
+  function tryRender() {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(renderMermaid, 100);
+      });
+    } else {
+      setTimeout(renderMermaid, 100);
+    }
+  }
+
+  tryRender();
+})();
+       ` }} />
+       </article>
 
       <PostNav prev={prev} next={next} lang={lang} />
 

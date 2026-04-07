@@ -102,6 +102,12 @@ const Layout: FC<LayoutProps> = ({
             crossorigin="anonymous"
           />
         )}
+        {type === 'article' && (
+          <script
+            src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
+            defer
+          />
+        )}
         <SEO
           title={title}
           description={description}
