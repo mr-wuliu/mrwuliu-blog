@@ -103,6 +103,25 @@ const Layout: FC<LayoutProps> = ({
           />
         )}
         {type === 'article' && (
+          <link
+            rel="preconnect"
+            href="https://fonts.googleapis.com"
+          />
+        )}
+        {type === 'article' && (
+          <link
+            rel="preconnect"
+            href="https://fonts.gstatic.com"
+            crossorigin="anonymous"
+          />
+        )}
+        {type === 'article' && (
+          <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"
+          />
+        )}
+        {type === 'article' && (
           <script
             src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
             defer
