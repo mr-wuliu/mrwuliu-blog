@@ -399,7 +399,8 @@ body {
   margin: 0;
   padding: 12px;
   background: #fafafa;
-  border-top: 1px dashed rgba(0, 0, 0, 0.15);
+  border-top: 1.5px dashed #94a3b8;
+  border-radius: 0 0 8px 8px;
   text-align: center;
   overflow-x: auto;
 }
@@ -407,11 +408,12 @@ body {
 .mermaid-preview svg {
   max-width: 100%;
   height: auto;
+  font-family: "Nunito", sans-serif;
 }
 
 .mermaid-preview-label {
   font-size: 0.6rem;
-  font-family: "SFMono-Regular", Menlo, Consolas, monospace;
+  font-family: "Nunito", sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: rgba(0, 0, 0, 0.3);
