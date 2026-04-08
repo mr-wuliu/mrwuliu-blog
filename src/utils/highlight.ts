@@ -101,7 +101,7 @@ export function highlightCode(html: string): string {
       // Skip highlighting for mermaid — render as client-side mermaid diagram
       if (lang === 'mermaid') {
         const escapedCode = decodedCode.replace(/"/g, '&quot;')
-        return `<div class="mermaid-source" data-mermaid="${escapedCode}" data-language="Mermaid"><pre><code class="language-mermaid">${decodedCode}</code></pre></div>`
+        return `<div class="mermaid-source" data-mermaid="${escapedCode}" data-language="Mermaid"><div class="mermaid-loading"><span class="mermaid-loading-dot"></span><span class="mermaid-loading-dot"></span><span class="mermaid-loading-dot"></span></div><pre style="display:none"><code class="language-mermaid">${decodedCode}</code></pre></div>`
       }
 
       try {

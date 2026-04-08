@@ -477,13 +477,17 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
           svg.style.height = 'auto';
         }
 
-        var pre = el.querySelector('pre');
-        if (pre) pre.style.display = 'none';
+        var loading = el.querySelector('.mermaid-loading');
+        if (loading) loading.style.display = 'none';
 
-        el.insertBefore(wrapper, pre);
+        el.insertBefore(wrapper, el.querySelector('pre'));
         el.classList.add('mermaid-rendered');
       }).catch(function() {
-        // Rendering failed — leave the code block visible as fallback
+        // Rendering failed — show code block as fallback
+        var loading = el.querySelector('.mermaid-loading');
+        if (loading) loading.style.display = 'none';
+        var pre = el.querySelector('pre');
+        if (pre) pre.style.display = '';
       });
     });
   }
