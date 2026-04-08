@@ -306,8 +306,10 @@ a[class*="hover:bg-black"]:hover {
 .post-content .mermaid-source {
   margin: 1rem 0;
   position: relative;
-  border: 1px solid #000;
+  border: 1.5px dashed #94a3b8;
+  border-radius: 12px;
   background: #fafafa;
+  padding: 2.1rem 1rem 1rem;
 }
 
 .post-content .mermaid-source pre {
@@ -347,7 +349,7 @@ a[class*="hover:bg-black"]:hover {
 }
 
 .post-content .mermaid-diagram {
-  padding: 1.5rem 1rem;
+  padding: 1rem;
   display: flex;
   justify-content: center;
   overflow-x: auto;
@@ -355,6 +357,18 @@ a[class*="hover:bg-black"]:hover {
 
 .post-content .mermaid-diagram svg {
   max-width: 100%;
+}
+
+.post-content .mermaid-diagram svg .label {
+  font-family: "Nunito", sans-serif !important;
+}
+
+.post-content .mermaid-diagram svg .edgeLabel {
+  font-size: 0.82rem;
+}
+
+.post-content .mermaid-diagram svg .cluster-label {
+  font-weight: 700;
 }
 
 .post-content .mermaid-source[data-language]::before,
@@ -725,9 +739,19 @@ a[class*="hover:bg-black"]:hover {
 [data-theme="coffee"] .post-content .mermaid-source,
 [data-theme="coffee"] .post-content .mermaid-diagram {
   background-color: #f7efea;
-  border-color: #795548;
+  border-color: #a1887f;
+  border-style: dashed;
+  border-radius: 12px;
 }
 
 [data-theme="coffee"] .post-content .mermaid-source[data-language]::before {
   color: rgba(62, 39, 35, 0.62);
+}
+
+[data-theme="coffee"] .post-content .mermaid-diagram svg .edgePath .path {
+  stroke: #8d6e63;
+}
+
+[data-theme="coffee"] .post-content .mermaid-diagram svg .label {
+  color: #3e2723;
 }
