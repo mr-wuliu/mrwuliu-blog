@@ -362,14 +362,32 @@ blogRoutes.get('/feed.xml', async (c) => {
   })
 })
 
+blogRoutes.get('/robots.txt', (c) => {
+  const baseUrl = new URL(c.req.url).origin
+  const txt = `User-agent: *
+Allow: /
+
+Sitemap: ${baseUrl}/sitemap.xml
+`
+  return c.text(txt, 200, { 'Cache-Control': 'public, max-age=86400' })
+})
+
 blogRoutes.get('/sitemap.xml', async (c) => {
+  const cache = (caches as unknown as { default: Cache }).default
+  const cacheKey = new Request(new URL('/sitemap.xml', c.req.url).toString())
+  const cached = await cache.match(cacheKey)
+  if (cached) return cached
+
   const db = createDb(c.env.DB)
   const result = await getAllPublishedPostsForSitemap(db)
   const baseUrl = new URL(c.req.url).origin
   const sitemapXml = generateSitemap(result, baseUrl)
-  return c.body(sitemapXml, 200, {
+  const response = c.body(sitemapXml, 200, {
     'Content-Type': 'application/xml',
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
   })
+  await cache.put(cacheKey, response.clone())
+  return response
 })
 
 async function getAllPublishedPostsForSitemap(
