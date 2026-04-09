@@ -121,12 +121,6 @@ const Layout: FC<LayoutProps> = ({
             href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap"
           />
         )}
-        {type === 'article' && (
-          <script
-            src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"
-            defer
-          />
-        )}
         <SEO
           title={title}
           description={description}

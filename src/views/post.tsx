@@ -442,93 +442,38 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
 
         <script dangerouslySetInnerHTML={{ __html: `
 (function() {
-  var baseConfig = {
-    startOnLoad: false,
-    theme: 'base',
-    look: 'handDrawn',
-    securityLevel: 'strict',
-  };
+  var sources = document.querySelectorAll('.post-content .mermaid-source');
+  if (!sources.length) return;
 
-  var nodePalette = [
-    { bg: '#FF6B6B', border: '#D94848', text: '#ffffff' },
-    { bg: '#FFB347', border: '#E09530', text: '#ffffff' },
-    { bg: '#6BCB77', border: '#4FAF5B', text: '#ffffff' },
-    { bg: '#4D96FF', border: '#3078E0', text: '#ffffff' },
-    { bg: '#9B72CF', border: '#7D52B0', text: '#ffffff' },
-    { bg: '#FF6EB4', border: '#D94E94', text: '#ffffff' },
-    { bg: '#45D4C8', border: '#28B5A9', text: '#ffffff' },
-    { bg: '#FFD93D', border: '#E0BC20', text: '#ffffff' },
-  ];
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js';
+  s.onload = function() {
+    var baseConfig = { startOnLoad: false, theme: 'base', look: 'handDrawn', securityLevel: 'strict' };
+    var defaultVars = {
+      fontFamily: '"Nunito", sans-serif', fontSize: '14px',
+      primaryColor: '#eef2f7', primaryTextColor: '#2d3748', primaryBorderColor: '#94a3b8',
+      lineColor: '#94a3b8', secondaryColor: '#f1f5f9', tertiaryColor: '#ffffff',
+      background: '#fafafa', mainBkg: '#eef2f7', nodeBorder: '#94a3b8',
+      clusterBkg: '#f8fafc', clusterBorder: '#94a3b8', titleColor: '#2d3748',
+      edgeLabelBackground: '#f8fafc', nodeTextColor: '#2d3748', nodeBorderRadius: '12px',
+    };
+    var nodePalette = [
+      { bg: '#FF6B6B', border: '#D94848', text: '#ffffff' },
+      { bg: '#FFB347', border: '#E09530', text: '#ffffff' },
+      { bg: '#6BCB77', border: '#4FAF5B', text: '#ffffff' },
+      { bg: '#4D96FF', border: '#3078E0', text: '#ffffff' },
+      { bg: '#9B72CF', border: '#7D52B0', text: '#ffffff' },
+      { bg: '#FF6EB4', border: '#D94E94', text: '#ffffff' },
+      { bg: '#45D4C8', border: '#28B5A9', text: '#ffffff' },
+      { bg: '#FFD93D', border: '#E0BC20', text: '#ffffff' },
+    ];
 
-  var coffeePalette = [
-    { bg: '#FF8A65', border: '#E06B40', text: '#ffffff' },
-    { bg: '#FFD54F', border: '#E0B830', text: '#ffffff' },
-    { bg: '#AED581', border: '#8FBC5E', text: '#ffffff' },
-    { bg: '#F48FB1', border: '#D46E8F', text: '#ffffff' },
-    { bg: '#FFAB91', border: '#E08C72', text: '#ffffff' },
-    { bg: '#CE93D8', border: '#AE72B5', text: '#ffffff' },
-    { bg: '#80CBC4', border: '#5FADA5', text: '#ffffff' },
-    { bg: '#FFF176', border: '#E0D45E', text: '#ffffff' },
-  ];
-
-  var coffeeVars = {
-    fontFamily: '"Nunito", sans-serif',
-    fontSize: '14px',
-    primaryColor: '#efebe9',
-    primaryTextColor: '#3e2723',
-    primaryBorderColor: '#795548',
-    lineColor: '#8d6e63',
-    secondaryColor: '#d7ccc8',
-    tertiaryColor: '#f7efea',
-    background: '#f7efea',
-    mainBkg: '#efebe9',
-    nodeBorder: '#795548',
-    clusterBkg: '#f7efea',
-    clusterBorder: '#795548',
-    titleColor: '#3e2723',
-    edgeLabelBackground: '#efebe9',
-    nodeTextColor: '#3e2723',
-    nodeBorderRadius: '12px',
-  };
-
-  var defaultVars = {
-    fontFamily: '"Nunito", sans-serif',
-    fontSize: '14px',
-    primaryColor: '#eef2f7',
-    primaryTextColor: '#2d3748',
-    primaryBorderColor: '#94a3b8',
-    lineColor: '#94a3b8',
-    secondaryColor: '#f1f5f9',
-    tertiaryColor: '#ffffff',
-    background: '#fafafa',
-    mainBkg: '#eef2f7',
-    nodeBorder: '#94a3b8',
-    clusterBkg: '#f8fafc',
-    clusterBorder: '#94a3b8',
-    titleColor: '#2d3748',
-    edgeLabelBackground: '#f8fafc',
-    nodeTextColor: '#2d3748',
-    nodeBorderRadius: '12px',
-  };
-
-  function getThemeVars() {
-    return document.documentElement.getAttribute('data-theme') === 'coffee' ? coffeeVars : defaultVars;
-  }
-
-  function renderMermaid() {
-    var sources = document.querySelectorAll('.post-content .mermaid-source');
-    if (!sources.length) return;
-    if (typeof mermaid === 'undefined') return;
-
-    var vars = getThemeVars();
-    mermaid.initialize(Object.assign({}, baseConfig, { themeVariables: vars }));
+    mermaid.initialize(Object.assign({}, baseConfig, { themeVariables: defaultVars }));
 
     sources.forEach(function(el) {
       if (el.classList.contains('mermaid-rendered')) return;
-
       var rawCode = el.getAttribute('data-mermaid');
       if (!rawCode) return;
-
       var allNodeIds = {};
       var m;
       var p1 = /\\b([A-Za-z_][A-Za-z0-9_]*)\\s*[\\[\\{(]/g;
@@ -536,72 +481,20 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
       var p2 = /(?:-->|---)\\s*(?:\\|[^|]*\\|\\s*)?([A-Za-z_][A-Za-z0-9_]*)/g;
       while ((m = p2.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
       var nodeIds = Object.keys(allNodeIds);
-
-      var palette = vars === coffeeVars ? coffeePalette : nodePalette;
       var styleLines = '';
       nodeIds.forEach(function(nid, i) {
-        var c = palette[i % palette.length];
+        var c = nodePalette[i % nodePalette.length];
         styleLines += '\\nstyle ' + nid + ' fill:' + c.bg + ',stroke:' + c.border + ',color:' + c.text + ',font-weight:bold';
       });
-
-      var initDir = '%%{init:' + JSON.stringify({
-        theme: 'base',
-        look: 'handDrawn',
-        themeVariables: vars
-      }) + '}%%\\n';
+      var initDir = '%%{init:' + JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: defaultVars }) + '}%%\\n';
       var code = initDir + rawCode + styleLines;
-
       var id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
-
       mermaid.render(id, code).then(function(result) {
         var wrapper = document.createElement('div');
         wrapper.className = 'mermaid-diagram';
         wrapper.innerHTML = result.svg;
-
-        var svg = wrapper.querySelector('svg');
-        if (svg) {
-          var vb = svg.getAttribute('viewBox');
-          if (vb && svg.getAttribute('width') === '100%') {
-            var vw = vb.split(' ')[2];
-            if (vw) svg.setAttribute('width', vw);
-          }
-          svg.removeAttribute('style');
-          svg.style.maxWidth = '100%';
-          svg.style.height = 'auto';
-
-          var nodeCount = svg.querySelectorAll('.node').length;
-          var edgeCount = svg.querySelectorAll('.edgePath').length;
-          var complexity = nodeCount + edgeCount;
-          // Simple (≤4): 2.8px, Medium (5-12): 2.2→1.6px, Complex (>12): ~1.2px
-          var sw = complexity <= 4 ? 2.8
-                 : complexity <= 12 ? 2.2 - (complexity - 4) * 0.075
-                 : Math.max(1.0, 1.6 - (complexity - 12) * 0.03);
-
-          svg.querySelectorAll('.edgePath path').forEach(function(p) {
-            p.style.strokeWidth = sw + 'px';
-          });
-          svg.querySelectorAll('.node').forEach(function(node) {
-            var paths = node.querySelectorAll('path');
-            var fills = [];
-            var strokes = [];
-            paths.forEach(function(p) {
-              var hasFill = p.style.fill && p.style.fill !== 'none';
-              var hasStroke = p.style.stroke && p.style.stroke !== 'none';
-              if (hasStroke && !hasFill) {
-                strokes.push(p);
-                p.style.strokeWidth = '3px';
-              } else {
-                fills.push(p);
-              }
-            });
-            fills.forEach(function(f) { node.appendChild(f); });
-            strokes.forEach(function(s) { node.appendChild(s); });
-          });
-        }
-
         var loading = el.querySelector('.mermaid-loading');
         if (loading) loading.style.display = 'none';
-
         el.insertBefore(wrapper, el.querySelector('pre'));
         el.classList.add('mermaid-rendered');
       }).catch(function() {
@@ -611,46 +504,10 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
         if (pre) pre.style.display = '';
       });
     });
-  }
-
-  function rerenderMermaid() {
-    document.querySelectorAll('.post-content .mermaid-source.mermaid-rendered').forEach(function(el) {
-      var diagram = el.querySelector('.mermaid-diagram');
-      if (diagram) diagram.remove();
-      var loading = el.querySelector('.mermaid-loading');
-      if (loading) loading.style.display = '';
-      el.classList.remove('mermaid-rendered');
-    });
-    renderMermaid();
-  }
-
-  function tryRender() {
-    function attempt() {
-      if (typeof mermaid === 'undefined') {
-        setTimeout(attempt, 200);
-        return;
-      }
-      renderMermaid();
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(attempt, 100);
-      });
-    } else {
-      setTimeout(attempt, 100);
-    }
-  }
-
-  tryRender();
-
-  new MutationObserver(function() {
-    setTimeout(rerenderMermaid, 50);
-  }).observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-theme'],
-  });
+  };
+  document.head.appendChild(s);
 })();
-       ` }} />
+        ` }} />
        </article>
 
       <PostNav prev={prev} next={next} lang={lang} />

@@ -303,6 +303,7 @@ a[class*="hover:bg-black"]:hover {
 }
 
 /* Mermaid diagram containers */
+.post-content .mermaid-pre-rendered,
 .post-content .mermaid-source {
   margin: 1rem 0;
   position: relative;
@@ -310,6 +311,18 @@ a[class*="hover:bg-black"]:hover {
   border-radius: 12px;
   background: #fafafa;
   padding: 2.1rem 1rem 1rem;
+}
+
+.post-content .mermaid-pre-rendered::before {
+  content: "Mermaid";
+  position: absolute;
+  top: 0.45rem;
+  left: 0.65rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(0, 0, 0, 0.35);
 }
 
 .post-content .mermaid-source pre {
@@ -736,6 +749,7 @@ a[class*="hover:bg-black"]:hover {
   box-shadow: 0 4px 12px rgba(62, 39, 35, 0.12);
 }
 
+[data-theme="coffee"] .post-content .mermaid-pre-rendered,
 [data-theme="coffee"] .post-content .mermaid-source,
 [data-theme="coffee"] .post-content .mermaid-diagram {
   background-color: #f7efea;
@@ -744,6 +758,7 @@ a[class*="hover:bg-black"]:hover {
   border-radius: 12px;
 }
 
+[data-theme="coffee"] .post-content .mermaid-pre-rendered::before,
 [data-theme="coffee"] .post-content .mermaid-source[data-language]::before {
   color: rgba(62, 39, 35, 0.62);
 }

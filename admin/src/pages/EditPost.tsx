@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import { preRenderMermaidInHtml } from '../lib/mermaid-pre-render'
 import Editor from '../components/Editor'
 
 interface PostData {
@@ -77,18 +78,20 @@ export default function EditPost() {
       .split(',')
       .map((tag) => tag.trim())
       .filter(Boolean)
-    const body = {
-      title,
-      content,
-      status,
-      tags,
-      slug: slug || undefined,
-      excerpt: excerpt || undefined,
-      hidden,
-      pinned,
-    }
 
     try {
+      const renderedContent = await preRenderMermaidInHtml(content)
+      const body = {
+        title,
+        content: renderedContent,
+        status,
+        tags,
+        slug: slug || undefined,
+        excerpt: excerpt || undefined,
+        hidden,
+        pinned,
+      }
+
       if (isEdit && id) {
         await api.put(`/posts/${id}`, body)
       } else {
