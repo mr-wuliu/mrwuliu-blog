@@ -12,6 +12,7 @@ type Bindings = {
   DB: D1Database
   IMAGES: R2Bucket
   ASSETS: Fetcher
+  API_KEY: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -37,11 +38,21 @@ app.use('/api/*', async (c, next) => {
       headers: {
         'Access-Control-Allow-Origin': 'https://mrwuliu.top',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
         'Access-Control-Max-Age': '86400',
       },
     })
   }
+
+  // Allow: valid API Key (machine access) OR Cloudflare Zero Trust identity (browser access)
+  const apiKey = c.req.header('X-API-Key')
+  const hasApiKey = apiKey && apiKey === c.env.API_KEY
+  const hasZeroTrustIdentity = !!c.req.header('Cf-Access-Jwt-Assertion') || !!c.req.header('Cf-Authorization')
+
+  if (!hasApiKey && !hasZeroTrustIdentity) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
   await next()
   const res = c.res
   const headers = new Headers(res.headers)

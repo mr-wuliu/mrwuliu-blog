@@ -16,6 +16,7 @@ export default defineConfig({
             JWT_SECRET: "test-jwt-secret-for-integration-tests",
             ADMIN_USERNAME: "testadmin",
             ADMIN_PASSWORD: "testpassword123",
+            API_KEY: "test-api-key-for-integration-tests",
           },
         },
       };

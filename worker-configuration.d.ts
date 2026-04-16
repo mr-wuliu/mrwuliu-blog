@@ -7,6 +7,7 @@ type CloudflareEnv = {
   JWT_SECRET: string
   ADMIN_USERNAME: string
   ADMIN_PASSWORD: string
+  API_KEY: string
   TEST_MIGRATIONS: { name: string; queries: string[] }[]
 }
 
