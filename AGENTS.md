@@ -122,9 +122,71 @@ npm run dev:admin             # Vite dev server (proxies /api → :8787)
 
 ## NOTES
 
-- Env secrets required: `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` (set in `.dev.vars` or via `wrangler secret put`)
+- Env secrets required: `JWT_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `API_KEY` (set in `.dev.vars` or via `wrangler secret put`)
 - `src/middleware/` and `src/styles/` directories exist but are empty — middleware is inline in `src/index.ts`
 - `worker-configuration.d.ts` declares typed bindings — update when adding new bindings
 - Production domain: `mrwuliu.top` (defined in `wrangler.toml` routes)
 - `nodejs_compat` flag enabled in `wrangler.toml`
 - Admin SPA at `/admin/*` served via ASSETS binding with SPA fallback in `src/index.ts`
+
+## AI BLOG WRITING
+
+AI agents can write blog posts directly via the production API. Credentials are in `.env` (gitignored).
+
+### Authentication
+
+All `/api/*` endpoints require either:
+- **`X-API-Key` header** (for machine/AI access) — value from `.env` → `API_KEY`
+- **Cloudflare Zero Trust identity** (for browser/admin access) — automatic via Access login
+
+AI must also bypass Cloudflare Zero Trust by sending Service Token headers:
+- `CF-Access-Client-Id` → from `.env` → `CF_ACCESS_CLIENT_ID`
+- `CF-Access-Client-Secret` → from `.env` → `CF_ACCESS_CLIENT_SECRET`
+
+### Create a Post
+
+```bash
+source .env
+curl -X POST "${BLOG_API_URL}/api/posts" \
+  -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+  -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+  -H "X-API-Key: ${API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "文章标题",
+    "content": "<p>HTML content here</p>",
+    "excerpt": "摘要",
+    "status": "published",
+    "tags": ["标签1", "标签2"],
+    "hidden": false,
+    "pinned": false
+  }'
+```
+
+### Update a Post
+
+```bash
+curl -X PUT "${BLOG_API_URL}/api/posts/{id}" \
+  -H "CF-Access-Client-Id: ${CF_ACCESS_CLIENT_ID}" \
+  -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET}" \
+  -H "X-API-Key: ${API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "新标题", "status": "published"}'
+```
+
+### Available API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/posts` | List posts (query: `page`, `limit`, `status`) |
+| GET | `/api/posts/:id` | Get single post with tags |
+| POST | `/api/posts` | Create post |
+| PUT | `/api/posts/:id` | Update post |
+| DELETE | `/api/posts/:id` | Delete post |
+| POST | `/api/posts/:id/like` | Toggle like |
+| GET | `/api/tags` | List tags |
+| POST | `/api/tags` | Create tag |
+| DELETE | `/api/tags/:id` | Delete tag |
+| POST | `/api/images` | Upload image (multipart/form-data) |
+| GET | `/api/images` | List images |
+| DELETE | `/api/images/:id` | Delete image |
