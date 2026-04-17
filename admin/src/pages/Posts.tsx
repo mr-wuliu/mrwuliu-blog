@@ -22,6 +22,7 @@ interface Post {
   createdAt: string
   updatedAt: string
   tags?: Tag[]
+  titleEn?: string | null
 }
 
 interface PostsResponse {
@@ -223,6 +224,15 @@ export default function Posts() {
                       {post.pinned && (
                         <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-red-500/20 text-red-600">
                           {t('posts.pinned')}
+                        </span>
+                      )}
+                      {post.titleEn ? (
+                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-blue-500/20 text-blue-600">
+                          EN ✓
+                        </span>
+                      ) : (
+                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black border-opacity-20 px-2 py-0.5 text-black opacity-30">
+                          EN —
                         </span>
                       )}
                     </td>

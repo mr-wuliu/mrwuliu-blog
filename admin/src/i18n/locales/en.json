@@ -65,7 +65,9 @@
     "unhide": "Unhide",
     "pin": "Pin",
     "unpin": "Unpin",
-    "confirmDelete": "Confirm delete this post? This cannot be undone."
+    "confirmDelete": "Confirm delete this post? This cannot be undone.",
+    "hasTranslation": "Translated",
+    "noTranslation": "No Translation"
   },
   "comments": {
     "title": "Comment Management",
@@ -145,6 +147,10 @@
     "saving": "Saving...",
     "loading": "Loading...",
     "hidden": "Hidden",
-    "pinned": "Pinned"
+    "pinned": "Pinned",
+    "langZh": "中文",
+    "langEn": "English",
+    "titleEnPlaceholder": "English Title",
+    "excerptEnPlaceholder": "English Excerpt (optional)"
   }
 }

@@ -13,6 +13,7 @@ type Bindings = {
   IMAGES: R2Bucket
   ASSETS: Fetcher
   API_KEY: string
+  DISABLE_API_AUTH?: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -42,6 +43,13 @@ app.use('/api/*', async (c, next) => {
         'Access-Control-Max-Age': '86400',
       },
     })
+  }
+
+  const host = c.req.header('host') || ''
+  const isPrivateNetwork = /^(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
+  if (c.env.DISABLE_API_AUTH === 'true' || isPrivateNetwork) {
+    await next()
+    return
   }
 
   // Allow: valid API Key (machine access) OR Cloudflare Zero Trust identity (browser access)

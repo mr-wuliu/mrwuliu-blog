@@ -65,7 +65,9 @@
     "unhide": "取消隐藏",
     "pin": "置顶",
     "unpin": "取消置顶",
-    "confirmDelete": "确认删除这篇文章？此操作不可恢复。"
+    "confirmDelete": "确认删除这篇文章？此操作不可恢复。",
+    "hasTranslation": "已翻译",
+    "noTranslation": "未翻译"
   },
   "comments": {
     "title": "评论管理",
@@ -145,6 +147,10 @@
     "saving": "保存中...",
     "loading": "加载中...",
     "hidden": "隐藏文章",
-    "pinned": "置顶文章"
+    "pinned": "置顶文章",
+    "langZh": "中文",
+    "langEn": "English",
+    "titleEnPlaceholder": "英文标题",
+    "excerptEnPlaceholder": "英文摘要（可选）"
   }
 }

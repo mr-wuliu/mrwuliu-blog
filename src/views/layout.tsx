@@ -231,11 +231,21 @@ const Layout: FC<LayoutProps> = ({
           'document.addEventListener("click",function(e){' +
           'var tg=e.target.closest(".lang-toggle");' +
           'if(!tg)return;e.preventDefault();' +
-          'var nl=__cur==="zh"?"en":"zh";' +
+          'var href=tg.href,nl=__cur==="zh"?"en":"zh",cm=document.querySelector("main");' +
+          'if(cm){cm.style.transition="opacity .15s";cm.style.opacity="0.5"}' +
+          'fetch(href).then(function(r){return r.text()}).then(function(html){' +
+          'var doc=new DOMParser().parseFromString(html,"text/html");' +
+          'if(cm){var nm=doc.querySelector("main");if(nm){cm.innerHTML=nm.innerHTML;' +
+          'cm.querySelectorAll("script").forEach(function(s){var ns=document.createElement("script");ns.textContent=s.textContent;if(s.parentNode)s.parentNode.replaceChild(ns,s)})}' +
+          'cm.style.opacity="1"}' +
           '__applyLang(nl);' +
           'var fb=document.querySelector("[data-t=\\"footer.copyright\\"]");' +
           'if(fb)fb.textContent=fb.getAttribute("data-t-"+nl);' +
-          'history.pushState(null,"",(nl==="en"?"/en":"")+location.pathname.replace(/^\\/en/,"")+location.search+location.hash);' +
+          'if(doc.title)document.title=doc.title;' +
+          'var nt=doc.querySelector(".lang-toggle");if(nt)tg.href=nt.href;' +
+          'history.pushState(null,"",href);window.scrollTo(0,0);' +
+          'if(!window.__langPopState){window.__langPopState=true;window.addEventListener("popstate",function(){location.reload()})}' +
+          '}).catch(function(){if(cm)cm.style.opacity="1";window.location.href=href})' +
           '});'
         }} />
       </body>

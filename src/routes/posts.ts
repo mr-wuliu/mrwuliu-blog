@@ -23,6 +23,9 @@ const createPostSchema = z.object({
   tags: z.array(z.string()).default([]),
   hidden: z.boolean().default(false),
   pinned: z.boolean().default(false),
+  titleEn: z.string().optional(),
+  contentEn: z.string().optional(),
+  excerptEn: z.string().optional(),
 })
 
 const updatePostSchema = z.object({
@@ -33,6 +36,9 @@ const updatePostSchema = z.object({
   tags: z.array(z.string()).optional(),
   hidden: z.boolean().optional(),
   pinned: z.boolean().optional(),
+  titleEn: z.string().optional(),
+  contentEn: z.string().optional(),
+  excerptEn: z.string().optional(),
 })
 
 postRoutes.post('/', zValidator('json', createPostSchema), async (c) => {
@@ -49,6 +55,9 @@ postRoutes.post('/', zValidator('json', createPostSchema), async (c) => {
     slug,
     content: data.content,
     excerpt: data.excerpt,
+    titleEn: data.titleEn ?? null,
+    contentEn: data.contentEn ?? '',
+    excerptEn: data.excerptEn ?? '',
     status: data.status,
     hidden: data.hidden,
     pinned: data.pinned,
@@ -109,6 +118,9 @@ postRoutes.put('/:id', zValidator('json', updatePostSchema), async (c) => {
     ...(data.excerpt !== undefined && { excerpt: data.excerpt }),
     ...(data.hidden !== undefined && { hidden: data.hidden }),
     ...(data.pinned !== undefined && { pinned: data.pinned }),
+    ...(data.titleEn !== undefined && { titleEn: data.titleEn }),
+    ...(data.contentEn !== undefined && { contentEn: data.contentEn }),
+    ...(data.excerptEn !== undefined && { excerptEn: data.excerptEn }),
     status,
     publishedAt,
     updatedAt: now,

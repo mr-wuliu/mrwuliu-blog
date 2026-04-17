@@ -8,6 +8,7 @@ type CloudflareEnv = {
   ADMIN_USERNAME: string
   ADMIN_PASSWORD: string
   API_KEY: string
+  DISABLE_API_AUTH?: string
   TEST_MIGRATIONS: { name: string; queries: string[] }[]
 }
 

@@ -5,9 +5,12 @@ import { sql } from 'drizzle-orm'
 export const posts = sqliteTable('posts', {
   id: text('id').primaryKey(),
   title: text('title').notNull(),
+  titleEn: text('title_en'),
   slug: text('slug').notNull().unique(),
   content: text('content').notNull().default(''),
+  contentEn: text('content_en').default(''),
   excerpt: text('excerpt').notNull().default(''),
+  excerptEn: text('excerpt_en').default(''),
   coverImageKey: text('cover_image_key'),
   status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
   hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),

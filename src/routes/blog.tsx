@@ -34,6 +34,16 @@ const blogRoutes = new Hono<{ Bindings: Bindings }>()
 function createBlogRouter(lang: Lang) {
   const router = new Hono<{ Bindings: Bindings }>()
 
+  function resolvePostLang<T extends Record<string, unknown>>(post: T, lang: Lang): T {
+    if (lang !== 'en') return post
+    return {
+      ...post,
+      title: (post.titleEn as string) || (post.title as string),
+      content: (post.contentEn as string) || (post.content as string),
+      excerpt: (post.excerptEn as string) || (post.excerpt as string),
+    }
+  }
+
   router.get('/', async (c) => {
     const db = createDb(c.env.DB)
     const page = Math.max(1, Number(c.req.query('page')) || 1)
@@ -74,12 +84,13 @@ function createBlogRouter(lang: Lang) {
       })
     )
 
+    const resolvedPosts = postsWithTags.map(p => resolvePostLang(p, lang))
     const totalPages = Math.ceil(result.total / limit)
 
     return c.html(
       <Home
         lang={lang}
-        posts={postsWithTags}
+        posts={resolvedPosts}
         pagination={{
           page: result.page,
           limit: result.limit,
@@ -134,6 +145,8 @@ function createBlogRouter(lang: Lang) {
       })
     )
 
+    const resolvedPosts = postsWithTags.map(p => resolvePostLang(p, lang))
+
     const allTags = await db.select().from(tags)
     const authorProfile = await getAuthorProfile(db)
 
@@ -141,7 +154,7 @@ function createBlogRouter(lang: Lang) {
       <TagPage
         lang={lang}
         tag={tag}
-        posts={postsWithTags}
+        posts={resolvedPosts}
         allTags={allTags}
         pagination={{
           page,
@@ -195,23 +208,27 @@ function createBlogRouter(lang: Lang) {
       .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
       .orderBy(asc(comments.createdAt))
 
-    let renderedContent = renderLatex(postWithTags.content)
+    const resolvedPost = resolvePostLang(postWithTags, lang)
+
+    let renderedContent = renderLatex(resolvedPost.content)
     renderedContent = highlightCode(renderedContent)
     const { html: tocHtml, headings } = generateToc(renderedContent)
 
     const prevPost = await getAdjacentPost(db, postWithTags.publishedAt, 'prev')
     const nextPost = await getAdjacentPost(db, postWithTags.publishedAt, 'next')
+    const resolvedPrev = prevPost ? resolvePostLang(prevPost, lang) : null
+    const resolvedNext = nextPost ? resolvePostLang(nextPost, lang) : null
     const authorProfile = await getAuthorProfile(db)
 
     return c.html(
       <PostPage
         lang={lang}
-        post={postWithTags}
+        post={resolvedPost}
         content={tocHtml}
         headings={headings}
         comments={approvedComments}
-        prev={prevPost}
-        next={nextPost}
+        prev={resolvedPrev}
+        next={resolvedNext}
         authorProfile={authorProfile}
       />
     )
@@ -292,8 +309,9 @@ function createBlogRouter(lang: Lang) {
   router.get('/writings', async (c) => {
     const db = createDb(c.env.DB)
     const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
+    const resolvedPosts = result.posts.map(p => resolvePostLang(p, lang))
     const authorProfile = await getAuthorProfile(db)
-    return c.html(<WritingsPage lang={lang} posts={result.posts} authorProfile={authorProfile} />)
+    return c.html(<WritingsPage lang={lang} posts={resolvedPosts} authorProfile={authorProfile} />)
   })
 
   router.get('/about', async (c) => {
@@ -418,12 +436,12 @@ async function getAdjacentPost(
   db: ReturnType<typeof createDb>,
   currentPublishedAt: string | null,
   direction: 'prev' | 'next'
-): Promise<{ slug: string; title: string } | null> {
+): Promise<{ slug: string; title: string; titleEn: string | null } | null> {
   if (!currentPublishedAt) return null
 
   if (direction === 'prev') {
     const [result] = await db
-      .select({ slug: posts.slug, title: posts.title })
+      .select({ slug: posts.slug, title: posts.title, titleEn: posts.titleEn })
       .from(posts)
       .where(and(eq(posts.status, 'published'), eq(posts.hidden, false), sql`${posts.publishedAt} < ${currentPublishedAt}`))
       .orderBy(desc(posts.publishedAt))
@@ -432,7 +450,7 @@ async function getAdjacentPost(
   }
 
   const [result] = await db
-    .select({ slug: posts.slug, title: posts.title })
+    .select({ slug: posts.slug, title: posts.title, titleEn: posts.titleEn })
     .from(posts)
     .where(and(eq(posts.status, 'published'), eq(posts.hidden, false), sql`${posts.publishedAt} > ${currentPublishedAt}`))
     .orderBy(asc(posts.publishedAt))
