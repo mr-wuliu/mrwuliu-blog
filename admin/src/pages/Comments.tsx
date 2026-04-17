@@ -109,7 +109,7 @@ export default function Comments() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="overflow-y-auto h-full p-8 space-y-6">
       <h1 className="text-xl font-bold tracking-tight text-black">{t('comments.title')}</h1>
 
       <div className="flex gap-2 mb-6">

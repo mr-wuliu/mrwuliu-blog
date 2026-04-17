@@ -99,7 +99,7 @@ export default function Projects() {
   }
 
   return (
-    <div>
+    <div className="overflow-y-auto h-full p-8">
       <div className="flex justify-between items-center mb-8 border-b-2 border-black pb-4">
         <h1 className="text-2xl font-bold uppercase tracking-widest">{t('projects.title')}</h1>
         <button

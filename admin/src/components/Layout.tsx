@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
-import LangToggle from './LangToggle'
 
 type CommentsCountResponse = { comments: unknown[]; total: number }
 
@@ -21,7 +20,7 @@ export default function Layout() {
   }, [fetchPendingCount])
 
   return (
-    <div className="min-h-screen flex bg-white">
+    <div className="h-screen flex bg-white overflow-hidden">
       <aside className="w-60 bg-white border-r border-black flex flex-col sticky top-0 h-screen">
         <div className="px-6 py-6 border-b border-black">
           <h1 className="text-lg font-bold tracking-tight text-black">{t('layout.adminTitle')}</h1>
@@ -110,12 +109,7 @@ export default function Layout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b border-black flex items-center justify-between px-8 bg-white">
-          <span className="text-xs font-bold uppercase tracking-widest opacity-50">{t('layout.adminPanel')}</span>
-          <LangToggle />
-        </header>
-
-        <main className="flex-1 overflow-auto p-8 bg-white">
+        <main className="flex-1 overflow-hidden bg-white">
           <Outlet />
         </main>
       </div>

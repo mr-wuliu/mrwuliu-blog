@@ -151,6 +151,9 @@
     "langZh": "中文",
     "langEn": "English",
     "titleEnPlaceholder": "English Title",
-    "excerptEnPlaceholder": "English Excerpt (optional)"
+    "excerptEnPlaceholder": "English Excerpt (optional)",
+    "toc": "Table of Contents",
+    "tocEmpty": "No headings yet",
+    "metadata": "Post Info"
   }
 }

@@ -81,6 +81,23 @@ Personal blog on Cloudflare Workers edge runtime. Hono SSR for public site + Rea
 - **NEVER** bypass `createDb()` — all DB access goes through the factory
 - **Pre-commit enforces typecheck** — no `as any`, `@ts-ignore`, or `@ts-expect-error`
 
+## LOCAL DEPLOY RULE (MANDATORY)
+
+After modifying any file under `admin/src/`, you **MUST** rebuild and verify locally:
+
+```bash
+cd admin && npm run build
+```
+
+This outputs to `../public/admin/` which the local dev server (`./dev.sh start`) serves as static assets. No restart needed — just refresh the browser.
+
+**Workflow:**
+1. Make code changes in `admin/src/`
+2. Run `cd admin && npm run build` (typecheck + vite build)
+3. Refresh browser at `http://localhost:8787/admin/...` to verify
+4. If broken → fix → repeat from step 2
+5. Only report done to user after verifying visually
+
 ## UNIQUE STYLES
 
 - Dual-package single deploy: root Worker + admin SPA (separate npm projects, one deployment)
@@ -99,6 +116,9 @@ Personal blog on Cloudflare Workers edge runtime. Hono SSR for public site + Rea
 ./dev.sh migrate      # Apply D1 migrations locally
 ./dev.sh status       # Check running
 ./dev.sh logs         # Tail logs
+
+# Admin SPA build (MUST run after any admin/ changes)
+cd admin && npm run build   # Builds to ../public/admin/
 
 # Testing
 npm test              # All tests (API + UI)

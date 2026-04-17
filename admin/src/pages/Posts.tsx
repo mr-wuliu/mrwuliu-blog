@@ -114,7 +114,7 @@ export default function Posts() {
   ]
 
   return (
-    <div>
+    <div className="overflow-y-auto h-full p-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-black">{t('posts.title')}</h1>

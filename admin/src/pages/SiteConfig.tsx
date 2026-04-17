@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 import Editor from '../components/Editor'
+import LangToggle from '../components/LangToggle'
 
 interface SiteConfigData {
   key: string
@@ -114,10 +115,11 @@ export default function SiteConfig() {
   }
 
   return (
-    <div>
+    <div className="overflow-y-auto h-full p-8">
       <div className="flex justify-between items-center mb-8 border-b-2 border-black pb-4">
         <h1 className="text-2xl font-bold uppercase tracking-widest">{t('siteConfig.title')}</h1>
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <LangToggle />
           <button
             onClick={handleSave}
             disabled={saving}

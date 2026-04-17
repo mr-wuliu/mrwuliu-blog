@@ -12,6 +12,7 @@ import TableHeader from '@tiptap/extension-table-header'
 import { common, createLowlight } from 'lowlight'
 import { Mathematics, BlockMath, InlineMath } from '@tiptap/extension-mathematics'
 import { Extension, InputRule } from '@tiptap/core'
+import type { Editor as TipTapEditor } from '@tiptap/core'
 import { Plugin, TextSelection } from '@tiptap/pm/state'
 import 'katex/dist/katex.min.css'
 import BlockMathView from './math/BlockMathView'
@@ -240,9 +241,10 @@ const CustomMathematics = Mathematics.extend({
 interface EditorProps {
   content: string
   onChange: (html: string) => void
+  onEditorReady?: (editor: TipTapEditor) => void
 }
 
-export default function Editor({ content, onChange }: EditorProps) {
+export default function Editor({ content, onChange, onEditorReady }: EditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showTableTools, setShowTableTools] = useState(false)
 
@@ -525,6 +527,12 @@ export default function Editor({ content, onChange }: EditorProps) {
       editor.off('transaction', sync)
     }
   }, [editor])
+
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor)
+    }
+  }, [editor, onEditorReady])
 
   if (!editor) return null
 
