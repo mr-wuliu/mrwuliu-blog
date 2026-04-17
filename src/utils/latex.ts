@@ -92,7 +92,7 @@ export function generateToc(html: string): { html: string; headings: TocHeading[
   const headings: TocHeading[] = []
   let counter = 0
 
-  const result = html.replace(/<(h[234])([^>]*)>([\s\S]*?)<\/\1>/gi, (match, tag: string, attrs: string, content: string) => {
+  const result = html.replace(/<(h[23456])([^>]*)>([\s\S]*?)<\/\1>/gi, (match, tag: string, attrs: string, content: string) => {
     const level = parseInt(tag[1], 10)
     counter++
     const id = `heading-${counter}`

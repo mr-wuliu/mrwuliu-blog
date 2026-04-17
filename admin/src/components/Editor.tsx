@@ -247,11 +247,12 @@ interface EditorProps {
 export default function Editor({ content, onChange, onEditorReady }: EditorProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showTableTools, setShowTableTools] = useState(false)
+  const [, forceRender] = useState(0)
 
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
+        heading: { levels: [1, 2, 3, 4, 5, 6] },
         codeBlock: false,
       }),
       CodeBlockLowlight.configure({
@@ -517,6 +518,7 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
         || editor.isActive('tableCell')
         || editor.isActive('tableHeader')
       setShowTableTools(inTable)
+      forceRender(n => n + 1)
     }
     sync()
     editor.on('selectionUpdate', sync)
@@ -547,6 +549,9 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
     { label: 'H1', active: editor.isActive('heading', { level: 1 }), onClick: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
     { label: 'H2', active: editor.isActive('heading', { level: 2 }), onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
     { label: 'H3', active: editor.isActive('heading', { level: 3 }), onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run() },
+    { label: 'H4', active: editor.isActive('heading', { level: 4 }), onClick: () => editor.chain().focus().toggleHeading({ level: 4 }).run() },
+    { label: 'H5', active: editor.isActive('heading', { level: 5 }), onClick: () => editor.chain().focus().toggleHeading({ level: 5 }).run() },
+    { label: 'H6', active: editor.isActive('heading', { level: 6 }), onClick: () => editor.chain().focus().toggleHeading({ level: 6 }).run() },
     { label: 'B', active: editor.isActive('bold'), onClick: () => editor.chain().focus().toggleBold().run() },
     { label: 'I', active: editor.isActive('italic'), onClick: () => editor.chain().focus().toggleItalic().run() },
     { label: '</>', active: editor.isActive('code'), onClick: () => editor.chain().focus().toggleCode().run() },
@@ -568,9 +573,19 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
     { label: 'Hdr', onClick: () => editor.chain().focus().toggleHeaderRow().run() },
     { label: 'DelTbl', onClick: () => editor.chain().focus().deleteTable().run() },
   ] : []
+  const currentHeadingLevel = (() => {
+    for (let i = 1; i <= 6; i++) {
+      if (editor.isActive('heading', { level: i })) return i
+    }
+    return null
+  })()
+
   return (
-    <div className="relative border border-black rounded-none overflow-hidden">
-      <div className="flex flex-wrap gap-1 bg-white border-b border-black px-2 py-1.5">
+    <div className="relative border border-black rounded-none">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center gap-1 bg-white border-b border-black px-2 py-1.5">
+        {currentHeadingLevel !== null && (
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest opacity-40 mr-1 select-none">H{currentHeadingLevel}</span>
+        )}
         {buttons.map((btn) => (
           <button
             key={btn.label}
@@ -595,10 +610,12 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
         />
       </div>
 
+      <div className="overflow-x-hidden">
       <EditorContent
         editor={editor}
         className="prose max-w-none min-h-[400px] px-4 py-3 bg-white text-black focus:outline-none [&_.tiptap]:min-h-[400px] [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-black [&_.tiptap_p.is-editor-empty:first-child::before]:opacity-30 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
       />
+      </div>
       {showTableTools && (
         <div className="fixed right-4 bottom-4 z-40 bg-white border border-black shadow-sm p-2 w-[220px]">
           <div className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-2">Table Tools</div>

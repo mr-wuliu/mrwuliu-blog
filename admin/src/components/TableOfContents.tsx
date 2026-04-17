@@ -18,7 +18,7 @@ function extractHeadings(editor: Editor): HeadingItem[] {
   editor.state.doc.descendants((node, pos) => {
     if (node.type.name === 'heading') {
       const level = node.attrs.level as number
-      if (level >= 1 && level <= 3) {
+      if (level >= 1 && level <= 6) {
         headings.push({
           level,
           text: node.textContent,
@@ -108,6 +108,9 @@ export default function TableOfContents({ editor }: TableOfContentsProps) {
                     heading.level === 1 ? 'pl-0 font-bold' : '',
                     heading.level === 2 ? 'pl-3 font-normal' : '',
                     heading.level === 3 ? 'pl-6 font-normal opacity-60' : '',
+                    heading.level === 4 ? 'pl-9 font-normal opacity-50' : '',
+                    heading.level === 5 ? 'pl-12 font-normal opacity-40' : '',
+                    heading.level === 6 ? 'pl-15 font-normal opacity-30' : '',
                     activeId === heading.id
                       ? 'opacity-100 border-l-2 border-black -ml-0.5'
                       : 'opacity-50',

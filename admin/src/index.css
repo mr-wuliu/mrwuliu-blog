@@ -15,13 +15,16 @@ body {
   margin-top: 0.25em;
   margin-bottom: 0.25em;
 }
-.prose .tiptap h1, .prose .tiptap h2, .prose .tiptap h3 {
+.prose .tiptap h1, .prose .tiptap h2, .prose .tiptap h3, .prose .tiptap h4, .prose .tiptap h5, .prose .tiptap h6 {
   margin-top: 0.5em;
   margin-bottom: 0.25em;
 }
 .prose .tiptap h1:first-child,
 .prose .tiptap h2:first-child,
 .prose .tiptap h3:first-child,
+.prose .tiptap h4:first-child,
+.prose .tiptap h5:first-child,
+.prose .tiptap h6:first-child,
 .prose .tiptap p:first-child {
   margin-top: 0;
 }
