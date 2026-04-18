@@ -32,7 +32,13 @@ export default function InlineMathView({ node, updateAttributes, deleteNode, edi
     if (didHandleClose.current) return
     if (draft === '') {
       didHandleClose.current = true
+      const pos = getPos()
       deleteNode()
+      if (pos != null) {
+        setTimeout(() => {
+          editor.chain().focus().setTextSelection(pos).run()
+        }, 0)
+      }
       return
     }
     didHandleClose.current = true
@@ -50,7 +56,13 @@ export default function InlineMathView({ node, updateAttributes, deleteNode, edi
   const revertEdit = useCallback(() => {
     if (latex === '') {
       didHandleClose.current = true
+      const pos = getPos()
       deleteNode()
+      if (pos != null) {
+        setTimeout(() => {
+          editor.chain().focus().setTextSelection(pos).run()
+        }, 0)
+      }
       return
     }
     didHandleClose.current = true
@@ -78,7 +90,13 @@ export default function InlineMathView({ node, updateAttributes, deleteNode, edi
       } else if (e.key === 'Backspace' && draft === '') {
         e.preventDefault()
         didHandleClose.current = true
+        const pos = getPos()
         deleteNode()
+        if (pos != null) {
+          setTimeout(() => {
+            editor.chain().focus().setTextSelection(pos).run()
+          }, 0)
+        }
       }
     },
     [commitEdit, revertEdit, draft, deleteNode],

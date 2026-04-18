@@ -39,7 +39,13 @@ export default function BlockMathView({ node, updateAttributes, deleteNode, edit
     if (didHandleClose.current) return
     if (draft === '') {
       didHandleClose.current = true
+      const pos = getPos()
       deleteNode()
+      if (pos != null) {
+        setTimeout(() => {
+          editor.chain().focus().setTextSelection(pos).run()
+        }, 0)
+      }
       return
     }
     didHandleClose.current = true
@@ -57,7 +63,13 @@ export default function BlockMathView({ node, updateAttributes, deleteNode, edit
   const revertEdit = useCallback(() => {
     if (latex === '') {
       didHandleClose.current = true
+      const pos = getPos()
       deleteNode()
+      if (pos != null) {
+        setTimeout(() => {
+          editor.chain().focus().setTextSelection(pos).run()
+        }, 0)
+      }
       return
     }
     didHandleClose.current = true
@@ -85,7 +97,13 @@ export default function BlockMathView({ node, updateAttributes, deleteNode, edit
       } else if (e.key === 'Backspace' && draft === '' && textareaRef.current?.selectionStart === 0) {
         e.preventDefault()
         didHandleClose.current = true
+        const pos = getPos()
         deleteNode()
+        if (pos != null) {
+          setTimeout(() => {
+            editor.chain().focus().setTextSelection(pos).run()
+          }, 0)
+        }
       }
     },
     [commitEdit, revertEdit, draft, deleteNode],
