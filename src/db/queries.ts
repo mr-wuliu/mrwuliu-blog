@@ -1,5 +1,5 @@
 import { eq, desc, and, sql, asc, inArray } from 'drizzle-orm'
-import { posts, postTags, tags, siteConfig, projects, postStats } from './schema'
+import { posts, postTags, tags, siteConfig, projects, postStats, collections, collectionPosts } from './schema'
 import type { Database } from './index'
 
 // Get posts with pagination (admin - all statuses)
@@ -196,4 +196,163 @@ export async function getAuthorProfile(db: Database) {
     github: map['author_github'] || '',
     email: map['author_email'] || '',
   }
+}
+
+export async function getAllCollections(db: Database) {
+  return db
+    .select({
+      id: collections.id,
+      name: collections.name,
+      nameEn: collections.nameEn,
+      slug: collections.slug,
+      description: collections.description,
+      descriptionEn: collections.descriptionEn,
+      coverImageKey: collections.coverImageKey,
+      sortOrder: collections.sortOrder,
+      status: collections.status,
+      createdAt: collections.createdAt,
+      updatedAt: collections.updatedAt,
+      postCount: sql<number>`count(${collectionPosts.postId})`,
+    })
+    .from(collections)
+    .leftJoin(collectionPosts, eq(collections.id, collectionPosts.collectionId))
+    .groupBy(collections.id)
+    .orderBy(asc(collections.sortOrder))
+}
+
+export async function getPublishedCollections(db: Database) {
+  return db
+    .select({
+      id: collections.id,
+      name: collections.name,
+      nameEn: collections.nameEn,
+      slug: collections.slug,
+      description: collections.description,
+      descriptionEn: collections.descriptionEn,
+      coverImageKey: collections.coverImageKey,
+      sortOrder: collections.sortOrder,
+      status: collections.status,
+      createdAt: collections.createdAt,
+      updatedAt: collections.updatedAt,
+      postCount: sql<number>`count(${collectionPosts.postId})`,
+    })
+    .from(collections)
+    .leftJoin(collectionPosts, eq(collections.id, collectionPosts.collectionId))
+    .where(eq(collections.status, 'published'))
+    .groupBy(collections.id)
+    .orderBy(asc(collections.sortOrder))
+}
+
+export async function getCollectionById(db: Database, id: string) {
+  const result = await db.select().from(collections).where(eq(collections.id, id))
+  return result[0] || null
+}
+
+export async function getCollectionBySlug(db: Database, slug: string) {
+  const result = await db.select().from(collections).where(eq(collections.slug, slug))
+  return result[0] || null
+}
+
+export async function getCollectionWithPosts(db: Database, id: string) {
+  const collection = await getCollectionById(db, id)
+  if (!collection) return null
+
+  const result = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
+    .from(collectionPosts)
+    .innerJoin(posts, eq(collectionPosts.postId, posts.id))
+    .where(eq(collectionPosts.collectionId, id))
+    .orderBy(asc(collectionPosts.sortOrder))
+
+  return { ...collection, posts: result }
+}
+
+export async function getPublishedCollectionWithPosts(db: Database, slug: string) {
+  const collection = await getCollectionBySlug(db, slug)
+  if (!collection || collection.status !== 'published') return null
+
+  const result = await db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
+    .from(collectionPosts)
+    .innerJoin(posts, eq(collectionPosts.postId, posts.id))
+    .where(eq(collectionPosts.collectionId, collection.id))
+    .orderBy(asc(collectionPosts.sortOrder))
+
+  return { ...collection, posts: result }
+}
+
+export async function createCollection(db: Database, data: { name: string; nameEn?: string; slug: string; description?: string; descriptionEn?: string; coverImageKey?: string; sortOrder?: number; status?: string }) {
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  await db.insert(collections).values({
+    id,
+    name: data.name,
+    nameEn: data.nameEn || null,
+    slug: data.slug,
+    description: data.description || '',
+    descriptionEn: data.descriptionEn || null,
+    coverImageKey: data.coverImageKey || null,
+    sortOrder: data.sortOrder ?? 0,
+    status: (data.status as 'draft' | 'published') || 'draft',
+    createdAt: now,
+    updatedAt: now,
+  })
+  return getCollectionById(db, id)
+}
+
+export async function updateCollection(db: Database, id: string, data: Partial<{ name: string; nameEn: string; slug: string; description: string; descriptionEn: string; coverImageKey: string; sortOrder: number; status: 'draft' | 'published'; postIds: string[] }>) {
+  const { postIds, ...updateData } = data
+  const now = new Date().toISOString()
+
+  if (Object.keys(updateData).length > 0) {
+    await db.update(collections).set({ ...updateData, updatedAt: now }).where(eq(collections.id, id))
+  }
+
+  if (postIds) {
+    await db.delete(collectionPosts).where(eq(collectionPosts.collectionId, id))
+    if (postIds.length > 0) {
+      await db.insert(collectionPosts).values(
+        postIds.map((postId, index) => ({
+          collectionId: id,
+          postId,
+          sortOrder: index,
+        }))
+      )
+    }
+  }
+
+  return getCollectionById(db, id)
+}
+
+export async function deleteCollection(db: Database, id: string) {
+  await db.delete(collections).where(eq(collections.id, id))
+}
+
+export async function getPostCollections(db: Database, postId: string) {
+  return db
+    .select({
+      id: collections.id,
+      name: collections.name,
+      nameEn: collections.nameEn,
+      slug: collections.slug,
+    })
+    .from(collectionPosts)
+    .innerJoin(collections, eq(collectionPosts.collectionId, collections.id))
+    .where(eq(collectionPosts.postId, postId))
 }

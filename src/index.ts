@@ -7,6 +7,7 @@ import imageRoutes, { imageServeRoutes } from './routes/images'
 import blogRoutes from './routes/blog'
 import siteConfigRoutes from './routes/site-config'
 import projectsRoutes from './routes/projects'
+import collectionsRoutes from './routes/collections'
 
 type Bindings = {
   DB: D1Database
@@ -86,6 +87,7 @@ app.route('/api', imageRoutes)
 app.route('/images', imageServeRoutes)
 app.route('/api/site-config', siteConfigRoutes)
 app.route('/api/projects', projectsRoutes)
+app.route('/api/collections', collectionsRoutes)
 
 app.get('/admin/*', async (c) => {
   const url = new URL(c.req.url)
