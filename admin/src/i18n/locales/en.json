@@ -154,6 +154,8 @@
     "excerptEnPlaceholder": "English Excerpt (optional)",
     "toc": "Table of Contents",
     "tocEmpty": "No headings yet",
-    "metadata": "Post Info"
+    "metadata": "Post Info",
+    "toggleToc": "Toggle TOC",
+    "toggleInfo": "Toggle Info"
   }
 }

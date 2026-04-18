@@ -154,6 +154,8 @@
     "excerptEnPlaceholder": "英文摘要（可选）",
     "toc": "目录",
     "tocEmpty": "暂无标题",
-    "metadata": "文章信息"
+    "metadata": "文章信息",
+    "toggleToc": "切换目录",
+    "toggleInfo": "文章信息"
   }
 }
