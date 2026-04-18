@@ -21,8 +21,8 @@ export default function Layout() {
 
   return (
     <div className="h-screen flex bg-white overflow-hidden">
-      <aside className="w-60 bg-white border-r border-black flex flex-col sticky top-0 h-screen">
-        <div className="px-6 py-6 border-b border-black">
+      <aside className="w-48 bg-white border-r border-black flex flex-col sticky top-0 h-screen">
+        <div className="px-4 py-6 border-b border-black">
           <h1 className="text-lg font-bold tracking-tight text-black">{t('layout.adminTitle')}</h1>
         </div>
 
