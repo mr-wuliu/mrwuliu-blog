@@ -64,6 +64,7 @@ interface PostPageProps {
   prev: PostNav | null
   next: PostNav | null
   authorProfile?: AuthorProfile
+  collections?: { id: string; name: string; nameEn: string | null; slug: string; posts: { id: string; title: string; slug: string }[] }[]
 }
 
 const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => {
@@ -275,7 +276,7 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
   )
 }
 
-const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, prev, next, authorProfile }) => {
+const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, prev, next, authorProfile, collections }) => {
   const postUrl = langPath(`/posts/${post.slug}`, lang)
   const publishedTime = post.publishedAt ?? post.createdAt
   const modifiedTime = post.updatedAt !== publishedTime ? post.updatedAt : undefined
@@ -333,6 +334,30 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
         </div>
 
         <div class="post-body-divider mb-3" />
+
+        {collections && collections.length > 0 && (
+          <div class="mb-8 border border-gray-200 rounded p-4">
+            {collections.map(collection => (
+              <div key={collection.id} class="mb-4 last:mb-0">
+                <h3 class="text-sm font-medium uppercase tracking-widest text-gray-500 mb-2">
+                  <a href={langPath('/series/' + collection.slug, lang)} class="hover:text-black transition-colors no-underline text-gray-500">
+                    {lang === 'en' && collection.nameEn ? collection.nameEn : collection.name}
+                  </a>
+                </h3>
+                <ol class="space-y-1">
+                  {collection.posts.map((cp, index) => (
+                    <li key={cp.id}>
+                      <a href={langPath('/posts/' + cp.slug, lang)}
+                         class={`text-sm no-underline transition-colors ${cp.id === post.id ? 'font-bold text-black' : 'text-gray-600 hover:text-black'}`}>
+                        {index + 1}. {cp.title}
+                      </a>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+        )}
 
         <Toc headings={headings} lang={lang} />
 

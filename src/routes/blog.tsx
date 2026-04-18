@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes } from '../db/schema'
-import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile } from '../db/queries'
+import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getCollectionWithPosts } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
@@ -15,6 +15,8 @@ import WritingsPage from '../views/writings'
 import TagsCloudPage from '../views/tags-cloud'
 import ProjectsPage from '../views/projects'
 import ProjectDetailPage from '../views/project-detail'
+import SeriesPage from '../views/series'
+import SeriesDetailPage from '../views/series-detail'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
 import { getClientIp, getVisitorFingerprint, trackPostView } from '../utils/analytics'
@@ -220,6 +222,21 @@ function createBlogRouter(lang: Lang) {
     const resolvedNext = nextPost ? resolvePostLang(nextPost, lang) : null
     const authorProfile = await getAuthorProfile(db)
 
+    const postCollections = await getPostCollections(db, post.id)
+    const collectionsWithPosts = await Promise.all(
+      postCollections.map(async (col) => {
+        const colWithPosts = await getCollectionWithPosts(db, col.id)
+        return colWithPosts
+      })
+    )
+    const validCollections = collectionsWithPosts
+      .filter((c): c is NonNullable<typeof c> => c !== null && c.status === 'published')
+      .map(c => ({
+        ...c,
+        posts: c.posts.filter(p => p.status === 'published'),
+      }))
+      .filter(c => c.posts.length > 0)
+
     return c.html(
       <PostPage
         lang={lang}
@@ -230,6 +247,7 @@ function createBlogRouter(lang: Lang) {
         prev={resolvedPrev}
         next={resolvedNext}
         authorProfile={authorProfile}
+        collections={validCollections}
       />
     )
   })
@@ -356,6 +374,28 @@ function createBlogRouter(lang: Lang) {
     }
     const authorProfile = await getAuthorProfile(db)
     return c.html(<ProjectDetailPage lang={lang} project={project} authorProfile={authorProfile} />)
+  })
+
+  router.get('/series', async (c) => {
+    const db = createDb(c.env.DB)
+    const collections = await getPublishedCollections(db)
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<SeriesPage lang={lang} collections={collections} authorProfile={authorProfile} />)
+  })
+
+  router.get('/series/:slug', async (c) => {
+    const slug = c.req.param('slug')
+    const db = createDb(c.env.DB)
+    const collection = await getPublishedCollectionWithPosts(db, slug)
+    if (!collection) {
+      return c.html(<NotFoundPage lang={lang} />, 404)
+    }
+    const filteredCollection = {
+      ...collection,
+      posts: collection.posts.filter((p: { status: string }) => p.status === 'published'),
+    }
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<SeriesDetailPage lang={lang} collection={filteredCollection} authorProfile={authorProfile} />)
   })
 
   return router

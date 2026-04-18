@@ -1,6 +1,7 @@
 export default {
   nav: {
     writings: 'Writings',
+    series: 'Series',
     projects: 'Projects',
     tags: 'Tags',
     about: 'About',
@@ -33,6 +34,16 @@ export default {
     backToProjects: '← BACK TO PROJECTS',
     created: 'CREATED',
     updated: 'UPDATED',
+  },
+  series: {
+    title: 'Series',
+    subtitle: 'Curated collections of articles by topic',
+    empty: 'No series yet',
+    posts: 'articles',
+    backToSeries: '← BACK TO SERIES',
+    collectionPosts: 'Articles in this series',
+    lastUpdated: 'Last updated',
+    pageTitle: 'Series - Blog',
   },
   tagsCloud: {
     title: 'Tags',

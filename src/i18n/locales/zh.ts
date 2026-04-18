@@ -1,6 +1,7 @@
 export default {
   nav: {
     writings: '文字',
+    series: '系列',
     projects: '工程',
     tags: '标签',
     about: '自述',
@@ -33,6 +34,16 @@ export default {
     backToProjects: '← 返回工程列表',
     created: '创建日期',
     updated: '更新日期',
+  },
+  series: {
+    title: '系列文章',
+    subtitle: '按主题整理的系列文章合集',
+    empty: '暂无系列',
+    posts: '篇文章',
+    backToSeries: '← 返回系列列表',
+    collectionPosts: '本系列文章',
+    lastUpdated: '最后更新',
+    pageTitle: '系列文章 - Blog',
   },
   tagsCloud: {
     title: '标签',

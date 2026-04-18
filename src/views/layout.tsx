@@ -145,6 +145,7 @@ const Layout: FC<LayoutProps> = ({
                   <div class="flex items-center">
                     <div class="flex gap-6 text-lg uppercase tracking-widest ml-auto">
                       <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
+                      <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
                       <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
                       <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
                       <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
@@ -168,6 +169,7 @@ const Layout: FC<LayoutProps> = ({
                 <div class="flex items-center">
                   <div class="flex gap-6 text-lg uppercase tracking-widest ml-auto">
                     <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
+                    <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
                     <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
                     <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
                     <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>

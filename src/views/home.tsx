@@ -126,6 +126,10 @@ const Home: FC<HomeProps> = ({ lang, posts, pagination, authorProfile }) => {
     >
       <div>
         <h1 class="text-4xl font-bold tracking-tight mb-10" data-t="home.title">{t(lang, 'home.title')}</h1>
+        <a href={langPath('/series', lang)} data-thref="/series" class="inline-flex items-center gap-2 px-4 py-2 border border-black text-sm font-medium uppercase tracking-widest hover:bg-black hover:text-white transition-colors mb-8 no-underline text-black">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+          {t(lang, 'nav.series')}
+        </a>
         {posts.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
             <p data-t="home.noPosts">{t(lang, 'home.noPosts')}</p>
