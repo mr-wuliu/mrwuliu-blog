@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, index, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 
 // posts table
@@ -142,4 +142,34 @@ export const postStats = sqliteTable('post_stats', {
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
   post_stats_view_count_idx: index('post_stats_view_count_idx').on(table.viewCount),
+}))
+
+// collections table (post collections/series)
+export const collections = sqliteTable('collections', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  slug: text('slug').notNull().unique(),
+  description: text('description').notNull().default(''),
+  descriptionEn: text('description_en').default(''),
+  coverImageKey: text('cover_image_key'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  collectionsSlugIdx: uniqueIndex('collections_slug_idx').on(table.slug),
+  collectionsStatusIdx: index('collections_status_idx').on(table.status),
+  collectionsSortOrderIdx: index('collections_sort_order_idx').on(table.sortOrder),
+}))
+
+// collection_posts junction table
+export const collectionPosts = sqliteTable('collection_posts', {
+  collectionId: text('collection_id').notNull().references(() => collections.id, { onDelete: 'cascade' }),
+  postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  sortOrder: integer('sort_order').notNull().default(0),
+}, (table) => ({
+  cpPk: primaryKey(table.collectionId, table.postId),
+  cpCollectionIdx: index('cp_collection_idx').on(table.collectionId),
+  cpPostIdx: index('cp_post_idx').on(table.postId),
 }))
