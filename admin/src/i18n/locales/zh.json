@@ -6,7 +6,8 @@
     "posts": "文章",
     "comments": "评论",
     "siteConfig": "站点配置",
-    "projects": "项目"
+    "projects": "项目",
+    "collections": "集合"
   },
   "common": {
     "loading": "加载中...",
@@ -136,6 +137,43 @@
     "tableActions": "操作",
     "confirmDelete": "确定删除此项目？"
   },
+  "collections": {
+    "title": "集合管理",
+    "name": "名称",
+    "nameEn": "英文名称",
+    "slug": "别名",
+    "description": "描述",
+    "descriptionEn": "英文描述",
+    "status": "状态",
+    "sortOrder": "排序",
+    "postCount": "文章数",
+    "posts": "文章",
+    "addPosts": "添加文章",
+    "removePost": "移除",
+    "draft": "草稿",
+    "published": "已发布",
+    "createBtn": "创建集合",
+    "editBtn": "编辑",
+    "deleteBtn": "删除",
+    "saveBtn": "保存",
+    "cancelBtn": "取消",
+    "confirmDelete": "确定要删除这个集合吗？",
+    "selectPosts": "选择文章",
+    "noPosts": "暂无文章",
+    "collectionName": "集合名称",
+    "coverImage": "封面图片",
+    "loading": "加载中...",
+    "noCollections": "暂无集合",
+    "tableName": "名称",
+    "tableSlug": "别名",
+    "tableStatus": "状态",
+    "tablePostCount": "文章数",
+    "tableSortOrder": "排序",
+    "tableActions": "操作",
+    "editCollection": "编辑集合",
+    "newCollection": "新建集合",
+    "managePosts": "管理文章"
+  },
   "editPost": {
     "titlePlaceholder": "文章标题",
     "tagsPlaceholder": "标签（逗号分隔）",
@@ -156,6 +194,10 @@
     "tocEmpty": "暂无标题",
     "metadata": "文章信息",
     "toggleToc": "切换目录",
-    "toggleInfo": "文章信息"
+    "toggleInfo": "文章信息",
+    "collections": "集合",
+    "toggleCollections": "切换集合",
+    "noCollections": "该文章不属于任何集合",
+    "confirmLeave": "有未保存的修改，确定要离开吗？"
   }
 }

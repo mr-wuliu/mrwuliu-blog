@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { Editor as TipTapEditor } from '@tiptap/core'
@@ -54,6 +54,30 @@ export default function EditPost() {
   const [activeEditor, setActiveEditor] = useState<TipTapEditor | null>(null)
   const [tocExpanded, setTocExpanded] = useState(true)
   const [infoExpanded, setInfoExpanded] = useState(true)
+  const [collectionsExpanded, setCollectionsExpanded] = useState(true)
+  const [loadedPostId, setLoadedPostId] = useState<string | undefined>(id)
+  const dirtyRef = useRef(false)
+  const originalRef = useRef<{ title: string; content: string; slug: string; excerpt: string; tagsInput: string; hidden: boolean; pinned: boolean; titleEn: string; excerptEn: string; contentEn: string } | null>(null)
+
+  const markDirty = useCallback(() => { dirtyRef.current = true }, [])
+
+  const confirmLeave = useCallback(() => {
+    if (dirtyRef.current && !window.confirm(t('editPost.confirmLeave'))) return false
+    dirtyRef.current = false
+    return true
+  }, [t])
+
+  const guardedNavigate = useCallback((path: string) => {
+    if (!confirmLeave()) return
+    navigate(path)
+  }, [navigate, confirmLeave])
+  const [postCollections, setPostCollections] = useState<{
+    id: string
+    name: string
+    nameEn: string | null
+    slug: string
+    posts: { id: string; title: string; slug: string }[]
+  }[]>([])
 
   const handleEditorReady = useCallback((editor: TipTapEditor) => {
     setActiveEditor(editor)
@@ -78,13 +102,32 @@ export default function EditPost() {
       setTitleEn(post.titleEn ?? '')
       setExcerptEn(post.excerptEn ?? '')
       setContentEn(post.contentEn ?? '')
+      setLoadedPostId(id)
+      dirtyRef.current = false
+      originalRef.current = { title: post.title, content: post.content, slug: post.slug, excerpt: post.excerpt ?? '', tagsInput: post.tags.map((tag) => tag.name).join(', '), hidden: post.hidden ?? false, pinned: post.pinned ?? false, titleEn: post.titleEn ?? '', excerptEn: post.excerptEn ?? '', contentEn: post.contentEn ?? '' }
       setLoading(false)
     }).catch(() => {
       setLoading(false)
     })
+    api.get<{ collections: { id: string; name: string; nameEn: string | null; slug: string; posts: { id: string; title: string; slug: string }[] }[] }>(`/collections/by-post/${id}`).then((res) => {
+      setPostCollections(res.collections)
+    }).catch(() => {
+      setPostCollections([])
+    })
   }, [id])
 
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirtyRef.current) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [])
+
   const handleTitleChange = useCallback((value: string) => {
+    markDirty()
     setTitle(value)
     if (!slugManuallyEdited) {
       setSlug(slugify(value))
@@ -92,6 +135,7 @@ export default function EditPost() {
   }, [slugManuallyEdited])
 
   const handleSlugChange = useCallback((value: string) => {
+    markDirty()
     setSlug(value)
     setSlugManuallyEdited(true)
   }, [])
@@ -125,6 +169,7 @@ export default function EditPost() {
       } else {
         await api.post('/posts', body)
       }
+      dirtyRef.current = false
       navigate('/posts')
     } catch {
       // Save failed — re-enable buttons
@@ -133,7 +178,7 @@ export default function EditPost() {
     }
   }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn])
 
-  if (loading) {
+  if (loading && !title) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-sm opacity-50">{t('editPost.loading')}</p>
@@ -146,7 +191,7 @@ export default function EditPost() {
       <nav className="h-9 border-b border-black bg-white flex items-center flex-shrink-0 px-2 gap-1">
         <button
           type="button"
-          onClick={() => navigate('/posts')}
+          onClick={() => guardedNavigate('/posts')}
           title={t('editPost.cancel')}
           className="h-7 px-2 flex items-center justify-center text-sm opacity-50 hover:opacity-100 hover:bg-black hover:text-white transition-all cursor-pointer"
         >
@@ -205,6 +250,20 @@ export default function EditPost() {
 
         <div className="flex-1" />
 
+        {isEdit && (
+          <button
+            type="button"
+            onClick={() => setCollectionsExpanded(!collectionsExpanded)}
+            title={t('editPost.toggleCollections')}
+            className={`h-7 px-2 flex items-center justify-center text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
+              collectionsExpanded
+                ? 'border-black bg-black text-white'
+                : 'border-black border-opacity-30 opacity-50 hover:opacity-100'
+            }`}
+          >
+            {t('editPost.collections')}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setTocExpanded(!tocExpanded)}
@@ -238,6 +297,39 @@ export default function EditPost() {
           }`}
         >
           <div className="w-48 h-full overflow-y-auto">
+            {collectionsExpanded && postCollections.length > 0 && (
+              <div className="border-b border-black border-opacity-20">
+                <div className="px-3 py-2 border-b border-black border-opacity-10">
+                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">
+                    {t('editPost.collections')}
+                  </span>
+                </div>
+                {postCollections.map((col) => (
+                  <div key={col.id} className="px-3 py-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest opacity-40 mb-1">
+                      {col.name}
+                    </div>
+                    <ol className="space-y-0.5">
+                      {col.posts.map((cp, idx) => (
+                        <li key={cp.id}>
+                          <button
+                            type="button"
+                            onClick={() => cp.id !== id && guardedNavigate(`/posts/${cp.id}/edit`)}
+                            className={`w-full text-left text-[11px] leading-tight px-1 py-0.5 rounded transition-colors ${
+                              cp.id === id
+                                ? 'font-bold text-black bg-black bg-opacity-5'
+                                : 'text-black text-opacity-50 hover:text-opacity-100 hover:bg-black hover:bg-opacity-5 cursor-pointer'
+                            }`}
+                          >
+                            {idx + 1}. {cp.title}
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </div>
+            )}
             <TableOfContents editor={activeEditor} />
           </div>
         </div>
@@ -245,9 +337,9 @@ export default function EditPost() {
         <div className="flex-1 overflow-y-auto min-h-0">
           <div className="max-w-4xl mx-auto px-8 py-6">
             <Editor
-              key={activeLang}
+              key={`${activeLang}-${loadedPostId}`}
               content={activeLang === 'zh' ? content : contentEn}
-              onChange={activeLang === 'zh' ? setContent : setContentEn}
+              onChange={(v) => { markDirty(); (activeLang === 'zh' ? setContent : setContentEn)(v) }}
               onEditorReady={handleEditorReady}
             />
           </div>
@@ -298,7 +390,7 @@ export default function EditPost() {
                     <input
                       type="text"
                       value={tagsInput}
-                      onChange={(e) => setTagsInput(e.target.value)}
+                      onChange={(e) => { markDirty(); setTagsInput(e.target.value) }}
                       placeholder={t('editPost.tagsPlaceholder')}
                       className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black transition-colors"
                     />
@@ -309,7 +401,7 @@ export default function EditPost() {
                     </label>
                     <textarea
                       value={excerpt}
-                      onChange={(e) => setExcerpt(e.target.value)}
+                      onChange={(e) => { markDirty(); setExcerpt(e.target.value) }}
                       placeholder={t('editPost.excerptPlaceholder')}
                       rows={3}
                       className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black transition-colors"
@@ -317,11 +409,11 @@ export default function EditPost() {
                   </div>
                   <div className="flex items-center gap-6">
                     <label className="flex items-center gap-2 cursor-pointer text-sm text-black">
-                      <input type="checkbox" checked={hidden} onChange={(e) => setHidden(e.target.checked)} className="w-4 h-4 accent-black" />
+                      <input type="checkbox" checked={hidden} onChange={(e) => { markDirty(); setHidden(e.target.checked) }} className="w-4 h-4 accent-black" />
                       <span className="font-bold uppercase tracking-widest text-xs opacity-70">{t('editPost.hidden')}</span>
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer text-sm text-black">
-                      <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="w-4 h-4 accent-black" />
+                      <input type="checkbox" checked={pinned} onChange={(e) => { markDirty(); setPinned(e.target.checked) }} className="w-4 h-4 accent-black" />
                       <span className="font-bold uppercase tracking-widest text-xs opacity-70">{t('editPost.pinned')}</span>
                     </label>
                   </div>
@@ -335,7 +427,7 @@ export default function EditPost() {
                     <input
                       type="text"
                       value={titleEn}
-                      onChange={(e) => setTitleEn(e.target.value)}
+                      onChange={(e) => { markDirty(); setTitleEn(e.target.value) }}
                       placeholder={t('editPost.titleEnPlaceholder')}
                       className="w-full text-sm font-bold bg-transparent border border-black border-opacity-30 px-3 py-2 outline-none placeholder-black placeholder-opacity-30 text-black focus:border-black transition-colors"
                     />
@@ -346,7 +438,7 @@ export default function EditPost() {
                     </label>
                     <textarea
                       value={excerptEn}
-                      onChange={(e) => setExcerptEn(e.target.value)}
+                      onChange={(e) => { markDirty(); setExcerptEn(e.target.value) }}
                       placeholder={t('editPost.excerptEnPlaceholder')}
                       rows={3}
                       className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black transition-colors"

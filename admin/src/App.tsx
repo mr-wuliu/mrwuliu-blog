@@ -5,6 +5,7 @@ import EditPost from './pages/EditPost'
 import Comments from './pages/Comments'
 import SiteConfig from './pages/SiteConfig'
 import Projects from './pages/Projects'
+import Collections from './pages/Collections'
 import Layout from './components/Layout'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/comments" element={<Comments />} />
         <Route path="/site-config" element={<SiteConfig />} />
         <Route path="/projects" element={<Projects />} />
+        <Route path="/collections" element={<Collections />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

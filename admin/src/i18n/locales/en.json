@@ -6,7 +6,8 @@
     "posts": "Posts",
     "comments": "Comments",
     "siteConfig": "Site Config",
-    "projects": "Projects"
+    "projects": "Projects",
+    "collections": "Collections"
   },
   "common": {
     "loading": "Loading...",
@@ -136,6 +137,43 @@
     "tableActions": "Actions",
     "confirmDelete": "Delete this project?"
   },
+  "collections": {
+    "title": "Collections",
+    "name": "Name",
+    "nameEn": "Name (EN)",
+    "slug": "Slug",
+    "description": "Description",
+    "descriptionEn": "Description (EN)",
+    "status": "Status",
+    "sortOrder": "Sort Order",
+    "postCount": "Posts",
+    "posts": "Posts",
+    "addPosts": "Add Posts",
+    "removePost": "Remove",
+    "draft": "Draft",
+    "published": "Published",
+    "createBtn": "Create Collection",
+    "editBtn": "Edit",
+    "deleteBtn": "Delete",
+    "saveBtn": "Save",
+    "cancelBtn": "Cancel",
+    "confirmDelete": "Are you sure you want to delete this collection?",
+    "selectPosts": "Select Posts",
+    "noPosts": "No posts",
+    "collectionName": "Collection Name",
+    "coverImage": "Cover Image",
+    "loading": "Loading...",
+    "noCollections": "No collections yet",
+    "tableName": "Name",
+    "tableSlug": "Slug",
+    "tableStatus": "Status",
+    "tablePostCount": "Posts",
+    "tableSortOrder": "Order",
+    "tableActions": "Actions",
+    "editCollection": "Edit Collection",
+    "newCollection": "New Collection",
+    "managePosts": "Manage Posts"
+  },
   "editPost": {
     "titlePlaceholder": "Post title",
     "tagsPlaceholder": "Tags (comma separated)",
@@ -156,6 +194,10 @@
     "tocEmpty": "No headings yet",
     "metadata": "Post Info",
     "toggleToc": "Toggle TOC",
-    "toggleInfo": "Toggle Info"
+    "toggleInfo": "Toggle Info",
+    "collections": "Collections",
+    "toggleCollections": "Toggle Collections",
+    "noCollections": "This post is not in any collection",
+    "confirmLeave": "You have unsaved changes. Are you sure you want to leave?"
   }
 }
