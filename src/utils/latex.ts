@@ -101,11 +101,11 @@ export function generateToc(html: string): { html: string; headings: TocHeading[
 
     headings.push({ id, level, text })
 
-    if (/id\s*=/i.test(attrs)) {
-      return match
-    }
+    const newAttrs = /id\s*=/i.test(attrs)
+      ? attrs.replace(/id\s*=\s*"[^"]*"/i, `id="${id}"`)
+      : ` id="${id}"${attrs}`
 
-    return `<${tag} id="${id}"${attrs}>${content}</${tag}>`
+    return `<${tag}${newAttrs}>${content}</${tag}>`
   })
 
   return { html: result, headings }
