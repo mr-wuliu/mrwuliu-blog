@@ -175,19 +175,19 @@ export default function Posts() {
                   <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     {t('posts.tableTitle')}
                   </th>
-                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left whitespace-nowrap">
                     {t('posts.tableStatus')}
                   </th>
-                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left whitespace-nowrap">
                     {t('posts.tableTags')}
                   </th>
-                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left whitespace-nowrap">
                     {t('posts.tableDate')}
                   </th>
-                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left whitespace-nowrap">
                     {t('posts.tableViews')}
                   </th>
-                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left text-right">
+                  <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left text-right whitespace-nowrap">
                     {t('posts.tableActions')}
                   </th>
                 </tr>
@@ -201,40 +201,42 @@ export default function Posts() {
                     <td className="px-5 py-3">
                       <button
                         onClick={() => navigate(`/posts/${post.id}/edit`)}
-                        className="text-black font-medium text-sm text-left hover:opacity-70 transition-all"
+                        className="text-black font-medium text-sm text-left hover:opacity-70 transition-all break-words"
                       >
                         {post.title}
                       </button>
                     </td>
-                    <td className="px-5 py-3">
-                      {post.status === 'published' ? (
-                        <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-green-500/20 text-green-600">
-                          {t('posts.published')}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-yellow-500/20 text-yellow-600">
-                          {t('posts.draft')}
-                        </span>
-                      )}
-                      {post.hidden && (
-                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-gray-500/20 text-gray-600">
-                          {t('posts.hidden')}
-                        </span>
-                      )}
-                      {post.pinned && (
-                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-red-500/20 text-red-600">
-                          {t('posts.pinned')}
-                        </span>
-                      )}
-                      {post.titleEn ? (
-                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-blue-500/20 text-blue-600">
-                          EN ✓
-                        </span>
-                      ) : (
-                        <span className="ml-1 text-[10px] font-black uppercase tracking-widest border border-black border-opacity-20 px-2 py-0.5 text-black opacity-30">
-                          EN —
-                        </span>
-                      )}
+                    <td className="px-5 py-3 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1 flex-nowrap">
+                        {post.status === 'published' ? (
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-green-500/20 text-green-600">
+                            {t('posts.published')}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-yellow-500/20 text-yellow-600">
+                            {t('posts.draft')}
+                          </span>
+                        )}
+                        {post.hidden && (
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-gray-500/20 text-gray-600">
+                            {t('posts.hidden')}
+                          </span>
+                        )}
+                        {post.pinned && (
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-red-500/20 text-red-600">
+                            {t('posts.pinned')}
+                          </span>
+                        )}
+                        {post.titleEn ? (
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black px-2 py-0.5 bg-blue-500/20 text-blue-600">
+                            EN ✓
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-20 px-2 py-0.5 text-black opacity-30">
+                            EN —
+                          </span>
+                        )}
+                      </span>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex gap-1 flex-wrap">
