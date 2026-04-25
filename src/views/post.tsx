@@ -361,6 +361,24 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
 
         <Toc headings={headings} lang={lang} />
 
+        <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  var toc = document.querySelector('nav.my-8');
+  if (!toc) return;
+  toc.addEventListener('click', function(e) {
+    var a = e.target.closest('a');
+    if (!a) return;
+    var href = a.getAttribute('href');
+    if (!href || href[0] !== '#') return;
+    var target = document.getElementById(href.slice(1));
+    if (!target) return;
+    e.preventDefault();
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    history.replaceState(null, '', href);
+  });
+})();
+        ` }} />
+
         <div
           class="post-content"
           dangerouslySetInnerHTML={{ __html: content }}
