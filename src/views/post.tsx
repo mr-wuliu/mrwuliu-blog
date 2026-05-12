@@ -517,19 +517,33 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
       if (el.classList.contains('mermaid-rendered')) return;
       var rawCode = el.getAttribute('data-mermaid');
       if (!rawCode) return;
+      var look = 'handDrawn';
       var allNodeIds = {};
       var m;
-      var p1 = /\\b([A-Za-z_][A-Za-z0-9_]*)\\s*[\\[\\{(]/g;
-      while ((m = p1.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
-      var p2 = /(?:-->|---)\\s*(?:\\|[^|]*\\|\\s*)?([A-Za-z_][A-Za-z0-9_]*)/g;
-      while ((m = p2.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
+      var isSequence = /^\\s*sequenceDiagram\\b/mi.test(rawCode);
+      if (isSequence) {
+        var pParticipant = /^\\s*participant\\s+(\\S+)/gmi;
+        while ((m = pParticipant.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
+        var pActor = /^\\s*actor\\s+(\\S+)/gmi;
+        while ((m = pActor.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
+        var pArrow = /(\\w+)\\s*[+-]?\\s*(?:-{1,2}>{1,2}|--?x|--?\\))\\s*[+-]?\\s*(\\w+)/g;
+        while ((m = pArrow.exec(rawCode)) !== null) {
+          allNodeIds[m[1]] = true;
+          allNodeIds[m[2]] = true;
+        }
+      } else {
+        var p1 = /\\b([A-Za-z_][A-Za-z0-9_]*)\\s*[\\[\\{(]/g;
+        while ((m = p1.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
+        var p2 = /(?:-->|---)\\s*(?:\\|[^|]*\\|\\s*)?([A-Za-z_][A-Za-z0-9_]*)/g;
+        while ((m = p2.exec(rawCode)) !== null) allNodeIds[m[1]] = true;
+      }
       var nodeIds = Object.keys(allNodeIds);
       var styleLines = '';
       nodeIds.forEach(function(nid, i) {
         var c = nodePalette[i % nodePalette.length];
         styleLines += '\\nstyle ' + nid + ' fill:' + c.bg + ',stroke:' + c.border + ',color:' + c.text + ',font-weight:bold';
       });
-      var initDir = '%%{init:' + JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: defaultVars }) + '}%%\\n';
+      var initDir = '%%{init:' + JSON.stringify({ theme: 'base', look: look, themeVariables: defaultVars }) + '}%%\\n';
       var code = initDir + rawCode + styleLines;
       var id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
       mermaid.render(id, code).then(function(result) {

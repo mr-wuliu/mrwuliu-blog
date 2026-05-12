@@ -46,11 +46,25 @@ const nodePalette = [
 
 function extractNodeIds(code: string): string[] {
   const ids: Record<string, boolean> = {}
-  const p1 = /\b([A-Za-z_][A-Za-z0-9_]*)\s*[\[\{(]/g
   let m: RegExpExecArray | null
-  while ((m = p1.exec(code)) !== null) ids[m[1]] = true
-  const p2 = /(?:-->|---)\s*(?:\|[^|]*\|\s*)?([A-Za-z_][A-Za-z0-9_]*)/g
-  while ((m = p2.exec(code)) !== null) ids[m[1]] = true
+
+  if (/^\s*sequenceDiagram\b/mi.test(code)) {
+    const pParticipant = /^\s*participant\s+(\S+)/gmi
+    while ((m = pParticipant.exec(code)) !== null) ids[m[1]] = true
+    const pActor = /^\s*actor\s+(\S+)/gmi
+    while ((m = pActor.exec(code)) !== null) ids[m[1]] = true
+    const pArrow = /(\w+)\s*[+-]?\s*(?:-{1,2}>{1,2}|--?x|--?\))\s*[+-]?\s*(\w+)/g
+    while ((m = pArrow.exec(code)) !== null) {
+      ids[m[1]] = true
+      ids[m[2]] = true
+    }
+  } else {
+    const p1 = /\b([A-Za-z_][A-Za-z0-9_]*)\s*[\[\{(]/g
+    while ((m = p1.exec(code)) !== null) ids[m[1]] = true
+    const p2 = /(?:-->|---)\s*(?:\|[^|]*\|\s*)?([A-Za-z_][A-Za-z0-9_]*)/g
+    while ((m = p2.exec(code)) !== null) ids[m[1]] = true
+  }
+
   return Object.keys(ids)
 }
 
