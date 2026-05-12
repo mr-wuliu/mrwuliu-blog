@@ -5,3 +5,5 @@ dist
 .dev.vars
 .sisyphus
 style.html
+public/admin/
+tmp/
