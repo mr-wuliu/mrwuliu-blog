@@ -539,10 +539,12 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
       }
       var nodeIds = Object.keys(allNodeIds);
       var styleLines = '';
-      nodeIds.forEach(function(nid, i) {
-        var c = nodePalette[i % nodePalette.length];
-        styleLines += '\\nstyle ' + nid + ' fill:' + c.bg + ',stroke:' + c.border + ',color:' + c.text + ',font-weight:bold';
-      });
+      if (!isSequence) {
+        nodeIds.forEach(function(nid, i) {
+          var c = nodePalette[i % nodePalette.length];
+          styleLines += '\\nstyle ' + nid + ' fill:' + c.bg + ',stroke:' + c.border + ',color:' + c.text + ',font-weight:bold';
+        });
+      }
       var initDir = '%%{init:' + JSON.stringify({ theme: 'base', look: look, themeVariables: defaultVars }) + '}%%\\n';
       var code = initDir + rawCode + styleLines;
       var id = 'mermaid-' + Math.random().toString(36).substring(2, 10);

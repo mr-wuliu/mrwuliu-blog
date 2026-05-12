@@ -117,14 +117,20 @@ async function renderMermaidBlock(code: string): Promise<string | null> {
   try {
     mermaid.initialize({ ...baseConfig, themeVariables: themeVars })
 
-    const nodeIds = extractNodeIds(code)
-    const styleLines = nodeIds.map((nid, i) => {
-      const c = nodePalette[i % nodePalette.length]
-      return `\nstyle ${nid} fill:${c.bg},stroke:${c.border},color:${c.text},font-weight:bold`
-    }).join('')
-
+    const isSequence = /^\s*sequenceDiagram\b/mi.test(code)
     const initDir = `%%{init:${JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: themeVars })}}%%\n`
-    const styledCode = initDir + code + styleLines
+
+    let styledCode: string
+    if (isSequence) {
+      styledCode = initDir + code
+    } else {
+      const nodeIds = extractNodeIds(code)
+      const styleLines = nodeIds.map((nid, i) => {
+        const c = nodePalette[i % nodePalette.length]
+        return `\nstyle ${nid} fill:${c.bg},stroke:${c.border},color:${c.text},font-weight:bold`
+      }).join('')
+      styledCode = initDir + code + styleLines
+    }
 
     const id = `mermaid-prerender-${++renderCounter}-${Date.now()}`
     const { svg } = await mermaid.render(id, styledCode)
