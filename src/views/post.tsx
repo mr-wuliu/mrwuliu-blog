@@ -545,7 +545,10 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
           styleLines += '\\nstyle ' + nid + ' fill:' + c.bg + ',stroke:' + c.border + ',color:' + c.text + ',font-weight:bold';
         });
       }
-      var initDir = '%%{init:' + JSON.stringify({ theme: 'base', look: look, themeVariables: defaultVars }) + '}%%\\n';
+      var seqColors = { bkgColorArray: nodePalette.map(function(c){ return c.bg + '33'; }), borderColorArray: nodePalette.map(function(c){ return c.border; }) };
+      var initTheme = isSequence ? 'redux-color' : 'base';
+      var initVars = isSequence ? Object.assign({}, defaultVars, seqColors) : defaultVars;
+      var initDir = '%%{init:' + JSON.stringify({ theme: initTheme, look: look, themeVariables: initVars }) + '}%%\\n';
       var code = initDir + rawCode + styleLines;
       var id = 'mermaid-' + Math.random().toString(36).substring(2, 10);
       mermaid.render(id, code).then(function(result) {

@@ -118,12 +118,18 @@ async function renderMermaidBlock(code: string): Promise<string | null> {
     mermaid.initialize({ ...baseConfig, themeVariables: themeVars })
 
     const isSequence = /^\s*sequenceDiagram\b/mi.test(code)
-    const initDir = `%%{init:${JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: themeVars })}}%%\n`
 
+    let initDir: string
     let styledCode: string
     if (isSequence) {
+      const seqColors = {
+        bkgColorArray: nodePalette.map((c) => c.bg + '33'),
+        borderColorArray: nodePalette.map((c) => c.border),
+      }
+      initDir = `%%{init:${JSON.stringify({ theme: 'redux-color', look: 'handDrawn', themeVariables: { ...themeVars, ...seqColors } })}}}%%\n`
       styledCode = initDir + code
     } else {
+      initDir = `%%{init:${JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: themeVars })}}%%\n`
       const nodeIds = extractNodeIds(code)
       const styleLines = nodeIds.map((nid, i) => {
         const c = nodePalette[i % nodePalette.length]

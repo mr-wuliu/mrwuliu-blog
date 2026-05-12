@@ -70,11 +70,17 @@ function extractNodeIds(code: string): string[] {
 
 function buildStyledCode(rawCode: string): string {
   const isSequence = /^\s*sequenceDiagram\b/mi.test(rawCode)
-  const initDir = `%%{init:${JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: themeVars })}}%%\n`
 
   if (isSequence) {
+    const seqColors = {
+      bkgColorArray: nodePalette.map((c) => c.bg + '33'),
+      borderColorArray: nodePalette.map((c) => c.border),
+    }
+    const initDir = `%%{init:${JSON.stringify({ theme: 'redux-color', look: 'handDrawn', themeVariables: { ...themeVars, ...seqColors } })}}}%%\n`
     return initDir + rawCode
   }
+
+  const initDir = `%%{init:${JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: themeVars })}}%%\n`
 
   const nodeIds = extractNodeIds(rawCode)
   const styleLines = nodeIds.map((nid, i) => {
