@@ -6,6 +6,8 @@ import Comments from './pages/Comments'
 import SiteConfig from './pages/SiteConfig'
 import Projects from './pages/Projects'
 import Collections from './pages/Collections'
+import Analytics from './pages/Analytics'
+import PostAnalytics from './pages/PostAnalytics'
 import Layout from './components/Layout'
 
 function App() {
@@ -13,6 +15,8 @@ function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/analytics/:postId" element={<PostAnalytics />} />
         <Route path="/posts" element={<Posts />} />
         <Route path="/posts/new" element={<EditPost />} />
         <Route path="/posts/:id/edit" element={<EditPost />} />
