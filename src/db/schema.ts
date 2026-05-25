@@ -121,6 +121,9 @@ export const postViewEvents = sqliteTable('post_view_events', {
   userAgentHash: text('user_agent_hash').notNull(),
   country: text('country'),
   referrerHost: text('referrer_host'),
+  lang: text('lang'),
+  scrollDepth: integer('scroll_depth'),
+  isBot: integer('is_bot', { mode: 'boolean' }).notNull().default(false),
   viewDate: text('view_date').notNull().default(sql`(date('now'))`),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
@@ -172,4 +175,32 @@ export const collectionPosts = sqliteTable('collection_posts', {
   cpPk: primaryKey(table.collectionId, table.postId),
   cpCollectionIdx: index('cp_collection_idx').on(table.collectionId),
   cpPostIdx: index('cp_post_idx').on(table.postId),
+}))
+
+// Site-wide analytics: daily PV/UV per language
+export const siteAnalytics = sqliteTable('site_analytics', {
+  date: text('date').notNull(),
+  lang: text('lang').notNull(),
+  pageViews: integer('page_views').notNull().default(0),
+  uniqueVisitors: integer('unique_visitors').notNull().default(0),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  siteAnalyticsPk: primaryKey({ columns: [table.date, table.lang] }),
+  siteAnalyticsDateIdx: index('site_analytics_date_idx').on(table.date),
+}))
+
+// Site visitor dedup: tracks unique visitors per day per language
+export const siteVisitorEvents = sqliteTable('site_visitor_events', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  date: text('date').notNull(),
+  lang: text('lang').notNull(),
+  ipHash: text('ip_hash').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  siteVisitorEventsUniqueIdx: uniqueIndex('site_visitor_events_unique').on(
+    table.date,
+    table.lang,
+    table.ipHash,
+  ),
+  siteVisitorEventsDateIdx: index('site_visitor_events_date_idx').on(table.date),
 }))

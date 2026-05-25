@@ -64,6 +64,20 @@
       "when": 1776486891214,
       "tag": "0008_numerous_dormammu",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1779729598610,
+      "tag": "0009_messy_scarlet_spider",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1779731785844,
+      "tag": "0010_mute_madame_masque",
+      "breakpoints": true
     }
   ]
 }
