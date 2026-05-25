@@ -8,6 +8,7 @@ import blogRoutes from './routes/blog'
 import siteConfigRoutes from './routes/site-config'
 import projectsRoutes from './routes/projects'
 import collectionsRoutes from './routes/collections'
+import analyticsRoutes from './routes/analytics'
 
 type Bindings = {
   DB: D1Database
@@ -53,6 +54,12 @@ app.use('/api/*', async (c, next) => {
     return
   }
 
+  // Public analytics beacon — no auth required (called from blog pages)
+  if (c.req.path === '/api/analytics/scroll') {
+    await next()
+    return
+  }
+
   // Allow: valid API Key (machine access) OR Cloudflare Zero Trust identity (browser access)
   const apiKey = c.req.header('X-API-Key')
   const hasApiKey = apiKey && apiKey === c.env.API_KEY
@@ -88,6 +95,7 @@ app.route('/images', imageServeRoutes)
 app.route('/api/site-config', siteConfigRoutes)
 app.route('/api/projects', projectsRoutes)
 app.route('/api/collections', collectionsRoutes)
+app.route('/api/analytics', analyticsRoutes)
 
 app.get('/admin/*', async (c) => {
   const url = new URL(c.req.url)

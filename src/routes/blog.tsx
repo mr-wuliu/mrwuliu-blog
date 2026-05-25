@@ -19,7 +19,7 @@ import SeriesPage from '../views/series'
 import SeriesDetailPage from '../views/series-detail'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
-import { getClientIp, getVisitorFingerprint, trackPostView } from '../utils/analytics'
+import { getClientIp, getVisitorFingerprint, isBotAgent, trackPostView, trackSiteView } from '../utils/analytics'
 import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
@@ -35,6 +35,19 @@ const blogRoutes = new Hono<{ Bindings: Bindings }>()
 
 function createBlogRouter(lang: Lang) {
   const router = new Hono<{ Bindings: Bindings }>()
+
+  router.use('*', async (c, next) => {
+    await next()
+    try {
+      const userAgent = c.req.header('user-agent') || 'unknown'
+      if (isBotAgent(userAgent)) return
+      const ip = getClientIp(c.req.raw.headers)
+      const db = createDb(c.env.DB)
+      await trackSiteView(db, { lang, ip, userAgent, salt: c.env.JWT_SECRET })
+    } catch {
+      // analytics tracking should never break page rendering
+    }
+  })
 
   function resolvePostLang<T extends Record<string, unknown>>(post: T, lang: Lang): T {
     if (lang !== 'en') return post
@@ -201,6 +214,7 @@ function createBlogRouter(lang: Lang) {
       userAgent,
       country: cf.cf?.country,
       referrerHost,
+      lang,
       salt: c.env.JWT_SECRET,
     })
 

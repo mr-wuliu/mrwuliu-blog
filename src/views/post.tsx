@@ -570,6 +570,43 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
   document.head.appendChild(s);
 })();
         ` }} />
+
+        {/* Scroll depth tracking */}
+        <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  var postId = '${post.id}';
+  var maxDepth = 0;
+
+  function getDepth() {
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    if (h <= 0) return 100;
+    return Math.round((window.scrollY / h) * 100);
+  }
+
+  function send(depth) {
+    var payload = JSON.stringify({ postId: postId, scrollDepth: depth });
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/analytics/scroll', new Blob([payload], { type: 'application/json' }));
+    } else {
+      fetch('/api/analytics/scroll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true }).catch(function(){});
+    }
+  }
+
+  var timer;
+  window.addEventListener('scroll', function() {
+    var d = getDepth();
+    if (d > maxDepth) maxDepth = d;
+    clearTimeout(timer);
+    timer = setTimeout(function() { send(maxDepth); }, 2000);
+  }, { passive: true });
+
+  window.addEventListener('beforeunload', function() {
+    var d = getDepth();
+    if (d > maxDepth) maxDepth = d;
+    if (maxDepth > 0) send(maxDepth);
+  });
+})();
+        ` }} />
        </article>
 
       <PostNav prev={prev} next={next} lang={lang} />
