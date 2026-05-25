@@ -1,5 +1,5 @@
 import { and, eq, sql } from 'drizzle-orm'
-import { postStats, postViewEvents } from '../db/schema'
+import { postStats, postViewEvents, siteAnalytics, siteVisitorEvents } from '../db/schema'
 import type { Database } from '../db'
 
 type VisitorFingerprint = {
@@ -55,13 +55,21 @@ type TrackPostViewOptions = {
   userAgent: string
   country?: string
   referrerHost?: string
+  lang?: string
   salt: string
 }
 
+const BOT_PATTERNS = /bot|crawl|spider|slurp|mediapartners|preview|fetch|curl|wget|python-requests|httpclient|go-http|java\/|node-fetch|axios|lighthouse|headless|puppeteer|playwright|selenium|phantomjs/i
+
+export function isBotAgent(userAgent: string): boolean {
+  return BOT_PATTERNS.test(userAgent)
+}
+
 export async function trackPostView(db: Database, options: TrackPostViewOptions): Promise<void> {
-  const { postId, ip, userAgent, country, referrerHost, salt } = options
+  const { postId, ip, userAgent, country, referrerHost, lang, salt } = options
   const { ipHash, userAgentHash } = await getVisitorFingerprint(ip, userAgent, salt)
   const now = new Date().toISOString()
+  const bot = isBotAgent(userAgent)
 
   async function incrementStats(uniqueIncrement: 0 | 1) {
     await db.insert(postStats).values({
@@ -114,10 +122,56 @@ export async function trackPostView(db: Database, options: TrackPostViewOptions)
       userAgentHash,
       country,
       referrerHost,
+      lang,
+      isBot: bot,
     })
   } catch {
     return
   }
 
   await incrementStats(seenBeforeByIp ? 0 : 1)
+}
+
+type TrackSiteViewOptions = {
+  lang: string
+  ip: string
+  userAgent: string
+  salt: string
+}
+
+export async function trackSiteView(db: Database, options: TrackSiteViewOptions): Promise<void> {
+  const { lang, ip, userAgent, salt } = options
+  const { ipHash } = await getVisitorFingerprint(ip, userAgent, salt)
+  const today = new Date().toISOString().split('T')[0]
+
+  // Try to register this visitor as unique
+  let isUnique = false
+  try {
+    await db.insert(siteVisitorEvents).values({
+      date: today,
+      lang,
+      ipHash,
+    })
+    isUnique = true
+  } catch {
+    // duplicate visitor — not unique
+  }
+
+  // Single atomic upsert: always increment PV, conditionally increment UV
+  await db.insert(siteAnalytics).values({
+    date: today,
+    lang,
+    pageViews: 1,
+    uniqueVisitors: isUnique ? 1 : 0,
+    updatedAt: new Date().toISOString(),
+  }).onConflictDoUpdate({
+    target: [siteAnalytics.date, siteAnalytics.lang],
+    set: {
+      pageViews: sql`${siteAnalytics.pageViews} + 1`,
+      uniqueVisitors: isUnique
+        ? sql`${siteAnalytics.uniqueVisitors} + 1`
+        : sql`${siteAnalytics.uniqueVisitors}`,
+      updatedAt: new Date().toISOString(),
+    },
+  })
 }
