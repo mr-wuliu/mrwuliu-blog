@@ -166,8 +166,8 @@ export default function Analytics() {
 
   const columns: ColDef[] = [
     { key: 'totalViews', label: t('analytics.totalViews'), width: 'w-24', align: 'right' },
-    { key: 'zhViews', label: t('analytics.zhViews'), width: 'w-20', align: 'right' },
-    { key: 'enViews', label: t('analytics.enViews'), width: 'w-20', align: 'right' },
+    { key: 'zhViews', label: t('analytics.zhPV'), width: 'w-20', align: 'right' },
+    { key: 'enViews', label: t('analytics.enPV'), width: 'w-20', align: 'right' },
     { key: 'mom', label: t('analytics.mom'), width: 'w-20', align: 'right' },
     { key: 'avgReadPercent', label: t('analytics.avgRead'), width: 'w-20', align: 'right' },
     { key: 'completionRate', label: t('analytics.completion'), width: 'w-20', align: 'right' },
