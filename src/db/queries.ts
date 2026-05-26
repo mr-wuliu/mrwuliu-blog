@@ -356,3 +356,39 @@ export async function getPostCollections(db: Database, postId: string) {
     .innerJoin(collections, eq(collectionPosts.collectionId, collections.id))
     .where(eq(collectionPosts.postId, postId))
 }
+
+// Batch-fetch collections with their posts — replaces N+1 getCollectionWithPosts calls
+export async function getBatchCollectionsWithPosts(
+  db: Database,
+  collectionIds: string[],
+): Promise<(NonNullable<Awaited<ReturnType<typeof getCollectionWithPosts>>> & { id: string })[]> {
+  if (collectionIds.length === 0) return []
+
+  const collectionRows = await db
+    .select()
+    .from(collections)
+    .where(inArray(collections.id, collectionIds))
+
+  const allPosts = await db
+    .select({
+      collectionId: collectionPosts.collectionId,
+      id: posts.id,
+      title: posts.title,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      status: posts.status,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
+    .from(collectionPosts)
+    .innerJoin(posts, eq(collectionPosts.postId, posts.id))
+    .where(inArray(collectionPosts.collectionId, collectionIds))
+    .orderBy(asc(collectionPosts.sortOrder))
+
+  return collectionRows.map((col) => ({
+    ...col,
+    posts: allPosts
+      .filter((cp) => cp.collectionId === col.id)
+      .map(({ collectionId: _cid, ...post }) => post),
+  }))
+}

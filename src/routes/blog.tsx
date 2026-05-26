@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes } from '../db/schema'
-import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getCollectionWithPosts } from '../db/queries'
+import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
@@ -186,72 +186,89 @@ function createBlogRouter(lang: Lang) {
     const slug = c.req.param('slug')
     const db = createDb(c.env.DB)
 
+    const cache = (caches as unknown as { default: Cache }).default
+    const cacheKey = new Request(c.req.url)
+    const cached = await cache.match(cacheKey)
+    if (cached) {
+      const [post] = await db.select({ id: posts.id }).from(posts).where(eq(posts.slug, slug)).limit(1)
+      if (post) {
+        const ip = getClientIp(c.req.raw.headers)
+        const userAgent = c.req.header('user-agent') || 'unknown'
+        const referrer = c.req.header('referer')
+        let referrerHost: string | undefined
+        if (referrer) {
+          try { referrerHost = new URL(referrer).hostname } catch { referrerHost = undefined }
+        }
+        const cf = c.req.raw as Request & { cf?: { country?: string } }
+        c.executionCtx.waitUntil(
+          trackPostView(db, {
+            postId: post.id, ip, userAgent, country: cf.cf?.country,
+            referrerHost, lang, salt: c.env.JWT_SECRET,
+          })
+        )
+      }
+      return cached
+    }
+
     const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
     if (!post || post.status !== 'published') {
       return c.html(<NotFoundPage lang={lang} />, 404)
     }
 
-    const postWithTags = await getPostWithTags(db, post.id)
-    if (!postWithTags) {
-      return c.html(<NotFoundPage lang={lang} />, 404)
-    }
+    const postTagsResult = await db
+      .select({ tag: tags })
+      .from(postTags)
+      .innerJoin(tags, eq(postTags.tagId, tags.id))
+      .where(eq(postTags.postId, post.id))
+    const postWithTags = { ...post, tags: postTagsResult.map(r => r.tag) }
 
     const ip = getClientIp(c.req.raw.headers)
     const userAgent = c.req.header('user-agent') || 'unknown'
     const referrer = c.req.header('referer')
     let referrerHost: string | undefined
     if (referrer) {
-      try {
-        referrerHost = new URL(referrer).hostname
-      } catch {
-        referrerHost = undefined
-      }
+      try { referrerHost = new URL(referrer).hostname } catch { referrerHost = undefined }
     }
     const cf = c.req.raw as Request & { cf?: { country?: string } }
-    await trackPostView(db, {
-      postId: post.id,
-      ip,
-      userAgent,
-      country: cf.cf?.country,
-      referrerHost,
-      lang,
-      salt: c.env.JWT_SECRET,
-    })
-
-    const approvedComments = await db
-      .select()
-      .from(comments)
-      .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
-      .orderBy(asc(comments.createdAt))
+    c.executionCtx.waitUntil(
+      trackPostView(db, {
+        postId: post.id, ip, userAgent, country: cf.cf?.country,
+        referrerHost, lang, salt: c.env.JWT_SECRET,
+      })
+    )
 
     const resolvedPost = resolvePostLang(postWithTags, lang)
+
+    const [approvedComments, prevPost, nextPost, authorProfile, postCollections] = await Promise.all([
+      db.select().from(comments)
+        .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
+        .orderBy(asc(comments.createdAt)),
+      getAdjacentPost(db, postWithTags.publishedAt, 'prev'),
+      getAdjacentPost(db, postWithTags.publishedAt, 'next'),
+      getAuthorProfile(db),
+      getPostCollections(db, post.id),
+    ])
 
     let renderedContent = renderLatex(resolvedPost.content)
     renderedContent = highlightCode(renderedContent)
     const { html: tocHtml, headings } = generateToc(renderedContent)
 
-    const prevPost = await getAdjacentPost(db, postWithTags.publishedAt, 'prev')
-    const nextPost = await getAdjacentPost(db, postWithTags.publishedAt, 'next')
     const resolvedPrev = prevPost ? resolvePostLang(prevPost, lang) : null
     const resolvedNext = nextPost ? resolvePostLang(nextPost, lang) : null
-    const authorProfile = await getAuthorProfile(db)
 
-    const postCollections = await getPostCollections(db, post.id)
-    const collectionsWithPosts = await Promise.all(
-      postCollections.map(async (col) => {
-        const colWithPosts = await getCollectionWithPosts(db, col.id)
-        return colWithPosts
-      })
-    )
-    const validCollections = collectionsWithPosts
-      .filter((c): c is NonNullable<typeof c> => c !== null && c.status === 'published')
-      .map(c => ({
-        ...c,
-        posts: c.posts.filter(p => p.status === 'published'),
-      }))
-      .filter(c => c.posts.length > 0)
+    let validCollections: { id: string; name: string; nameEn: string | null; slug: string; posts: { id: string; title: string; slug: string; status: string }[] }[] = []
+    if (postCollections.length > 0) {
+      const batchCollections = await getBatchCollectionsWithPosts(db, postCollections.map(c => c.id))
+      validCollections = batchCollections
+        .filter(c => c.status === 'published')
+        .map(c => ({
+          ...c,
+          posts: c.posts.filter(p => p.status === 'published'),
+        }))
+        .filter(c => c.posts.length > 0)
+    }
 
-    return c.html(
+    const response = await c.html(
       <PostPage
         lang={lang}
         post={resolvedPost}
@@ -264,6 +281,17 @@ function createBlogRouter(lang: Lang) {
         collections={validCollections}
       />
     )
+
+    const headers = new Headers(response.headers)
+    headers.set('Cache-Control', 'public, max-age=300, s-maxage=300')
+    const cacheableResponse = new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    })
+    c.executionCtx.waitUntil(cache.put(cacheKey, cacheableResponse.clone()))
+
+    return cacheableResponse
   })
 
   router.post('/posts/:slug/comments', async (c) => {
