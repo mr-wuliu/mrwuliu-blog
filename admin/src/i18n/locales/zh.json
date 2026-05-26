@@ -8,7 +8,8 @@
     "siteConfig": "站点配置",
     "projects": "项目",
     "collections": "集合",
-    "analytics": "数据分析"
+    "analytics": "数据分析",
+    "friendLinks": "友链"
   },
   "common": {
     "loading": "加载中...",
@@ -137,6 +138,33 @@
     "tableOrder": "排序",
     "tableActions": "操作",
     "confirmDelete": "确定删除此项目？"
+  },
+  "friendLinks": {
+    "title": "友链管理",
+    "newLink": "+ 新建",
+    "editLink": "编辑友链",
+    "newLinkTitle": "新建友链",
+    "nameLabel": "名称",
+    "nameEnLabel": "英文名称",
+    "urlLabel": "链接",
+    "avatarLabel": "头像链接",
+    "avatarPlaceholder": "https://example.com/avatar.jpg",
+    "descriptionLabel": "描述",
+    "descriptionEnLabel": "英文描述",
+    "sortOrderLabel": "排序",
+    "statusLabel": "状态",
+    "draft": "草稿",
+    "published": "已发布",
+    "save": "保存",
+    "cancel": "取消",
+    "loading": "加载中...",
+    "noLinks": "暂无友链",
+    "tableName": "名称",
+    "tableUrl": "链接",
+    "tableStatus": "状态",
+    "tableOrder": "排序",
+    "tableActions": "操作",
+    "confirmDelete": "确定删除此友链？"
   },
   "collections": {
     "title": "集合管理",

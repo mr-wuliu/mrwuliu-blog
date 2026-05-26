@@ -6,6 +6,7 @@ import Comments from './pages/Comments'
 import SiteConfig from './pages/SiteConfig'
 import Projects from './pages/Projects'
 import Collections from './pages/Collections'
+import FriendLinks from './pages/FriendLinks'
 import Analytics from './pages/Analytics'
 import PostAnalytics from './pages/PostAnalytics'
 import Layout from './components/Layout'
@@ -24,6 +25,7 @@ function App() {
         <Route path="/site-config" element={<SiteConfig />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/collections" element={<Collections />} />
+        <Route path="/friend-links" element={<FriendLinks />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

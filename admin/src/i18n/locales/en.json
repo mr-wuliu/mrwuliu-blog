@@ -8,7 +8,8 @@
     "siteConfig": "Site Config",
     "projects": "Projects",
     "collections": "Collections",
-    "analytics": "Analytics"
+    "analytics": "Analytics",
+    "friendLinks": "Friend Links"
   },
   "common": {
     "loading": "Loading...",
@@ -137,6 +138,33 @@
     "tableOrder": "Order",
     "tableActions": "Actions",
     "confirmDelete": "Delete this project?"
+  },
+  "friendLinks": {
+    "title": "FRIEND LINKS",
+    "newLink": "+ NEW",
+    "editLink": "EDIT LINK",
+    "newLinkTitle": "NEW LINK",
+    "nameLabel": "Name",
+    "nameEnLabel": "Name (EN)",
+    "urlLabel": "URL",
+    "avatarLabel": "Avatar URL",
+    "avatarPlaceholder": "https://example.com/avatar.jpg",
+    "descriptionLabel": "Description",
+    "descriptionEnLabel": "Description (EN)",
+    "sortOrderLabel": "Sort Order",
+    "statusLabel": "Status",
+    "draft": "Draft",
+    "published": "Published",
+    "save": "SAVE",
+    "cancel": "CANCEL",
+    "loading": "Loading...",
+    "noLinks": "No friend links yet",
+    "tableName": "Name",
+    "tableUrl": "URL",
+    "tableStatus": "Status",
+    "tableOrder": "Order",
+    "tableActions": "Actions",
+    "confirmDelete": "Delete this friend link?"
   },
   "collections": {
     "title": "Collections",
