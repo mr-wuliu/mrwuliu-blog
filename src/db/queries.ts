@@ -1,5 +1,5 @@
 import { eq, desc, and, sql, asc, inArray } from 'drizzle-orm'
-import { posts, postTags, tags, siteConfig, projects, postStats, collections, collectionPosts } from './schema'
+import { posts, postTags, tags, siteConfig, projects, postStats, collections, collectionPosts, friendLinks } from './schema'
 import type { Database } from './index'
 
 // Get posts with pagination (admin - all statuses)
@@ -391,4 +391,73 @@ export async function getBatchCollectionsWithPosts(
       .filter((cp) => cp.collectionId === col.id)
       .map(({ collectionId: _cid, ...post }) => post),
   }))
+}
+
+// Friend link queries
+export async function getAllFriendLinks(db: Database) {
+  return db.select().from(friendLinks).orderBy(asc(friendLinks.sortOrder))
+}
+
+export async function getPublishedFriendLinks(db: Database) {
+  return db.select().from(friendLinks).where(eq(friendLinks.status, 'published')).orderBy(asc(friendLinks.sortOrder))
+}
+
+export async function getFriendLinkById(db: Database, id: string) {
+  const [link] = await db.select().from(friendLinks).where(eq(friendLinks.id, id))
+  return link ?? undefined
+}
+
+export async function createFriendLink(
+  db: Database,
+  data: {
+    name: string
+    nameEn?: string
+    url: string
+    avatar?: string
+    description?: string
+    descriptionEn?: string
+    sortOrder?: number
+    status?: 'draft' | 'published'
+  }
+) {
+  const id = crypto.randomUUID()
+  const now = new Date().toISOString()
+  await db.insert(friendLinks).values({
+    id,
+    name: data.name,
+    nameEn: data.nameEn || null,
+    url: data.url,
+    avatar: data.avatar || null,
+    description: data.description ?? '',
+    descriptionEn: data.descriptionEn || null,
+    sortOrder: data.sortOrder ?? 0,
+    status: data.status ?? 'draft',
+    createdAt: now,
+    updatedAt: now,
+  })
+  const [link] = await db.select().from(friendLinks).where(eq(friendLinks.id, id))
+  return link
+}
+
+export async function updateFriendLink(
+  db: Database,
+  id: string,
+  data: {
+    name?: string
+    nameEn?: string
+    url?: string
+    avatar?: string
+    description?: string
+    descriptionEn?: string
+    sortOrder?: number
+    status?: 'draft' | 'published'
+  }
+) {
+  await db.update(friendLinks).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(friendLinks.id, id))
+  const [link] = await db.select().from(friendLinks).where(eq(friendLinks.id, id))
+  return link
+}
+
+export async function deleteFriendLink(db: Database, id: string) {
+  await db.delete(friendLinks).where(eq(friendLinks.id, id))
 }

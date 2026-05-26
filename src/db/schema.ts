@@ -204,3 +204,21 @@ export const siteVisitorEvents = sqliteTable('site_visitor_events', {
   ),
   siteVisitorEventsDateIdx: index('site_visitor_events_date_idx').on(table.date),
 }))
+
+// friend_links table (友情链接)
+export const friendLinks = sqliteTable('friend_links', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  nameEn: text('name_en'),
+  url: text('url').notNull(),
+  avatar: text('avatar'),
+  description: text('description').notNull().default(''),
+  descriptionEn: text('description_en').default(''),
+  sortOrder: integer('sort_order').notNull().default(0),
+  status: text('status', { enum: ['draft', 'published'] }).notNull().default('draft'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  friend_links_status_idx: index('friend_links_status_idx').on(table.status),
+  friend_links_sort_order_idx: index('friend_links_sort_order_idx').on(table.sortOrder),
+}))
