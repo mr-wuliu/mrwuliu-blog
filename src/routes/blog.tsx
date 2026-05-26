@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes } from '../db/schema'
-import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts } from '../db/queries'
+import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
@@ -17,6 +17,7 @@ import ProjectsPage from '../views/projects'
 import ProjectDetailPage from '../views/project-detail'
 import SeriesPage from '../views/series'
 import SeriesDetailPage from '../views/series-detail'
+import FriendsPage from '../views/friends'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
 import { getClientIp, getVisitorFingerprint, isBotAgent, trackPostView, trackSiteView } from '../utils/analytics'
@@ -438,6 +439,13 @@ function createBlogRouter(lang: Lang) {
     }
     const authorProfile = await getAuthorProfile(db)
     return c.html(<SeriesDetailPage lang={lang} collection={filteredCollection} authorProfile={authorProfile} />)
+  })
+
+  router.get('/friends', async (c) => {
+    const db = createDb(c.env.DB)
+    const links = await getPublishedFriendLinks(db)
+    const authorProfile = await getAuthorProfile(db)
+    return c.html(<FriendsPage lang={lang} links={links} authorProfile={authorProfile} />)
   })
 
   return router

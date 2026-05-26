@@ -5,6 +5,7 @@ export default {
     projects: 'Projects',
     tags: 'Tags',
     about: 'About',
+    friends: 'Friends',
   },
   home: {
     title: 'Latest Posts',
@@ -76,6 +77,12 @@ export default {
     title: 'About',
     pageTitle: 'About - Blog',
     noContent: 'No content',
+  },
+  friends: {
+    title: 'Friend Links',
+    noLinks: 'No friend links yet',
+    pageTitle: 'Friend Links - Blog',
+    visit: 'VISIT →',
   },
   notFound: {
     title: '404 — Page Not Found',

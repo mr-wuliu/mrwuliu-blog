@@ -5,6 +5,7 @@ export default {
     projects: '工程',
     tags: '标签',
     about: '自述',
+    friends: '友链',
   },
   home: {
     title: '最新文章',
@@ -76,6 +77,12 @@ export default {
     title: '自述',
     pageTitle: '自述 - Blog',
     noContent: '暂无内容',
+  },
+  friends: {
+    title: '友情链接',
+    noLinks: '暂无友链',
+    pageTitle: '友情链接 - Blog',
+    visit: '访问 →',
   },
   notFound: {
     title: '404 — 页面未找到',

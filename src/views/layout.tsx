@@ -149,6 +149,7 @@ const Layout: FC<LayoutProps> = ({
                       <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
                       <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
                       <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
+                      <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                     </div>
                     <select class="theme-select" aria-label="Theme">
                       <option value="default">Default</option>
@@ -173,6 +174,7 @@ const Layout: FC<LayoutProps> = ({
                     <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
                     <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
                     <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
+                    <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                   </div>
                   <select class="theme-select" aria-label="Theme">
                     <option value="default">Default</option>
