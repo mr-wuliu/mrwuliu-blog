@@ -9,6 +9,7 @@ import siteConfigRoutes from './routes/site-config'
 import projectsRoutes from './routes/projects'
 import collectionsRoutes from './routes/collections'
 import analyticsRoutes from './routes/analytics'
+import friendLinkRoutes from './routes/friend-links'
 
 type Bindings = {
   DB: D1Database
@@ -31,6 +32,9 @@ app.use('*', async (c, next) => {
   headers.set('X-Frame-Options', 'DENY')
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
+  if (c.req.path.startsWith('/api/')) {
+    headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
+  }
   c.res = new Response(res.body, { status: res.status, statusText: res.statusText, headers })
 })
 
@@ -96,6 +100,7 @@ app.route('/api/site-config', siteConfigRoutes)
 app.route('/api/projects', projectsRoutes)
 app.route('/api/collections', collectionsRoutes)
 app.route('/api/analytics', analyticsRoutes)
+app.route('/api/friend-links', friendLinkRoutes)
 
 app.get('/admin/*', async (c) => {
   const url = new URL(c.req.url)
