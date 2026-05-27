@@ -72,6 +72,9 @@ export default {
     submit: '提交评论',
     commentSuccess: '评论已提交，需要人工审核后才会显示。',
     commentError: '评论提交失败，请稍后再试。',
+    reply: '回复',
+    replyTo: (name: string) => `回复 ${name}`,
+    cancelReply: '取消回复',
   },
   about: {
     title: '自述',

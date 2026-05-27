@@ -72,6 +72,9 @@ export default {
     submit: 'Submit',
     commentSuccess: 'Comment submitted. It will appear after manual review.',
     commentError: 'Failed to submit comment. Please try again later.',
+    reply: 'Reply',
+    replyTo: (name: string) => `Reply to ${name}`,
+    cancelReply: 'Cancel Reply',
   },
   about: {
     title: 'About',
