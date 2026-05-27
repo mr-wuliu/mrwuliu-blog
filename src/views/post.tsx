@@ -42,6 +42,62 @@ function identicon(seed: string, size = 40): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block">${cells.join('')}</svg>`
 }
 
+function md5(input: string): string {
+  const bytes = new TextEncoder().encode(input)
+  const len = bytes.length
+  const bitLen = len * 8
+  const padLen = ((56 - (len + 1) % 64) + 64) % 64
+  const buf = new Uint8Array(len + 1 + padLen + 8)
+  buf.set(bytes)
+  buf[len] = 0x80
+  const dv = new DataView(buf.buffer)
+  dv.setUint32(buf.length - 8, bitLen >>> 0, true)
+  dv.setUint32(buf.length - 4, 0, true)
+  const K = [
+    0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,
+    0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,
+    0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,
+    0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,
+    0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,
+    0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,
+    0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,
+    0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391,
+  ]
+  const S = [
+    7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+    5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+    4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+    6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21,
+  ]
+  let a0=0x67452301, b0=0xefcdab89, c0=0x98badcfe, d0=0x10325476
+  for (let off = 0; off < buf.length; off += 64) {
+    const M = new Int32Array(16)
+    for (let j = 0; j < 16; j++) M[j] = dv.getUint32(off + j * 4, true)
+    let A=a0, B=b0, C=c0, D=d0
+    for (let i = 0; i < 64; i++) {
+      let F: number, g: number
+      if (i < 16)      { F = (B & C) | (~B & D); g = i }
+      else if (i < 32) { F = (D & B) | (~D & C); g = (5*i+1) % 16 }
+      else if (i < 48) { F = B ^ C ^ D;          g = (3*i+5) % 16 }
+      else              { F = C ^ (B | ~D);       g = (7*i) % 16 }
+      F = (F + A + K[i] + M[g]) >>> 0
+      A = D; D = C; C = B
+      B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) >>> 0
+    }
+    a0 = (a0+A)>>>0; b0 = (b0+B)>>>0; c0 = (c0+C)>>>0; d0 = (d0+D)>>>0
+  }
+  const out = new Uint8Array(16)
+  const ov = new DataView(out.buffer)
+  ov.setUint32(0,a0,true); ov.setUint32(4,b0,true); ov.setUint32(8,c0,true); ov.setUint32(12,d0,true)
+  return Array.from(out, b => b.toString(16).padStart(2,'0')).join('')
+}
+
+function avatarHtml(email: string | null, fallbackSeed: string, size: number): string {
+  if (!email) return identicon(fallbackSeed, size)
+  const hash = md5(email.trim().toLowerCase())
+  return `<img src="https://www.gravatar.com/avatar/${hash}?s=${size*2}&d=404" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentNode.innerHTML=this.parentNode.getAttribute('data-fb')" />`
+}
+
 type Post = InferSelectModel<typeof import('../db/schema').posts>
 type Tag = InferSelectModel<typeof import('../db/schema').tags>
 type Comment = InferSelectModel<typeof import('../db/schema').comments>
@@ -96,6 +152,18 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   const commentCountZh = lang === 'zh' ? tf(lang, 'post.comments')(comments.length) : tf(otherL, 'post.comments')(comments.length)
   const commentCountEn = lang === 'en' ? tf(lang, 'post.comments')(comments.length) : tf(otherL, 'post.comments')(comments.length)
 
+  const replyLabel = t(lang, 'post.reply')
+  const cancelReplyLabel = t(lang, 'post.cancelReply')
+
+  const topLevelComments = comments.filter(c => !c.parentId)
+  const repliesByParent: Record<string, Comment[]> = {}
+  for (const c of comments) {
+    if (c.parentId) {
+      if (!repliesByParent[c.parentId]) repliesByParent[c.parentId] = []
+      repliesByParent[c.parentId].push(c)
+    }
+  }
+
   return (
     <section class="mt-4 pt-8 border-t-2 border-black"
       data-comment-msg={successMsg}
@@ -107,6 +175,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       data-comment-url={submitUrl}
       data-comment-url-zh={lang === 'zh' ? submitUrl : otherSubmitUrl}
       data-comment-url-en={lang === 'en' ? submitUrl : otherSubmitUrl}
+      data-reply-label={replyLabel}
+      data-cancel-reply-label={cancelReplyLabel}
     >
       <h2 class="text-xl font-bold tracking-tight mb-4"
         data-comment-count={comments.length}
@@ -116,16 +186,36 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
 
       {comments.length > 0 && (
         <div class="space-y-4 mb-8">
-          {comments.map((c) => (
-            <div class="p-6 bg-white border border-black mb-4 flex gap-3" id={`comment-${c.id}`}>
-              <div class="flex-shrink-0 mt-0.5 border border-gray-300 h-[40px] w-[40px] overflow-hidden" style="line-height:0;font-size:0" dangerouslySetInnerHTML={{ __html: identicon(c.visitorId || ((c.authorEmail || '') + c.authorName)) }} />
-              <div class="flex-1 min-w-0">
-                <div class="flex items-baseline gap-2 mb-1">
-                  <span class="text-sm font-bold text-black">{c.authorName}</span>
-                  <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(c.createdAt, lang)}</span>
+          {topLevelComments.map((c) => (
+            <div class="p-6 bg-white border border-black mb-2" id={`comment-${c.id}`}>
+              <div class="flex gap-3">
+                <div class="flex-shrink-0 mt-0.5 border border-gray-300 h-[40px] w-[40px] overflow-hidden" style="line-height:0;font-size:0" {...(c.authorEmail ? { 'data-fb': identicon(c.visitorId || ((c.authorEmail || '') + c.authorName), 40) } : {})} dangerouslySetInnerHTML={{ __html: avatarHtml(c.authorEmail, c.visitorId || ((c.authorEmail || '') + c.authorName), 40) }} />
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-baseline gap-2 mb-1">
+                    <span class="text-sm font-bold text-black">{c.authorName}</span>
+                    <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(c.createdAt, lang)}</span>
+                  </div>
+                  <div class="text-sm opacity-70 leading-relaxed">{c.content}</div>
+                  <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-2" data-reply-to={c.id} data-reply-name={c.authorName}>{replyLabel}</button>
                 </div>
-                <div class="text-sm opacity-70 leading-relaxed">{c.content}</div>
               </div>
+              {(repliesByParent[c.id] || []).length > 0 && (
+                <div class="ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2">
+                  {(repliesByParent[c.id] || []).map((r) => (
+                    <div class="flex gap-3 py-2" id={`comment-${r.id}`}>
+                      <div class="flex-shrink-0 mt-0.5 border border-gray-200 h-[32px] w-[32px] overflow-hidden" style="line-height:0;font-size:0" {...(r.authorEmail ? { 'data-fb': identicon(r.visitorId || ((r.authorEmail || '') + r.authorName), 32) } : {})} dangerouslySetInnerHTML={{ __html: avatarHtml(r.authorEmail, r.visitorId || ((r.authorEmail || '') + r.authorName), 32) }} />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-baseline gap-2 mb-1">
+                          <span class="text-sm font-bold text-black">{r.authorName}</span>
+                          <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(r.createdAt, lang)}</span>
+                        </div>
+                        <div class="text-sm opacity-70 leading-relaxed">→ {c.authorName}: {r.content}</div>
+                        <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-1" data-reply-to={c.id} data-reply-name={r.authorName}>{replyLabel}</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -144,6 +234,11 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
         </summary>
         <form id="comment-form" class="p-4 border-t border-black space-y-3">
           <style>{`#comment-form input::placeholder, #comment-form textarea::placeholder { color: #999; font-weight: 700; }`}</style>
+          <div id="reply-indicator" class="hidden px-3 py-2 bg-gray-100 border border-gray-300 text-sm flex items-center justify-between">
+            <span id="reply-indicator-text"></span>
+            <button type="button" id="cancel-reply-btn" class="text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all">{cancelReplyLabel}</button>
+          </div>
+          <input type="hidden" id="comment-parent-id" name="parentId" value="" />
           <div>
             <input type="text" id="authorName" name="authorName" maxlength={50}
               placeholder={t(lang, 'post.namePlaceholder')}
@@ -177,6 +272,13 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   function getMsg() { return section.getAttribute('data-comment-msg'); }
   function getErr() { return section.getAttribute('data-comment-err'); }
   function getUrl() { return section.getAttribute('data-comment-url'); }
+  function getReplyLabel() { return section.getAttribute('data-reply-label'); }
+  function getCancelReplyLabel() { return section.getAttribute('data-cancel-reply-label'); }
+
+  var parentInput = document.getElementById('comment-parent-id');
+  var replyIndicator = document.getElementById('reply-indicator');
+  var replyIndicatorText = document.getElementById('reply-indicator-text');
+  var cancelReplyBtn = document.getElementById('cancel-reply-btn');
 
   function showToast(msg, type) {
     var el = document.createElement('div');
@@ -191,6 +293,31 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       setTimeout(function() { el.remove(); }, 300);
     }, 4000);
   }
+
+  function clearReply() {
+    parentInput.value = '';
+    replyIndicator.classList.add('hidden');
+    replyIndicator.classList.remove('flex');
+  }
+
+  document.querySelectorAll('.reply-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var replyTo = btn.getAttribute('data-reply-to');
+      var replyName = btn.getAttribute('data-reply-name');
+      parentInput.value = replyTo;
+      replyIndicatorText.textContent = getReplyLabel() + ' ' + replyName;
+      replyIndicator.classList.remove('hidden');
+      replyIndicator.classList.add('flex');
+      var details = form.closest('details');
+      if (details) details.open = true;
+      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      form.querySelector('#content').focus();
+    });
+  });
+
+  cancelReplyBtn.addEventListener('click', function() {
+    clearReply();
+  });
 
   var savedName = localStorage.getItem('comment_authorName');
   var savedEmail = localStorage.getItem('comment_authorEmail');
@@ -218,6 +345,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       visitorId: visitorId,
       content: form.querySelector('#content').value.trim()
     };
+    var pid = parentInput.value;
+    if (pid) data.parentId = pid;
 
     fetch(getUrl(), {
       method: 'POST',
@@ -229,6 +358,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
         if (data.authorEmail) localStorage.setItem('comment_authorEmail', data.authorEmail);
         showToast(getMsg(), 'success');
         form.reset();
+        clearReply();
         if (nameInput) nameInput.value = data.authorName;
         if (emailInput && data.authorEmail) emailInput.value = data.authorEmail;
       } else {
