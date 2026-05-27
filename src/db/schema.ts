@@ -46,6 +46,7 @@ export const postTags = sqliteTable('post_tags', {
 export const comments = sqliteTable('comments', {
   id: text('id').primaryKey(),
   postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  parentId: text('parent_id'),
   authorName: text('author_name').notNull(),
   authorEmail: text('author_email'),
   visitorId: text('visitor_id'),
@@ -58,6 +59,7 @@ export const comments = sqliteTable('comments', {
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
   comments_post_id_idx: index('comments_post_id_idx').on(table.postId),
+  comments_parent_id_idx: index('comments_parent_id_idx').on(table.parentId),
   comments_status_idx: index('comments_status_idx').on(table.status),
   comments_ip_hash_idx: index('comments_ip_hash_idx').on(table.ipHash),
 }))
