@@ -311,19 +311,22 @@ function createBlogRouter(lang: Lang) {
     let authorEmail: string | undefined
     let visitorId: string | undefined
     let content: string
+    let parentId: string | undefined
 
     if (contentType.includes('application/json')) {
-      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
+      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string }>()
       authorName = body.authorName
       authorEmail = body.authorEmail
       visitorId = body.visitorId
       content = body.content
+      parentId = body.parentId
     } else {
-      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
+      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string }>()
       authorName = String(formData.authorName ?? '')
       authorEmail = formData.authorEmail ? String(formData.authorEmail) : undefined
       visitorId = formData.visitorId ? String(formData.visitorId) : undefined
       content = String(formData.content ?? '')
+      parentId = formData.parentId ? String(formData.parentId) : undefined
     }
 
     if (!authorName || authorName.length < 1 || authorName.length > 50) {
@@ -335,6 +338,13 @@ function createBlogRouter(lang: Lang) {
 
     const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
     if (!post) return c.redirect(langPath(`/posts/${slug}`, lang))
+
+    if (parentId) {
+      const [parentComment] = await db.select().from(comments).where(eq(comments.id, parentId))
+      if (!parentComment || parentComment.postId !== post.id) {
+        return c.redirect(langPath(`/posts/${slug}`, lang))
+      }
+    }
 
     function escapeHtml(str: string): string {
       return str
@@ -353,6 +363,7 @@ function createBlogRouter(lang: Lang) {
     await db.insert(comments).values({
       id,
       postId: post.id,
+      parentId: parentId ? escapeHtml(parentId) : null,
       authorName: escapeHtml(authorName),
       authorEmail: authorEmail ? escapeHtml(authorEmail) : null,
       visitorId: visitorId ? escapeHtml(visitorId) : null,

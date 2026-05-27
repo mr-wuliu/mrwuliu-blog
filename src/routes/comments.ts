@@ -28,7 +28,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     return c.json({ error: 'Too many requests. Please try again later.' }, 429)
   }
 
-  const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string }>()
+  const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string }>()
 
   if (!body.authorName || body.authorName.length < 1 || body.authorName.length > 50) {
     return c.json({ error: 'Author name must be 1-50 characters' }, 400)
@@ -42,6 +42,13 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
 
   const [post] = await db.select().from(posts).where(eq(posts.id, postId))
   if (!post) return c.json({ error: 'Post not found' }, 404)
+
+  if (body.parentId) {
+    const [parentComment] = await db.select().from(comments).where(eq(comments.id, body.parentId))
+    if (!parentComment || parentComment.postId !== postId) {
+      return c.json({ error: 'Parent comment not found or does not belong to this post' }, 400)
+    }
+  }
 
   function escapeHtml(str: string): string {
     return str
@@ -57,6 +64,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   const escapedContent = escapeHtml(body.content)
   const escapedEmail = body.authorEmail ? escapeHtml(body.authorEmail) : null
   const escapedVisitorId = body.visitorId ? escapeHtml(body.visitorId) : null
+  const escapedParentId = body.parentId ? escapeHtml(body.parentId) : null
   const userAgent = c.req.header('user-agent') || 'unknown'
   const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
   const cf = c.req.raw as Request & { cf?: { country?: string } }
@@ -64,6 +72,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   await db.insert(comments).values({
     id,
     postId,
+    parentId: escapedParentId,
     authorName: escapedName,
     authorEmail: escapedEmail,
     visitorId: escapedVisitorId,
@@ -104,6 +113,7 @@ commentRoutes.get('/admin/comments', async (c) => {
     .select({
       id: comments.id,
       postId: comments.postId,
+      parentId: comments.parentId,
       authorName: comments.authorName,
       authorEmail: comments.authorEmail,
       content: comments.content,
@@ -144,6 +154,17 @@ commentRoutes.put('/admin/comments/:id', async (c) => {
 
   await db.update(comments).set({ status }).where(eq(comments.id, id))
 
+  // Purge article page cache so new comment appears immediately
+  const [post] = await db.select({ slug: posts.slug }).from(posts).where(eq(posts.id, existing.postId))
+  if (post) {
+    const origin = new URL(c.req.url).origin
+    const cache = (caches as unknown as { default: Cache }).default
+    await Promise.all([
+      cache.delete(new Request(`${origin}/posts/${post.slug}`)),
+      cache.delete(new Request(`${origin}/en/posts/${post.slug}`)),
+    ])
+  }
+
   const [updated] = await db.select().from(comments).where(eq(comments.id, id))
   return c.json(updated)
 })
@@ -155,7 +176,20 @@ commentRoutes.delete('/admin/comments/:id', async (c) => {
   const [existing] = await db.select().from(comments).where(eq(comments.id, id))
   if (!existing) return c.json({ error: 'Comment not found' }, 404)
 
+  const [post] = await db.select({ slug: posts.slug }).from(posts).where(eq(posts.id, existing.postId))
+
   await db.delete(comments).where(eq(comments.id, id))
+
+  // Purge article page cache (comment removed from rendered page)
+  if (post) {
+    const origin = new URL(c.req.url).origin
+    const cache = (caches as unknown as { default: Cache }).default
+    await Promise.all([
+      cache.delete(new Request(`${origin}/posts/${post.slug}`)),
+      cache.delete(new Request(`${origin}/en/posts/${post.slug}`)),
+    ])
+  }
+
   return c.json({ success: true })
 })
 
