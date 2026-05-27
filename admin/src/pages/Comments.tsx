@@ -7,6 +7,7 @@ type CommentStatus = 'pending' | 'approved' | 'rejected'
 interface Comment {
   id: string
   postId: string
+  parentId: string | null
   postSlug: string | null
   postTitle: string | null
   authorName: string
@@ -163,6 +164,9 @@ export default function Comments() {
               </div>
 
               <p className="opacity-70 text-sm leading-relaxed mb-4">
+                {comment.parentId && (
+                  <span className="text-xs font-bold uppercase tracking-widest opacity-40 mr-1">↳ Reply</span>
+                )}
                 {truncate(comment.content, 100)}
               </p>
 
