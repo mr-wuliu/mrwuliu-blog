@@ -19,6 +19,7 @@ export default function SiteConfig() {
   const [bio, setBio] = useState('')
   const [github, setGithub] = useState('')
   const [email, setEmail] = useState('')
+  const [autoApprove, setAutoApprove] = useState(false)
 
   const [uploading, setUploading] = useState(false)
   const [hoverAvatar, setHoverAvatar] = useState(false)
@@ -40,11 +41,13 @@ export default function SiteConfig() {
       api.get<SiteConfigData>('/site-config/author_bio').catch(() => null),
       api.get<SiteConfigData>('/site-config/author_github').catch(() => null),
       api.get<SiteConfigData>('/site-config/author_email').catch(() => null),
-    ]).then(([avatarData, bioData, githubData, emailData]) => {
+      api.get<SiteConfigData>('/site-config/comment_auto_approve').catch(() => null),
+    ]).then(([avatarData, bioData, githubData, emailData, autoApproveData]) => {
       setAvatar(avatarData?.value || '')
       setBio(bioData?.value || '')
       setGithub(githubData?.value || '')
       setEmail(emailData?.value || '')
+      setAutoApprove(autoApproveData?.value === 'true')
     })
   }, [])
 
@@ -81,28 +84,18 @@ export default function SiteConfig() {
     e.target.value = ''
   }, [handleAvatarUpload])
 
-  const handleSave = async () => {
-    setSaving(true)
-    try {
-      await api.put('/site-config', { key: 'about', value: content })
-      alert(t('siteConfig.saveSuccess'))
-    } catch {
-      alert(t('siteConfig.saveFailed'))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSaveAuthor = async () => {
+  const handleSaveAll = async () => {
     setSaving(true)
     try {
       await Promise.all([
+        api.put('/site-config', { key: 'about', value: content }),
         api.put('/site-config', { key: 'author_avatar', value: avatar }),
         api.put('/site-config', { key: 'author_bio', value: bio }),
         api.put('/site-config', { key: 'author_github', value: github }),
         api.put('/site-config', { key: 'author_email', value: email }),
+        api.put('/site-config', { key: 'comment_auto_approve', value: autoApprove ? 'true' : 'false' }),
       ])
-      alert(t('siteConfig.authorSaveSuccess'))
+      alert(t('siteConfig.saveSuccess'))
     } catch {
       alert(t('siteConfig.saveFailed'))
     } finally {
@@ -121,7 +114,7 @@ export default function SiteConfig() {
         <div className="flex gap-4 items-center">
           <LangToggle />
           <button
-            onClick={handleSave}
+            onClick={handleSaveAll}
             disabled={saving}
             className="border-2 border-black px-6 py-2.5 text-sm font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
@@ -132,16 +125,7 @@ export default function SiteConfig() {
 
       {/* Author Profile Section */}
       <div>
-        <div className="flex justify-between items-center mb-6 border-b-2 border-black pb-4">
-          <h2 className="text-xl font-bold uppercase tracking-widest">{t('siteConfig.authorProfile')}</h2>
-          <button
-            onClick={handleSaveAuthor}
-            disabled={saving}
-            className="border-2 border-black px-6 py-2.5 text-sm font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-          >
-            {saving ? t('siteConfig.saving') : t('siteConfig.saveAuthor')}
-          </button>
-        </div>
+        <h2 className="text-xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">{t('siteConfig.authorProfile')}</h2>
 
         <div className="space-y-4">
           <div className="flex items-end gap-4">
@@ -219,6 +203,29 @@ export default function SiteConfig() {
 
         <div className="mt-4 text-xs text-gray-500 uppercase tracking-widest">
           {t('siteConfig.authorHint')}
+        </div>
+      </div>
+
+      {/* Comment Settings Section */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">{t('siteConfig.commentSettings')}</h2>
+
+        <div className="flex items-center justify-between p-4 border-2 border-black">
+          <div>
+            <div className="text-sm font-bold uppercase tracking-widest">{t('siteConfig.commentAutoApproveLabel')}</div>
+            <div className="text-xs text-gray-500 mt-1">{t('siteConfig.commentAutoApproveHint')}</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={autoApprove}
+            onClick={() => setAutoApprove(!autoApprove)}
+            className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors flex-shrink-0 ${autoApprove ? 'bg-black' : 'bg-white'}`}
+          >
+            <span
+              className={`inline-block h-4 w-4 transition-transform ${autoApprove ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-black'}`}
+            />
+          </button>
         </div>
       </div>
 

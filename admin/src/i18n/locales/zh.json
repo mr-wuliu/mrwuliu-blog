@@ -114,6 +114,9 @@
     "saveSuccess": "保存成功",
     "saveFailed": "保存失败",
     "authorSaveSuccess": "作者信息保存成功",
+    "commentSettings": "评论设置",
+    "commentAutoApproveLabel": "自动通过评论审核",
+    "commentAutoApproveHint": "开启后，新提交的评论将自动设为已通过状态，无需手动审核",
     "loading": "加载中..."
   },
   "projects": {

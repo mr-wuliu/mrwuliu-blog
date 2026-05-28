@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { eq, and, desc, sql } from 'drizzle-orm'
 import { createDb } from '../db'
 import { comments, posts } from '../db/schema'
+import { getSiteConfig } from '../db/queries'
 import { checkRateLimit } from '../utils/rate-limit'
 import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
 
@@ -69,6 +70,9 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
   const cf = c.req.raw as Request & { cf?: { country?: string } }
 
+  const autoApproveConfig = await getSiteConfig(db, 'comment_auto_approve')
+  const commentStatus = autoApproveConfig?.value === 'true' ? 'approved' : 'pending'
+
   await db.insert(comments).values({
     id,
     postId,
@@ -81,10 +85,10 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     country: cf.cf?.country,
     userAgent: userAgent.slice(0, 500),
     content: escapedContent,
-    status: 'pending',
+    status: commentStatus,
   })
 
-  return c.json({ id, status: 'pending', authorName: escapedName, content: escapedContent }, 201)
+  return c.json({ id, status: commentStatus, authorName: escapedName, content: escapedContent }, 201)
 })
 
 commentRoutes.get('/posts/:postId/comments', async (c) => {

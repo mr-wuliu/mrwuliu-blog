@@ -360,6 +360,9 @@ function createBlogRouter(lang: Lang) {
     const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
     const cf = c.req.raw as Request & { cf?: { country?: string } }
 
+    const autoApproveConfig = await getSiteConfig(db, 'comment_auto_approve')
+    const commentStatus = autoApproveConfig?.value === 'true' ? 'approved' : 'pending'
+
     await db.insert(comments).values({
       id,
       postId: post.id,
@@ -372,7 +375,7 @@ function createBlogRouter(lang: Lang) {
       country: cf.cf?.country,
       userAgent: userAgent.slice(0, 500),
       content: escapeHtml(content),
-      status: 'pending',
+      status: commentStatus,
     })
 
     return c.redirect(langPath(`/posts/${slug}`, lang))

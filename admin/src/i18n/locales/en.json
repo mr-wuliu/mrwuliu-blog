@@ -114,6 +114,9 @@
     "saveSuccess": "Saved successfully",
     "saveFailed": "Save failed",
     "authorSaveSuccess": "Author info saved",
+    "commentSettings": "COMMENT SETTINGS",
+    "commentAutoApproveLabel": "Auto-approve Comments",
+    "commentAutoApproveHint": "When enabled, new comments will be automatically approved without manual review",
     "loading": "Loading..."
   },
   "projects": {
