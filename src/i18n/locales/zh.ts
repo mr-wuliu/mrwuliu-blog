@@ -22,6 +22,7 @@ export default {
     title: '文字',
     noPosts: '暂无文章',
     pageTitle: '文字 - Blog',
+    description: '所有文章列表 - 技术与生活随笔',
   },
   projects: {
     title: '工程',
@@ -29,6 +30,7 @@ export default {
     detail: '详细 →',
     visit: '访问 →',
     pageTitle: '工程 - Blog',
+    description: '个人开源项目与作品集',
   },
   projectDetail: {
     techStack: '技术栈',
@@ -45,11 +47,13 @@ export default {
     collectionPosts: '本系列文章',
     lastUpdated: '最后更新',
     pageTitle: '系列文章 - Blog',
+    description: '按主题整理的系列文章合集',
   },
   tagsCloud: {
     title: '标签',
     noTags: '暂无标签',
     pageTitle: '标签 - Blog',
+    description: '所有文章标签分类',
   },
   tag: {
     allTags: '所有标签',
@@ -80,17 +84,20 @@ export default {
     title: '自述',
     pageTitle: '自述 - Blog',
     noContent: '暂无内容',
+    description: '关于作者 - 技术与生活',
   },
   friends: {
     title: '友情链接',
     noLinks: '暂无友链',
     pageTitle: '友情链接 - Blog',
     visit: '访问 →',
+    description: '推荐博客与友情链接',
   },
   notFound: {
     title: '404 — 页面未找到',
     message: '页面未找到',
     backHome: '← 返回首页',
+    description: '页面未找到',
   },
   footer: {
     copyright: (year: number) => `© ${year} Blog. Powered by Cloudflare Workers.`,

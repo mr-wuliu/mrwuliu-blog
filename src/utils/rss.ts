@@ -19,15 +19,16 @@ function toRFC822(dateStr: string): string {
   return date.toUTCString()
 }
 
-export function generateRSS(posts: RSSPost[], baseUrl: string): string {
-  const siteTitle = 'Blog'
-  const siteDescription = 'Personal Blog - Tech & Life'
+export function generateRSS(posts: RSSPost[], baseUrl: string, lang: 'zh' | 'en' = 'zh'): string {
+  const siteTitle = lang === 'en' ? 'Blog' : 'Blog'
+  const siteDescription = lang === 'en' ? 'Personal Blog - Tech & Life' : '个人博客 - 记录技术与生活'
   const siteUrl = baseUrl.replace(/\/$/, '')
   const lastBuildDate = new Date().toUTCString()
+  const postPathPrefix = lang === 'en' ? '/en/posts' : '/posts'
 
   const items = posts
     .map((post) => {
-      const link = `${siteUrl}/posts/${post.slug}`
+      const link = `${siteUrl}${postPathPrefix}/${post.slug}`
       const pubDate = post.publishedAt ? toRFC822(post.publishedAt) : ''
       const description = post.excerpt
         ? `<![CDATA[${post.excerpt}]]>`
@@ -47,9 +48,9 @@ export function generateRSS(posts: RSSPost[], baseUrl: string): string {
 <rss version="2.0">
   <channel>
     <title>${escapeXml(siteTitle)}</title>
-    <link>${siteUrl}</link>
+    <link>${siteUrl}${lang === 'en' ? '/en' : ''}</link>
     <description>${escapeXml(siteDescription)}</description>
-    <language>zh-cn</language>
+    <language>${lang === 'en' ? 'en' : 'zh-cn'}</language>
     <lastBuildDate>${lastBuildDate}</lastBuildDate>
 ${items}
   </channel>

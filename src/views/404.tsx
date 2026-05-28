@@ -4,7 +4,13 @@ import { type Lang, t, langPath } from '../i18n'
 
 const NotFoundPage: FC<{ lang?: Lang }> = ({ lang = 'zh' }) => {
   return (
-    <Layout title={t(lang, 'notFound.title')} lang={lang} currentPath="/">
+    <Layout
+      title={t(lang, 'notFound.title')}
+      description={t(lang, 'notFound.description')}
+      url={langPath('/', lang)}
+      lang={lang}
+      currentPath="/"
+    >
       <div class="flex flex-col items-center justify-center py-24">
         <h1 class="text-7xl font-bold text-black">404</h1>
         <p class="mt-4 text-lg opacity-70" data-t="notFound.message">{t(lang, 'notFound.message')}</p>

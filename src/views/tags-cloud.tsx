@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { ItemListSchema, BreadcrumbSchema } from './components/structured-data'
 import { type Lang, t, langPath } from '../i18n'
 
 type TagItem = {
@@ -20,7 +21,27 @@ function getTagSizeClass(count: number): string {
 
 const TagsCloudPage: FC<{ lang: Lang; tags: TagItem[]; authorProfile?: AuthorProfile }> = ({ lang, tags, authorProfile }) => {
   return (
-    <Layout title={t(lang, 'tagsCloud.pageTitle')} authorProfile={authorProfile} lang={lang} currentPath="/tags-cloud">
+    <Layout
+      title={t(lang, 'tagsCloud.pageTitle')}
+      description={t(lang, 'tagsCloud.description')}
+      url={langPath('/tags-cloud', lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath="/tags-cloud"
+      extraHead={
+        <>
+          <BreadcrumbSchema items={[
+            { name: t(lang, 'nav.tags'), url: langPath('/tags-cloud', lang) },
+          ]} />
+          <ItemListSchema data={{
+            name: t(lang, 'tagsCloud.title'),
+            description: t(lang, 'tagsCloud.description'),
+            url: langPath('/tags-cloud', lang),
+            numberOfItems: tags.length,
+          }} />
+        </>
+      }
+    >
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="tagsCloud.title">
           {t(lang, 'tagsCloud.title')}

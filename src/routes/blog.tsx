@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
-import { posts, tags, postTags, comments, postLikes } from '../db/schema'
+import { posts, tags, postTags, comments, postLikes, collections } from '../db/schema'
 import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
@@ -386,6 +386,7 @@ function createBlogRouter(lang: Lang) {
     const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
     const resolvedPosts = result.posts.map(p => resolvePostLang(p, lang))
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<WritingsPage lang={lang} posts={resolvedPosts} authorProfile={authorProfile} />)
   })
 
@@ -394,6 +395,7 @@ function createBlogRouter(lang: Lang) {
     const aboutConfig = await getSiteConfig(db, 'about')
     const content = aboutConfig?.value || `<p>${t(lang, 'about.noContent')}</p>`
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<AboutPage lang={lang} content={content} authorProfile={authorProfile} />)
   })
 
@@ -411,7 +413,7 @@ function createBlogRouter(lang: Lang) {
       .orderBy(desc(sql`count(${posts.id})`))
 
     const authorProfile = await getAuthorProfile(db)
-
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<TagsCloudPage lang={lang} tags={allTags} authorProfile={authorProfile} />)
   })
 
@@ -419,6 +421,7 @@ function createBlogRouter(lang: Lang) {
     const db = createDb(c.env.DB)
     const publishedProjects = await getPublishedProjects(db)
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<ProjectsPage lang={lang} projects={publishedProjects} authorProfile={authorProfile} />)
   })
 
@@ -430,6 +433,7 @@ function createBlogRouter(lang: Lang) {
       return c.html(<NotFoundPage lang={lang} />, 404)
     }
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<ProjectDetailPage lang={lang} project={project} authorProfile={authorProfile} />)
   })
 
@@ -437,6 +441,7 @@ function createBlogRouter(lang: Lang) {
     const db = createDb(c.env.DB)
     const collections = await getPublishedCollections(db)
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<SeriesPage lang={lang} collections={collections} authorProfile={authorProfile} />)
   })
 
@@ -452,6 +457,7 @@ function createBlogRouter(lang: Lang) {
       posts: collection.posts.filter((p: { status: string }) => p.status === 'published'),
     }
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<SeriesDetailPage lang={lang} collection={filteredCollection} authorProfile={authorProfile} />)
   })
 
@@ -459,6 +465,7 @@ function createBlogRouter(lang: Lang) {
     const db = createDb(c.env.DB)
     const links = await getPublishedFriendLinks(db)
     const authorProfile = await getAuthorProfile(db)
+    c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<FriendsPage lang={lang} links={links} authorProfile={authorProfile} />)
   })
 
@@ -477,10 +484,25 @@ blogRoutes.get('/feed.xml', async (c) => {
   const result = await getPublishedPosts(db, { page: 1, limit: 20 })
 
   const baseUrl = new URL(c.req.url).origin
-  const rssXml = generateRSS(result.posts, baseUrl)
+  const rssXml = generateRSS(result.posts, baseUrl, 'zh')
 
   return c.body(rssXml, 200, {
     'Content-Type': 'application/xml',
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+  })
+})
+
+blogRoutes.get('/en/feed.xml', async (c) => {
+  const db = createDb(c.env.DB)
+
+  const result = await getPublishedPosts(db, { page: 1, limit: 20 })
+
+  const baseUrl = new URL(c.req.url).origin
+  const rssXml = generateRSS(result.posts, baseUrl, 'en')
+
+  return c.body(rssXml, 200, {
+    'Content-Type': 'application/xml',
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
   })
 })
 
@@ -503,7 +525,14 @@ blogRoutes.get('/sitemap.xml', async (c) => {
   const db = createDb(c.env.DB)
   const result = await getAllPublishedPostsForSitemap(db)
   const baseUrl = new URL(c.req.url).origin
-  const sitemapXml = generateSitemap(result, baseUrl)
+
+  const allTags = await db.select({ slug: tags.slug }).from(tags)
+  const allCollections = await db.select({
+    slug: collections.slug,
+    updatedAt: collections.updatedAt,
+  }).from(collections).where(eq(collections.status, 'published'))
+
+  const sitemapXml = generateSitemap(result, allTags, allCollections, baseUrl)
   const response = c.body(sitemapXml, 200, {
     'Content-Type': 'application/xml',
     'Cache-Control': 'public, max-age=3600, s-maxage=3600',

@@ -18,7 +18,9 @@ imageRoutes.post('/images', async (c) => {
       return c.json({ error: 'No file provided. Use multipart/form-data with "file" field.' }, 400)
     }
 
-    const result = await uploadImage(c.env, file)
+    const altText = typeof body['altText'] === 'string' ? body['altText'] : undefined
+
+    const result = await uploadImage(c.env, file, altText)
     return c.json(result, 201)
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'Upload failed'

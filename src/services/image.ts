@@ -30,6 +30,7 @@ interface ImageResult {
 export async function uploadImage(
   env: Bindings,
   file: File,
+  altText?: string,
 ): Promise<ImageResult> {
   // Validate file type
   if (!ALLOWED_TYPES.has(file.type)) {
@@ -59,7 +60,7 @@ export async function uploadImage(
   await db.insert(images).values({
     id,
     r2Key,
-    altText: null,
+    altText: altText || null,
     mimeType: file.type,
     sizeBytes: file.size,
   })

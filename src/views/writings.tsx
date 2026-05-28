@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { ItemListSchema, BreadcrumbSchema } from './components/structured-data'
 import { type Lang, t, langPath, formatDateLang } from '../i18n'
 
 type Post = {
@@ -13,7 +14,27 @@ type Post = {
 
 const WritingsPage: FC<{ lang: Lang; posts: Post[]; authorProfile?: AuthorProfile }> = ({ lang, posts, authorProfile }) => {
   return (
-    <Layout title={t(lang, 'writings.pageTitle')} authorProfile={authorProfile} lang={lang} currentPath="/writings">
+    <Layout
+      title={t(lang, 'writings.pageTitle')}
+      description={t(lang, 'writings.description')}
+      url={langPath('/writings', lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath="/writings"
+      extraHead={
+        <>
+          <BreadcrumbSchema items={[
+            { name: t(lang, 'nav.writings'), url: langPath('/writings', lang) },
+          ]} />
+          <ItemListSchema data={{
+            name: t(lang, 'writings.title'),
+            description: t(lang, 'writings.description'),
+            url: langPath('/writings', lang),
+            numberOfItems: posts.length,
+          }} />
+        </>
+      }
+    >
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="writings.title">
           {t(lang, 'writings.title')}

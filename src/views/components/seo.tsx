@@ -1,8 +1,9 @@
 import type { FC } from 'hono/jsx'
-import { type Lang, t } from '../../i18n'
+import { type Lang, t, langPath } from '../../i18n'
 
 const SITE_NAME = "mrwuliu's blog"
 const BASE_URL = 'https://mrwuliu.top'
+const DEFAULT_OG_IMAGE = `${BASE_URL}/favicon.svg`
 
 type SEOProps = {
   title: string
@@ -33,8 +34,13 @@ const SEO: FC<SEOProps> = ({
 }) => {
   const desc = description || t(lang, 'home.description')
   const fullTitle = title === siteName ? title : `${title} | ${siteName}`
-  const canonicalUrl = url ? `${BASE_URL}${url}` : (currentPath ? `${BASE_URL}${currentPath}` : BASE_URL)
-  const imageUrl = image?.startsWith('http') ? image : image ? `${BASE_URL}${image}` : undefined
+
+  const canonicalPath = url || (currentPath ? langPath(currentPath, lang) : '/')
+  const canonicalUrl = `${BASE_URL}${canonicalPath}`
+
+  const imageUrl = image
+    ? (image.startsWith('http') ? image : `${BASE_URL}${image}`)
+    : DEFAULT_OG_IMAGE
 
   // Build hreflang: Chinese and English alternate
   const zhPath = currentPath ? currentPath.replace(/^\/en/, '') : '/'
@@ -47,7 +53,7 @@ const SEO: FC<SEOProps> = ({
       <link rel="canonical" href={canonicalUrl} />
 
       {/* Hreflang for i18n — critical for multilingual SEO */}
-      <link rel="alternate" hreflang="zh" href={`${BASE_URL}${zhPath}`} />
+      <link rel="alternate" hreflang="zh-CN" href={`${BASE_URL}${zhPath}`} />
       <link rel="alternate" hreflang="en" href={`${BASE_URL}${enPath}`} />
       <link rel="alternate" hreflang="x-default" href={`${BASE_URL}${zhPath}`} />
 
@@ -58,7 +64,8 @@ const SEO: FC<SEOProps> = ({
       <meta property="og:type" content={type} />
       <meta property="og:site_name" content={siteName} />
       <meta property="og:locale" content={lang === 'zh' ? 'zh_CN' : 'en_US'} />
-      {imageUrl && <meta property="og:image" content={imageUrl} />}
+      <meta property="og:locale:alternate" content={lang === 'zh' ? 'en_US' : 'zh_CN'} />
+      <meta property="og:image" content={imageUrl} />
 
       {/* Article-specific OG tags — AI engines & Google use these for citation decisions */}
       {type === 'article' && publishedTime && (
@@ -72,10 +79,10 @@ const SEO: FC<SEOProps> = ({
       )}
 
       {/* Twitter Card */}
-      <meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
+      <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={desc} />
-      {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+      <meta name="twitter:image" content={imageUrl} />
 
       {/* Author meta — E-E-A-T signal */}
       {authorName && <meta name="author" content={authorName} />}

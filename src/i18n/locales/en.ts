@@ -22,6 +22,7 @@ export default {
     title: 'Writings',
     noPosts: 'No posts yet',
     pageTitle: 'Writings - Blog',
+    description: 'All blog posts - tech & life writings',
   },
   projects: {
     title: 'Projects',
@@ -29,6 +30,7 @@ export default {
     detail: 'DETAIL →',
     visit: 'VISIT →',
     pageTitle: 'Projects - Blog',
+    description: 'Open source projects and portfolio',
   },
   projectDetail: {
     techStack: 'Tech Stack',
@@ -45,11 +47,13 @@ export default {
     collectionPosts: 'Articles in this series',
     lastUpdated: 'Last updated',
     pageTitle: 'Series - Blog',
+    description: 'Curated collections of articles by topic',
   },
   tagsCloud: {
     title: 'Tags',
     noTags: 'No tags yet',
     pageTitle: 'Tags - Blog',
+    description: 'All blog post tags and categories',
   },
   tag: {
     allTags: 'All Tags',
@@ -80,17 +84,20 @@ export default {
     title: 'About',
     pageTitle: 'About - Blog',
     noContent: 'No content',
+    description: 'About the author - tech & life',
   },
   friends: {
     title: 'Friend Links',
     noLinks: 'No friend links yet',
     pageTitle: 'Friend Links - Blog',
     visit: 'VISIT →',
+    description: 'Recommended blogs and friend links',
   },
   notFound: {
     title: '404 — Page Not Found',
     message: 'Page not found',
     backHome: '← Back to Home',
+    description: 'Page not found',
   },
   footer: {
     copyright: (year: number) => `© ${year} Blog. Powered by Cloudflare Workers.`,

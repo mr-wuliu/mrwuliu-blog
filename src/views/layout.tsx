@@ -75,7 +75,7 @@ const Layout: FC<LayoutProps> = ({
           'document.documentElement.setAttribute("data-theme",s);' +
           '})();'
         }} />
-        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="stylesheet" href="/css/tailwind.css" />
         <link rel="stylesheet" href="/css/style.css" />
         <script dangerouslySetInnerHTML={{ __html:
           'var __zh=' + zhFlat + ';var __en=' + enFlat + ';var __cur="' + lang + '";' +
@@ -94,7 +94,11 @@ const Layout: FC<LayoutProps> = ({
           'document.documentElement.lang=l==="zh"?"zh-CN":"en";' +
           '}'
         }} />
-        <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="/feed.xml" />
+        {lang === 'zh' ? (
+          <link rel="alternate" type="application/rss+xml" title="RSS Feed (中文)" href="/feed.xml" />
+        ) : (
+          <link rel="alternate" type="application/rss+xml" title="RSS Feed (English)" href="/en/feed.xml" />
+        )}
         {type === 'article' && (
           <link
             rel="stylesheet"
@@ -241,6 +245,10 @@ const Layout: FC<LayoutProps> = ({
           'var tg=e.target.closest(".lang-toggle");' +
           'if(tg&&tg.href)__prefetchLang(tg.href);' +
           '},true);' +
+          'document.addEventListener("mousedown",function(e){' +
+          'var tg=e.target.closest(".lang-toggle");' +
+          'if(tg&&tg.href)__prefetchLang(tg.href);' +
+          '},true);' +
           'function __applyLangPage(html,href,nl){' +
           'var doc=new DOMParser().parseFromString(html,"text/html");' +
           'var cm=document.querySelector("main");' +
@@ -255,10 +263,22 @@ const Layout: FC<LayoutProps> = ({
           'history.pushState(null,"",href);window.scrollTo(0,0);' +
           'if(!window.__langPopState){window.__langPopState=true;window.addEventListener("popstate",function(){location.reload()})}' +
           '}' +
+          'function __toggleLangVisual(nl){' +
+          'document.querySelectorAll(".lang-toggle").forEach(function(tg){' +
+          'var tb=tg.querySelector(".lang-toggle-thumb");' +
+          'if(tb){' +
+          'if(nl==="zh"){tb.classList.add("lang-toggle-thumb-end")}else{tb.classList.remove("lang-toggle-thumb-end")}' +
+          'tb.textContent=nl==="zh"?"\\u4e2d\\u6587":"EN";' +
+          '}' +
+          'tg.querySelectorAll(".lang-toggle-option").forEach(function(op){op.classList.remove("lang-toggle-option-active")});' +
+          'var ao=tg.querySelector(".lang-toggle-option[data-lang=\\""+nl+"\\"]");if(ao)ao.classList.add("lang-toggle-option-active");' +
+          '});' +
+          '}' +
           'document.addEventListener("click",function(e){' +
           'var tg=e.target.closest(".lang-toggle");' +
           'if(!tg)return;e.preventDefault();' +
           'var href=tg.href,nl=__cur==="zh"?"en":"zh";' +
+          '__toggleLangVisual(nl);' +
           'var cached=__langPages[href];' +
           'if(cached){' +
           '__applyLangPage(cached,href,nl);' +

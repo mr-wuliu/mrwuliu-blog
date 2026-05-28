@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { CollectionPageSchema, BreadcrumbSchema } from './components/structured-data'
 import { type Lang, t, langPath, formatDateLang } from '../i18n'
 
 type CollectionPost = {
@@ -30,7 +31,28 @@ const SeriesDetailPage: FC<{ lang: Lang; collection: Collection; authorProfile?:
   const displayDescription = lang === 'en' && collection.descriptionEn ? collection.descriptionEn : collection.description
 
   return (
-    <Layout title={`${displayName} - ${t(lang, 'series.pageTitle')}`} authorProfile={authorProfile} lang={lang} currentPath={`/series/${collection.slug}`}>
+    <Layout
+      title={`${displayName} - ${t(lang, 'series.pageTitle')}`}
+      description={displayDescription || t(lang, 'series.description')}
+      url={langPath(`/series/${collection.slug}`, lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath={`/series/${collection.slug}`}
+      extraHead={
+        <>
+          <BreadcrumbSchema items={[
+            { name: t(lang, 'nav.series'), url: langPath('/series', lang) },
+            { name: displayName, url: langPath(`/series/${collection.slug}`, lang) },
+          ]} />
+          <CollectionPageSchema data={{
+            name: displayName,
+            description: displayDescription || undefined,
+            url: langPath(`/series/${collection.slug}`, lang),
+            itemCount: collection.posts.length,
+          }} />
+        </>
+      }
+    >
       <div class="flex flex-col lg:flex-row gap-8">
         <div class="lg:w-3/5">
           <h1 class="text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">

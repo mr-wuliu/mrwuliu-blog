@@ -439,6 +439,8 @@ a[class*="hover:bg-black"]:hover {
   padding: 4px;
   text-decoration: none;
   margin-left: 1.5rem;
+  width: 88px;
+  box-sizing: border-box;
 }
 
 .theme-select {
@@ -461,7 +463,7 @@ a[class*="hover:bg-black"]:hover {
   width: 38px;
   padding: 3px 0;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.25);
   user-select: none;
@@ -484,11 +486,12 @@ a[class*="hover:bg-black"]:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 0.65rem;
   font-weight: 700;
   color: #fff;
   user-select: none;
   white-space: nowrap;
+  overflow: hidden;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

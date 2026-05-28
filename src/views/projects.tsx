@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { ItemListSchema, BreadcrumbSchema } from './components/structured-data'
 import { type Lang, t, langPath } from '../i18n'
 
 type Project = {
@@ -72,7 +73,27 @@ const ProjectCard: FC<{ project: Project; lang: Lang }> = ({ project, lang }) =>
 
 const ProjectsPage: FC<{ lang: Lang; projects: Project[]; authorProfile?: AuthorProfile }> = ({ lang, projects, authorProfile }) => {
   return (
-    <Layout title={t(lang, 'projects.pageTitle')} authorProfile={authorProfile} lang={lang} currentPath="/projects">
+    <Layout
+      title={t(lang, 'projects.pageTitle')}
+      description={t(lang, 'projects.description')}
+      url={langPath('/projects', lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath="/projects"
+      extraHead={
+        <>
+          <BreadcrumbSchema items={[
+            { name: t(lang, 'nav.projects'), url: langPath('/projects', lang) },
+          ]} />
+          <ItemListSchema data={{
+            name: t(lang, 'projects.title'),
+            description: t(lang, 'projects.description'),
+            url: langPath('/projects', lang),
+            numberOfItems: projects.length,
+          }} />
+        </>
+      }
+    >
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="projects.title">
           {t(lang, 'projects.title')}

@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { BreadcrumbSchema } from './components/structured-data'
 import { type Lang, t, langPath, formatDateLang } from '../i18n'
 
 type Project = {
@@ -25,7 +26,20 @@ const ProjectDetailPage: FC<{ lang: Lang; project: Project; authorProfile?: Auth
   }
 
   return (
-    <Layout title={`${project.title} - ${t(lang, 'projects.pageTitle')}`} authorProfile={authorProfile} lang={lang} currentPath={`/projects/${project.id}`}>
+    <Layout
+      title={`${project.title} - ${t(lang, 'projects.pageTitle')}`}
+      description={project.description}
+      url={langPath(`/projects/${project.id}`, lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath={`/projects/${project.id}`}
+      extraHead={
+        <BreadcrumbSchema items={[
+          { name: t(lang, 'nav.projects'), url: langPath('/projects', lang) },
+          { name: project.title, url: langPath(`/projects/${project.id}`, lang) },
+        ]} />
+      }
+    >
       <div class="flex flex-col lg:flex-row gap-8">
         <div class="lg:w-3/5">
           <h1 class="text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">

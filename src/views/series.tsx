@@ -1,6 +1,7 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
+import { ItemListSchema, BreadcrumbSchema } from './components/structured-data'
 import { type Lang, t, langPath, formatDateLang } from '../i18n'
 
 type Collection = {
@@ -53,7 +54,27 @@ const CollectionCard: FC<{ collection: Collection; lang: Lang }> = ({ collection
 
 const SeriesPage: FC<{ lang: Lang; collections: Collection[]; authorProfile?: AuthorProfile }> = ({ lang, collections, authorProfile }) => {
   return (
-    <Layout title={t(lang, 'series.pageTitle')} authorProfile={authorProfile} lang={lang} currentPath="/series">
+    <Layout
+      title={t(lang, 'series.pageTitle')}
+      description={t(lang, 'series.description')}
+      url={langPath('/series', lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath="/series"
+      extraHead={
+        <>
+          <BreadcrumbSchema items={[
+            { name: t(lang, 'nav.series'), url: langPath('/series', lang) },
+          ]} />
+          <ItemListSchema data={{
+            name: t(lang, 'series.title'),
+            description: t(lang, 'series.description'),
+            url: langPath('/series', lang),
+            numberOfItems: collections.length,
+          }} />
+        </>
+      }
+    >
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-2" data-t="series.title">
           {t(lang, 'series.title')}

@@ -21,7 +21,7 @@ type ArticleSchemaProps = {
 export const ArticleSchema: FC<{ data: ArticleSchemaProps }> = ({ data }) => {
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: data.title,
     description: data.description,
     url: `${BASE_URL}${data.url}`,
@@ -139,6 +139,73 @@ export const WebSiteSchema: FC = () => {
     '@type': 'WebSite',
     name: SITE_NAME,
     url: BASE_URL,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: `${BASE_URL}/tags/{search_term_string}`,
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+/**
+ * CollectionPage schema — for series detail pages.
+ */
+type CollectionPageSchemaProps = {
+  name: string
+  description?: string
+  url: string
+  itemCount: number
+}
+
+export const CollectionPageSchema: FC<{ data: CollectionPageSchemaProps }> = ({ data }) => {
+  const schema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: data.name,
+    ...(data.description && { description: data.description }),
+    url: `${BASE_URL}${data.url}`,
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: data.itemCount,
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+    />
+  )
+}
+
+/**
+ * ItemList schema — for list pages (writings, projects, tags-cloud, series, friends).
+ */
+type ItemListSchemaProps = {
+  name: string
+  description?: string
+  url: string
+  numberOfItems: number
+}
+
+export const ItemListSchema: FC<{ data: ItemListSchemaProps }> = ({ data }) => {
+  const schema: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: data.name,
+    ...(data.description && { description: data.description }),
+    url: `${BASE_URL}${data.url}`,
+    numberOfItems: data.numberOfItems,
   }
 
   return (

@@ -1,7 +1,8 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import type { AuthorProfile } from './components/author-sidebar'
-import { type Lang, t } from '../i18n'
+import { ItemListSchema, BreadcrumbSchema } from './components/structured-data'
+import { type Lang, t, langPath } from '../i18n'
 
 type FriendLink = {
   id: string
@@ -49,7 +50,27 @@ const FriendLinkCard: FC<{ link: FriendLink; lang: Lang }> = ({ link, lang }) =>
 
 const FriendsPage: FC<{ lang: Lang; links: FriendLink[]; authorProfile?: AuthorProfile }> = ({ lang, links, authorProfile }) => {
   return (
-    <Layout title={t(lang, 'friends.pageTitle')} authorProfile={authorProfile} lang={lang} currentPath="/friends">
+    <Layout
+      title={t(lang, 'friends.pageTitle')}
+      description={t(lang, 'friends.description')}
+      url={langPath('/friends', lang)}
+      authorProfile={authorProfile}
+      lang={lang}
+      currentPath="/friends"
+      extraHead={
+        <>
+          <BreadcrumbSchema items={[
+            { name: t(lang, 'nav.friends'), url: langPath('/friends', lang) },
+          ]} />
+          <ItemListSchema data={{
+            name: t(lang, 'friends.title'),
+            description: t(lang, 'friends.description'),
+            url: langPath('/friends', lang),
+            numberOfItems: links.length,
+          }} />
+        </>
+      }
+    >
       <div>
         <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="friends.title">
           {t(lang, 'friends.title')}
