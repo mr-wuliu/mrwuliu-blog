@@ -27,7 +27,12 @@ export function tf(lang: Lang, key: string): (...args: unknown[]) => string {
 }
 
 export function langPath(path: string, lang: Lang): string {
-  if (lang === 'en') return `/en${path}`
+  if (lang === 'en') {
+    if (path === '/') return '/en'
+    // '/?query' → '/en?query' (avoid trailing slash before query string)
+    if (path.startsWith('/?')) return `/en${path.slice(1)}`
+    return `/en${path}`
+  }
   return path
 }
 

@@ -236,10 +236,11 @@ const Layout: FC<LayoutProps> = ({
           'if(th==="default")u.searchParams.delete("theme");else u.searchParams.set("theme",th);' +
           'history.replaceState(null,"",u.pathname+(u.search?u.search:"")+u.hash);' +
           '})});' +
-          'var __langPages={};' +
+          'var __langPages={},__langFetching={};' +
           'function __prefetchLang(url){' +
-          'if(__langPages[url])return;' +
-          'fetch(url).then(function(r){return r.text()}).then(function(h){__langPages[url]=h}).catch(function(){})' +
+          'if(__langPages[url]||__langFetching[url])return;' +
+          '__langFetching[url]=1;' +
+          'fetch(url).then(function(r){return r.text()}).then(function(h){__langPages[url]=h;delete __langFetching[url]}).catch(function(){delete __langFetching[url]})' +
           '}' +
           'document.addEventListener("pointerover",function(e){' +
           'var tg=e.target.closest(".lang-toggle");' +
