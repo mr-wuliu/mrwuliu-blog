@@ -256,7 +256,8 @@ const Layout: FC<LayoutProps> = ({
           'var cm=document.querySelector("main");' +
           'if(cm){var nm=doc.querySelector("main");if(nm){cm.innerHTML=nm.innerHTML;' +
           'cm.querySelectorAll("script").forEach(function(s){var ns=document.createElement("script");ns.textContent=s.textContent;if(s.parentNode)s.parentNode.replaceChild(ns,s)})}}' +
-          '__applyLang(nl);' +
+          '__cur=nl;' +
+          'document.documentElement.lang=nl==="zh"?"zh-CN":"en";' +
           'var fb=document.querySelector("[data-t=\\"footer.copyright\\"]");' +
           'if(fb)fb.textContent=fb.getAttribute("data-t-"+nl);' +
           'if(doc.title)document.title=doc.title;' +
@@ -265,14 +266,28 @@ const Layout: FC<LayoutProps> = ({
           'history.pushState(null,"",href);window.scrollTo(0,0);' +
           'if(!window.__langPopState){window.__langPopState=true;window.addEventListener("popstate",function(){location.reload()})}' +
           '}' +
+          'function __animateToggle(l){' +
+          'document.querySelectorAll(".lang-toggle").forEach(function(tg){' +
+          'var tb=tg.querySelector(".lang-toggle-thumb");if(tb){tb.className="lang-toggle-thumb"+(l==="zh"?" lang-toggle-thumb-end":"");tb.textContent=l==="zh"? "\\u4e2d\\u6587":"EN"}' +
+          'tg.querySelectorAll(".lang-toggle-option").forEach(function(op){op.classList.remove("lang-toggle-option-active")});' +
+          'var ao=tg.querySelector(".lang-toggle-option[data-lang=\\"" + l + "\\"]");if(ao)ao.classList.add("lang-toggle-option-active");' +
+          '});' +
+          '}' +
           'document.addEventListener("click",function(e){' +
           'var tg=e.target.closest(".lang-toggle");' +
           'if(!tg)return;e.preventDefault();' +
           'var href=tg.href,nl=__cur==="zh"?"en":"zh";' +
           '__langPages[location.pathname+location.search]=document.documentElement.outerHTML;' +
-          '__applyLang(nl);' +
+          '__cur=nl;' +
+          '__animateToggle(nl);' +
           '__fetchLang(href).then(function(html){' +
-          'if(html){__applyLangPage(html,href,nl);__prefetchLang(tg.href)}' +
+          'if(html){__applyLangPage(html,href,nl);' +
+          'document.querySelectorAll("[data-t]").forEach(function(e){var v=__t(e.getAttribute("data-t"));if(v)e.textContent=v});' +
+          'document.querySelectorAll("[data-placeholder]").forEach(function(e){var v=__t(e.getAttribute("data-placeholder"));if(v)e.setAttribute("placeholder",v)});' +
+          'document.querySelectorAll("[data-thref]").forEach(function(e){var k=e.getAttribute("data-thref");var b=nl==="en"?"/en":"";e.setAttribute("href",b+k)});' +
+          'document.querySelectorAll("[data-comment-msg]").forEach(function(e){e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+nl));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+nl));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+nl))});' +
+          'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+nl);if(v)e.textContent=v});' +
+          '__prefetchLang(tg.href)}' +
           '});' +
           '});'
         }} />
