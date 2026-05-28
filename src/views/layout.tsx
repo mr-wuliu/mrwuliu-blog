@@ -64,7 +64,6 @@ const Layout: FC<LayoutProps> = ({
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
-        <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
         <script dangerouslySetInnerHTML={{ __html:
           '(function(){' +
           'var ts=["default","coffee"];' +
@@ -236,12 +235,14 @@ const Layout: FC<LayoutProps> = ({
           'if(th==="default")u.searchParams.delete("theme");else u.searchParams.set("theme",th);' +
           'history.replaceState(null,"",u.pathname+(u.search?u.search:"")+u.hash);' +
           '})});' +
-          'var __langPages={},__langFetching={};' +
-          'function __prefetchLang(url){' +
-          'if(__langPages[url]||__langFetching[url])return;' +
-          '__langFetching[url]=1;' +
-          'fetch(url).then(function(r){return r.text()}).then(function(h){__langPages[url]=h;delete __langFetching[url]}).catch(function(){delete __langFetching[url]})' +
+          'var __langPages={},__langPromises={};' +
+          'function __fetchLang(url){' +
+          'if(__langPages[url])return Promise.resolve(__langPages[url]);' +
+          'if(__langPromises[url])return __langPromises[url];' +
+          'var p=fetch(url).then(function(r){return r.text()}).then(function(h){__langPages[url]=h;delete __langPromises[url];return h}).catch(function(){delete __langPromises[url]});' +
+          '__langPromises[url]=p;return p' +
           '}' +
+          'function __prefetchLang(url){__fetchLang(url)}' +
           'document.addEventListener("pointerover",function(e){' +
           'var tg=e.target.closest(".lang-toggle");' +
           'if(tg&&tg.href)__prefetchLang(tg.href);' +
@@ -279,18 +280,11 @@ const Layout: FC<LayoutProps> = ({
           'var tg=e.target.closest(".lang-toggle");' +
           'if(!tg)return;e.preventDefault();' +
           'var href=tg.href,nl=__cur==="zh"?"en":"zh";' +
+          '__langPages[location.pathname+location.search]=document.documentElement.outerHTML;' +
           '__toggleLangVisual(nl);' +
-          'var cached=__langPages[href];' +
-          'if(cached){' +
-          '__applyLangPage(cached,href,nl);' +
-          '__prefetchLang(tg.href);' +
-          '}else{' +
-          'fetch(href).then(function(r){return r.text()}).then(function(html){' +
-          '__langPages[href]=html;' +
-          '__applyLangPage(html,href,nl);' +
-          '__prefetchLang(tg.href);' +
-          '}).catch(function(){window.location.href=href})' +
-          '}' +
+          '__fetchLang(href).then(function(html){' +
+          'if(html){__applyLangPage(html,href,nl);__prefetchLang(tg.href)}' +
+          '});' +
           '});'
         }} />
       </body>
