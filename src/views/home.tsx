@@ -46,7 +46,7 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   return (
     <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-4 sm:mb-6">
       <a href={langPath(`/posts/${post.slug}`, lang)} class="no-underline text-black block">
-        <h2 class="text-lg sm:text-xl font-bold tracking-tight mb-2">
+        <h2 class="text-lg sm:text-xl font-bold tracking-tight mb-2 break-words">
           {post.pinned && <span class="text-red-500 mr-1">📌</span>}
           {post.title}
         </h2>
