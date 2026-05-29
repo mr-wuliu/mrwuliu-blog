@@ -44,9 +44,9 @@ type HomeProps = {
 
 const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   return (
-    <article class="p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-6">
+    <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-4 sm:mb-6">
       <a href={langPath(`/posts/${post.slug}`, lang)} class="no-underline text-black block">
-        <h2 class="text-xl font-bold tracking-tight mb-2">
+        <h2 class="text-lg sm:text-xl font-bold tracking-tight mb-2">
           {post.pinned && <span class="text-red-500 mr-1">📌</span>}
           {post.title}
         </h2>
@@ -55,15 +55,15 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
             {formatDateLang(post.publishedAt, lang)}
           </time>
         )}
-        {post.excerpt && <p class="mt-3 opacity-70 text-lg leading-relaxed">{post.excerpt}</p>}
+        {post.excerpt && <p class="mt-3 opacity-70 text-base sm:text-lg leading-relaxed">{post.excerpt}</p>}
       </a>
-      <div class="mt-4 flex items-center justify-between">
+      <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
         <div class="flex flex-wrap gap-2">
           {post.tags && post.tags.map((tag) => (
             <a href={langPath(`/tags/${tag.slug}`, lang)} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
           ))}
         </div>
-        <div class="flex items-center gap-4 shrink-0 ml-4">
+        <div class="flex items-center gap-4 shrink-0">
           <a href={langPath(`/posts/${post.slug}`, lang)} class="flex items-center gap-1 text-xs font-bold uppercase tracking-widest opacity-50 no-underline text-black hover:opacity-100 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
             <span>{post.commentCount ?? 0}</span>
@@ -87,15 +87,15 @@ const Pagination: FC<{ pagination: PaginationData; lang: Lang }> = ({ pagination
   if (totalPages <= 1) return null
 
   return (
-    <nav class="mt-12 pt-8 border-t border-black" aria-label="pagination">
+    <nav class="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-black" aria-label="pagination">
       <div class="flex justify-between">
         {page > 1 && (
-          <a href={langPath(`/?page=${page - 1}`, lang)} class="text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.prev">
+          <a href={langPath(`/?page=${page - 1}`, lang)} class="text-xs sm:text-sm font-bold uppercase tracking-widest border border-black px-4 sm:px-6 py-2.5 sm:py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.prev">
             {t(lang, 'pagination.prev')}
           </a>
         )}
         {page < totalPages && (
-          <a href={langPath(`/?page=${page + 1}`, lang)} class="ml-auto text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.next">
+          <a href={langPath(`/?page=${page + 1}`, lang)} class="ml-auto text-xs sm:text-sm font-bold uppercase tracking-widest border border-black px-4 sm:px-6 py-2.5 sm:py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.next">
             {t(lang, 'pagination.next')}
           </a>
         )}
@@ -125,8 +125,8 @@ const Home: FC<HomeProps> = ({ lang, posts, pagination, authorProfile }) => {
       }
     >
       <div>
-        <div class="flex items-center gap-4 mb-10">
-          <h1 class="text-4xl font-bold tracking-tight" data-t="home.title">{t(lang, 'home.title')}</h1>
+        <div class="flex items-center gap-4 mb-6 sm:mb-10 flex-wrap">
+          <h1 class="text-2xl sm:text-4xl font-bold tracking-tight" data-t="home.title">{t(lang, 'home.title')}</h1>
           <a href={langPath('/series', lang)} data-thref="/series" class="inline-flex items-center gap-2 px-4 py-2 border border-black text-sm font-medium uppercase tracking-widest hover:bg-black hover:text-white transition-colors no-underline text-black">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
             {t(lang, 'nav.series')}

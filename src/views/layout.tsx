@@ -141,9 +141,68 @@ const Layout: FC<LayoutProps> = ({
       <body class="font-sans text-base leading-relaxed text-black bg-white antialiased min-h-screen flex flex-col">
         <header class="border-b border-black bg-white">
           <nav class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-4">
-            {hasSidebar ? (
-              <div class="lg:flex lg:gap-16">
-                <div class="flex-1 flex items-center justify-between gap-6 min-w-0">
+            {/* Mobile: Logo + Hamburger */}
+            <div class="flex items-center justify-between gap-4 lg:hidden">
+              <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
+              <button type="button" class="mobile-menu-btn" aria-label="Menu" aria-expanded="false" aria-controls="mobile-menu" id="mobile-menu-btn">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Mobile: Dropdown menu */}
+            <div id="mobile-menu" class="mobile-menu lg:hidden">
+              <div class="pt-4 border-t border-black mt-4">
+                <div class="mobile-menu-controls">
+                  <select class="theme-select" aria-label="Theme">
+                    <option value="default">Default</option>
+                    <option value="coffee">Coffee</option>
+                  </select>
+                  <a href={toggleHref} class="lang-toggle">
+                    <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                    <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
+                    <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
+                  </a>
+                </div>
+                <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="mobile-menu-link">{t(lang, 'nav.writings')}</a>
+                <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="mobile-menu-link">{t(lang, 'nav.series')}</a>
+                <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="mobile-menu-link">{t(lang, 'nav.projects')}</a>
+                <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="mobile-menu-link">{t(lang, 'nav.tags')}</a>
+                <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="mobile-menu-link">{t(lang, 'nav.about')}</a>
+                <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="mobile-menu-link">{t(lang, 'nav.friends')}</a>
+              </div>
+            </div>
+
+            {/* Desktop: Full horizontal nav */}
+            <div class="hidden lg:block">
+              {hasSidebar ? (
+                <div class="lg:flex lg:gap-16">
+                  <div class="flex-1 flex items-center justify-between gap-6 min-w-0">
+                    <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
+                    <div class="flex-1 overflow-x-auto">
+                      <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
+                        <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
+                        <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
+                        <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
+                        <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
+                        <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
+                        <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-3 shrink-0 ml-auto">
+                    <select class="theme-select" aria-label="Theme">
+                      <option value="default">Default</option>
+                      <option value="coffee">Coffee</option>
+                    </select>
+                    <a href={toggleHref} class="lang-toggle">
+                      <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                      <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
+                      <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <div class="flex items-center justify-between gap-6">
                   <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
                   <div class="flex-1 overflow-x-auto">
                     <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
@@ -155,48 +214,23 @@ const Layout: FC<LayoutProps> = ({
                       <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                     </div>
                   </div>
-                </div>
-                <div class="flex items-center gap-3 shrink-0 ml-auto">
-                  <select class="theme-select" aria-label="Theme">
-                    <option value="default">Default</option>
-                    <option value="coffee">Coffee</option>
-                  </select>
-                  <a href={toggleHref} class="lang-toggle">
-                    <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
-                    <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
-                    <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
-                  </a>
-                </div>
-              </div>
-            ) : (
-              <div class="flex items-center justify-between gap-6">
-                <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
-                <div class="flex-1 overflow-x-auto">
-                  <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
-                    <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
-                    <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
-                    <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
-                    <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
-                    <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
-                    <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
+                  <div class="flex items-center gap-3 shrink-0 ml-auto">
+                    <select class="theme-select" aria-label="Theme">
+                      <option value="default">Default</option>
+                      <option value="coffee">Coffee</option>
+                    </select>
+                    <a href={toggleHref} class="lang-toggle">
+                      <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                      <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
+                      <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
+                    </a>
                   </div>
                 </div>
-                <div class="flex items-center gap-3 shrink-0 ml-auto">
-                  <select class="theme-select" aria-label="Theme">
-                    <option value="default">Default</option>
-                    <option value="coffee">Coffee</option>
-                  </select>
-                  <a href={toggleHref} class="lang-toggle">
-                    <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
-                    <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
-                    <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
-                  </a>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </nav>
         </header>
-        <main class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-12 flex-1 w-full">
+        <main class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-10 md:pt-12 pb-8 md:pb-12 flex-1 w-full">
           {hasSidebar ? (
             <div class="lg:flex lg:gap-16">
               <div class="flex-1 min-w-0">
@@ -215,6 +249,9 @@ const Layout: FC<LayoutProps> = ({
         <footer class="border-t border-black bg-white mt-auto">
           <p class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-5 text-xs font-bold uppercase tracking-widest opacity-50 text-center" data-t="footer.copyright" data-t-zh={tf(lang, 'footer.copyright')(new Date().getFullYear())} data-t-en={tf(otherLang(lang), 'footer.copyright')(new Date().getFullYear())}>{tf(lang, 'footer.copyright')(new Date().getFullYear())}</p>
         </footer>
+        <script dangerouslySetInnerHTML={{ __html:
+          '(function(){var btn=document.getElementById("mobile-menu-btn");var menu=document.getElementById("mobile-menu");if(!btn||!menu)return;function close(){menu.style.maxHeight="0";btn.classList.remove("mobile-menu-btn-active");btn.setAttribute("aria-expanded","false")}function open(){menu.style.maxHeight=menu.scrollHeight+"px";btn.classList.add("mobile-menu-btn-active");btn.setAttribute("aria-expanded","true")}close();menu.style.overflow="hidden";menu.style.transition="max-height 0.3s ease";btn.addEventListener("click",function(){var isOpen=btn.getAttribute("aria-expanded")==="true";if(isOpen)close();else open()});menu.querySelectorAll("a").forEach(function(a){a.addEventListener("click",close)});window.addEventListener("resize",function(){if(btn.getAttribute("aria-expanded")==="true")menu.style.maxHeight=menu.scrollHeight+"px"})})();'
+        }} />
         <script dangerouslySetInnerHTML={{ __html:
           'var __themes=["default","coffee"];' +
           'function __okTheme(t){return __themes.indexOf(t)!==-1}' +

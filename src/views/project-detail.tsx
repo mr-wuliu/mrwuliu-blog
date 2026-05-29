@@ -42,7 +42,7 @@ const ProjectDetailPage: FC<{ lang: Lang; project: Project; authorProfile?: Auth
     >
       <div class="flex flex-col lg:flex-row gap-8">
         <div class="lg:w-3/5">
-          <h1 class="text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
             {project.title}
           </h1>
 

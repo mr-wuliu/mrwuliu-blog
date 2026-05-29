@@ -41,8 +41,8 @@ type TagPageProps = {
 
 const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   return (
-    <article class="p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-6">
-      <h2 class="text-xl font-bold tracking-tight mb-2">
+    <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-4 sm:mb-6">
+      <h2 class="text-lg sm:text-xl font-bold tracking-tight mb-2">
         <a href={langPath(`/posts/${post.slug}`, lang)} class="text-black no-underline hover:opacity-70 transition-all">{post.title}</a>
       </h2>
       {post.publishedAt && (
@@ -50,7 +50,7 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
           {formatDateLang(post.publishedAt, lang)}
         </time>
       )}
-      {post.excerpt && <p class="mt-3 opacity-70 text-lg leading-relaxed">{post.excerpt}</p>}
+      {post.excerpt && <p class="mt-3 opacity-70 text-base sm:text-lg leading-relaxed">{post.excerpt}</p>}
       {post.tags && post.tags.length > 0 && (
         <div class="mt-3 flex flex-wrap gap-1.5">
           {post.tags.map((tag) => (
@@ -67,15 +67,15 @@ const Pagination: FC<{ pagination: PaginationData; tagSlug: string; lang: Lang }
   if (totalPages <= 1) return null
 
   return (
-    <nav class="mt-12 pt-8 border-t border-black" aria-label="pagination">
+    <nav class="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-black" aria-label="pagination">
       <div class="flex justify-between">
         {page > 1 && (
-          <a href={langPath(`/tags/${tagSlug}?page=${page - 1}`, lang)} class="text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.prev">
+          <a href={langPath(`/tags/${tagSlug}?page=${page - 1}`, lang)} class="text-xs sm:text-sm font-bold uppercase tracking-widest border border-black px-4 sm:px-6 py-2.5 sm:py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.prev">
             {t(lang, 'pagination.prev')}
           </a>
         )}
         {page < totalPages && (
-          <a href={langPath(`/tags/${tagSlug}?page=${page + 1}`, lang)} class="ml-auto text-sm font-bold uppercase tracking-widest border border-black px-6 py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.next">
+          <a href={langPath(`/tags/${tagSlug}?page=${page + 1}`, lang)} class="ml-auto text-xs sm:text-sm font-bold uppercase tracking-widest border border-black px-4 sm:px-6 py-2.5 sm:py-3 text-black hover:bg-black hover:text-white transition-all no-underline" data-t="pagination.next">
             {t(lang, 'pagination.next')}
           </a>
         )}
@@ -118,7 +118,7 @@ const TagPage: FC<TagPageProps> = ({ lang, tag, posts, allTags, pagination, auth
           </ul>
         </aside>
         <div class="flex-1 min-w-0">
-          <h1 class="text-4xl font-bold tracking-tight mb-10">{tf(lang, 'tag.pageTitle')(tag.name)}</h1>
+          <h1 class="text-2xl sm:text-4xl font-bold tracking-tight mb-6 sm:mb-10">{tf(lang, 'tag.pageTitle')(tag.name)}</h1>
           {posts.length === 0 ? (
             <div class="py-16 text-center opacity-50 text-lg">
               <p data-t="tag.noPosts">{t(lang, 'tag.noPosts')}</p>

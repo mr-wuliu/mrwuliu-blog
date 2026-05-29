@@ -76,7 +76,7 @@ const SeriesPage: FC<{ lang: Lang; collections: Collection[]; authorProfile?: Au
       }
     >
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-2" data-t="series.title">
+        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-2" data-t="series.title">
           {t(lang, 'series.title')}
         </h1>
         <p class="text-sm opacity-50 mb-8" data-t="series.subtitle">{t(lang, 'series.subtitle')}</p>
@@ -85,7 +85,7 @@ const SeriesPage: FC<{ lang: Lang; collections: Collection[]; authorProfile?: Au
             <p data-t="series.empty">{t(lang, 'series.empty')}</p>
           </div>
         ) : (
-          <div class="sm:columns-2 lg:columns-3 gap-6" style="columns: 1">
+          <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
             {collections.map((collection) => (
               <CollectionCard collection={collection} lang={lang} />
             ))}

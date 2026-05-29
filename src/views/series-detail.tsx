@@ -55,7 +55,7 @@ const SeriesDetailPage: FC<{ lang: Lang; collection: Collection; authorProfile?:
     >
       <div class="flex flex-col lg:flex-row gap-8">
         <div class="lg:w-3/5">
-          <h1 class="text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
             {displayName}
           </h1>
 

@@ -20,7 +20,7 @@ const AboutPage: FC<{ lang: Lang; content: string; authorProfile?: AuthorProfile
       }
     >
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="about.title">
+        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="about.title">
           {t(lang, 'about.title')}
         </h1>
         <div

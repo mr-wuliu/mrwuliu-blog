@@ -43,7 +43,7 @@ const TagsCloudPage: FC<{ lang: Lang; tags: TagItem[]; authorProfile?: AuthorPro
       }
     >
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="tagsCloud.title">
+        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="tagsCloud.title">
           {t(lang, 'tagsCloud.title')}
         </h1>
         {tags.length === 0 ? (

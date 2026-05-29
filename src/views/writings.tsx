@@ -36,7 +36,7 @@ const WritingsPage: FC<{ lang: Lang; posts: Post[]; authorProfile?: AuthorProfil
       }
     >
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="writings.title">
+        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="writings.title">
           {t(lang, 'writings.title')}
         </h1>
         {posts.length === 0 ? (

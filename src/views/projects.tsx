@@ -95,7 +95,7 @@ const ProjectsPage: FC<{ lang: Lang; projects: Project[]; authorProfile?: Author
       }
     >
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="projects.title">
+        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="projects.title">
           {t(lang, 'projects.title')}
         </h1>
         {projects.length === 0 ? (
@@ -103,7 +103,7 @@ const ProjectsPage: FC<{ lang: Lang; projects: Project[]; authorProfile?: Author
             <p data-t="projects.noProjects">{t(lang, 'projects.noProjects')}</p>
           </div>
         ) : (
-          <div class="sm:columns-2 lg:columns-3 gap-6" style="columns: 1">
+          <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
             {projects.map((project) => (
               <ProjectCard project={project} lang={lang} />
             ))}

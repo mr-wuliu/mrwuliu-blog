@@ -127,7 +127,7 @@ const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => 
   if (headings.length === 0) return <></>
 
   return (
-    <nav class="my-8 p-6 bg-white border border-black rounded-none">
+    <nav class="my-6 sm:my-8 p-4 sm:p-6 bg-white border border-black rounded-none">
       <h2 class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4" data-t="post.toc">{t(lang, 'post.toc')}</h2>
       <ul class="space-y-1">
         {headings.map((h) => (
@@ -165,7 +165,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   }
 
   return (
-    <section class="mt-4 pt-8 border-t-2 border-black"
+    <section class="mt-4 pt-6 sm:pt-8 border-t-2 border-black"
       data-comment-msg={successMsg}
       data-comment-err={errorMsg}
       data-comment-msg-zh={lang === 'zh' ? successMsg : otherSuccessMsg}
@@ -187,7 +187,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       {comments.length > 0 && (
         <div class="space-y-4 mb-8">
           {topLevelComments.map((c) => (
-            <div class="p-6 bg-white border border-black mb-2" id={`comment-${c.id}`}>
+            <div class="p-4 sm:p-6 bg-white border border-black mb-2" id={`comment-${c.id}`}>
               <div class="flex gap-3">
                 <div class="flex-shrink-0 mt-0.5 border border-gray-300 h-[40px] w-[40px] overflow-hidden" style="line-height:0;font-size:0" {...(c.authorEmail ? { 'data-fb': identicon(c.visitorId || ((c.authorEmail || '') + c.authorName), 40) } : {})} dangerouslySetInnerHTML={{ __html: avatarHtml(c.authorEmail, c.visitorId || ((c.authorEmail || '') + c.authorName), 40) }} />
                 <div class="flex-1 min-w-0">
@@ -200,7 +200,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
                 </div>
               </div>
               {(repliesByParent[c.id] || []).length > 0 && (
-                <div class="ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <div class="ml-6 sm:ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2">
                   {(repliesByParent[c.id] || []).map((r) => (
                     <div class="flex gap-3 py-2" id={`comment-${r.id}`}>
                       <div class="flex-shrink-0 mt-0.5 border border-gray-200 h-[32px] w-[32px] overflow-hidden" style="line-height:0;font-size:0" {...(r.authorEmail ? { 'data-fb': identicon(r.visitorId || ((r.authorEmail || '') + r.authorName), 32) } : {})} dangerouslySetInnerHTML={{ __html: avatarHtml(r.authorEmail, r.visitorId || ((r.authorEmail || '') + r.authorName), 32) }} />
@@ -385,19 +385,19 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
   if (!prev && !next) return <></>
 
   return (
-    <nav class="mt-40 pt-3 border-t-2 border-black flex justify-between">
+    <nav class="mt-16 sm:mt-40 pt-3 border-t-2 border-black flex flex-col sm:flex-row gap-3 sm:justify-between">
       <div>
         {prev && (
-          <a href={langPath(`/posts/${prev.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5">
+          <a href={langPath(`/posts/${prev.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5 max-w-full">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
-            {prev.title}
+            <span class="truncate">{prev.title}</span>
           </a>
         )}
       </div>
       <div>
         {next && (
-          <a href={langPath(`/posts/${next.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5">
-            {next.title}
+          <a href={langPath(`/posts/${next.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5 max-w-full justify-end text-right">
+            <span class="truncate">{next.title}</span>
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg>
           </a>
         )}
@@ -452,8 +452,8 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
       }
     >
       <article>
-        <h1 class="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{post.title}</h1>
-        <div class="mt-4 mb-4 flex items-center gap-4">
+        <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">{post.title}</h1>
+        <div class="mt-4 mb-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <time datetime={post.publishedAt ?? ''} class="text-xs font-bold uppercase tracking-widest opacity-50">
             {formatDateLang(post.publishedAt, lang)}
           </time>

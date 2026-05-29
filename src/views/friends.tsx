@@ -72,7 +72,7 @@ const FriendsPage: FC<{ lang: Lang; links: FriendLink[]; authorProfile?: AuthorP
       }
     >
       <div>
-        <h1 class="text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="friends.title">
+        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="friends.title">
           {t(lang, 'friends.title')}
         </h1>
         {links.length === 0 ? (

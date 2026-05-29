@@ -428,6 +428,109 @@ a[class*="hover:bg-black"]:hover {
   }
 }
 
+/* Mobile navigation */
+.mobile-menu-btn {
+  background: none;
+  border: 1.5px solid #000;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  line-height: 0;
+  flex: none;
+}
+
+.mobile-menu-btn:hover,
+.mobile-menu-btn-active {
+  background: #000;
+  color: #fff;
+}
+
+.mobile-menu-btn svg {
+  display: block;
+}
+
+.mobile-menu-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0 0.5rem 1rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mobile-menu-link {
+  display: block;
+  padding: 0.75rem 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  color: #000;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mobile-menu-link:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.mobile-menu-link:last-child {
+  border-bottom: none;
+}
+
+/* Post content table overflow on mobile */
+@media (max-width: 640px) {
+  .post-content table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Mobile responsive tweaks */
+@media (max-width: 640px) {
+  .post-content ul,
+  .post-content ol {
+    padding-left: 1.25rem;
+  }
+
+  .post-content blockquote {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+/* Coffee theme — mobile nav */
+[data-theme="coffee"] .mobile-menu-btn {
+  border-color: #795548;
+  color: #3e2723;
+  background: #fffdfb;
+}
+
+[data-theme="coffee"] .mobile-menu-btn:hover,
+[data-theme="coffee"] .mobile-menu-btn-active {
+  background: #4e342e;
+  color: #fff;
+  border-color: #4e342e;
+}
+
+[data-theme="coffee"] .mobile-menu-link {
+  color: #3e2723;
+  border-bottom-color: rgba(121, 85, 72, 0.15);
+}
+
+[data-theme="coffee"] .mobile-menu-controls {
+  border-bottom-color: rgba(121, 85, 72, 0.15);
+}
+
+[data-theme="coffee"] .mobile-menu-link:hover {
+  background: rgba(121, 85, 72, 0.06);
+}
+
 .lang-toggle {
   position: relative;
   display: inline-flex;
