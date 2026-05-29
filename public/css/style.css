@@ -432,19 +432,19 @@ a[class*="hover:bg-black"]:hover {
   position: relative;
   display: inline-flex;
   align-items: center;
+  flex: none;
   border-radius: 9999px;
   background: #fff;
   border: 1.5px solid #000;
   cursor: pointer;
   padding: 4px;
   text-decoration: none;
-  margin-left: 1.5rem;
   width: 88px;
   box-sizing: border-box;
 }
 
 .theme-select {
-  margin-left: 1.5rem;
+  flex: none;
   border: 1.5px solid #000;
   background: #fff;
   color: #000;
