@@ -11,6 +11,7 @@ type SEOProps = {
   url?: string
   image?: string
   type?: 'website' | 'article'
+  tags?: string[]
   siteName?: string
   publishedTime?: string
   modifiedTime?: string
@@ -25,6 +26,7 @@ const SEO: FC<SEOProps> = ({
   url,
   image,
   type = 'website',
+  tags = [],
   siteName = SITE_NAME,
   publishedTime,
   modifiedTime,
@@ -44,12 +46,16 @@ const SEO: FC<SEOProps> = ({
 
   // Build hreflang: Chinese and English alternate
   const zhPath = currentPath ? currentPath.replace(/^\/en/, '') : '/'
-  const enPath = `/en${zhPath}`
+  const enPath = zhPath === '/' ? '/en' : `/en${zhPath}`
 
   return (
     <>
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      <meta name="application-name" content={siteName} />
+      <meta name="generator" content="Hono on Cloudflare Workers" />
+      {tags.length > 0 && <meta name="keywords" content={tags.join(', ')} />}
       <link rel="canonical" href={canonicalUrl} />
 
       {/* Hreflang for i18n — critical for multilingual SEO */}
@@ -66,6 +72,7 @@ const SEO: FC<SEOProps> = ({
       <meta property="og:locale" content={lang === 'zh' ? 'zh_CN' : 'en_US'} />
       <meta property="og:locale:alternate" content={lang === 'zh' ? 'en_US' : 'zh_CN'} />
       <meta property="og:image" content={imageUrl} />
+      <meta property="og:image:alt" content={title} />
 
       {/* Article-specific OG tags — AI engines & Google use these for citation decisions */}
       {type === 'article' && publishedTime && (
@@ -77,6 +84,9 @@ const SEO: FC<SEOProps> = ({
       {type === 'article' && authorName && (
         <meta property="article:author" content={authorName} />
       )}
+      {type === 'article' && tags.map((tag) => (
+        <meta property="article:tag" content={tag} />
+      ))}
 
       {/* Twitter Card */}
       <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />

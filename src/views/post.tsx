@@ -410,13 +410,19 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
   const postUrl = langPath(`/posts/${post.slug}`, lang)
   const publishedTime = post.publishedAt ?? post.createdAt
   const modifiedTime = post.updatedAt !== publishedTime ? post.updatedAt : undefined
+  const coverImageUrl = post.coverImageKey ? `/images/${post.coverImageKey}` : undefined
+  const tagNames = post.tags.map((tag) => tag.name)
+  const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+  const wordCount = textContent ? textContent.split(/\s+/).length : undefined
 
   return (
     <Layout
       title={post.title}
       description={post.excerpt || post.title}
       url={postUrl}
+      image={coverImageUrl}
       type="article"
+      tags={tagNames}
       authorProfile={authorProfile}
       lang={lang}
       currentPath={`/posts/${post.slug}`}
@@ -432,6 +438,10 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
             datePublished: publishedTime,
             dateModified: modifiedTime,
             authorName: 'mrwuliu',
+            imageUrl: coverImageUrl,
+            tags: tagNames,
+            lang,
+            wordCount,
           }} />
           <BreadcrumbSchema items={[
             { name: lang === 'zh' ? '首页' : 'Home', url: langPath('/', lang) },

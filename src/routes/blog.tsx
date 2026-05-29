@@ -508,12 +508,94 @@ blogRoutes.get('/en/feed.xml', async (c) => {
 
 blogRoutes.get('/robots.txt', (c) => {
   const baseUrl = new URL(c.req.url).origin
-  const txt = `User-agent: *
-Allow: /
-
-Sitemap: ${baseUrl}/sitemap.xml
-`
+  const aiCrawlers = [
+    'ChatGPT-User',
+    'OAI-SearchBot',
+    'PerplexityBot',
+    'Google-Extended',
+    'Bytespider',
+    'CCBot',
+    'ClaudeBot',
+    'anthropic-ai',
+  ]
+  const publicRules = ['Allow: /', 'Disallow: /admin/', 'Disallow: /api/']
+  const groups = [
+    ['User-agent: *', ...publicRules].join('\n'),
+    ...aiCrawlers.map((crawler) => [`User-agent: ${crawler}`, ...publicRules].join('\n')),
+  ]
+  const txt = `${groups.join('\n\n')}\n\nSitemap: ${baseUrl}/sitemap.xml\n`
   return c.text(txt, 200, { 'Cache-Control': 'public, max-age=86400' })
+})
+
+blogRoutes.get('/llms.txt', async (c) => {
+  const db = createDb(c.env.DB)
+  const baseUrl = new URL(c.req.url).origin
+  const [authorProfile, result, allTags, allCollections] = await Promise.all([
+    getAuthorProfile(db),
+    getPublishedPosts(db, { page: 1, limit: 30 }),
+    db.select({ name: tags.name, slug: tags.slug }).from(tags).limit(40),
+    db.select({
+      name: collections.name,
+      slug: collections.slug,
+    }).from(collections).where(eq(collections.status, 'published')).limit(20),
+  ])
+
+  const lines = [
+    "# mrwuliu's blog",
+    '',
+    '> Personal blog by mrwuliu about software engineering, web development, cloud computing, AI tools, developer workflow, and technical life notes. Default language is Chinese; English pages are available under /en/.',
+    '',
+    '## Canonical Site',
+    '',
+    `- Home: ${baseUrl}/`,
+    `- English: ${baseUrl}/en`,
+    `- RSS: ${baseUrl}/feed.xml`,
+    `- Sitemap: ${baseUrl}/sitemap.xml`,
+    '',
+    '## Author',
+    '',
+    '- Name: mrwuliu',
+    ...(authorProfile?.github ? [`- GitHub: ${authorProfile.github}`] : []),
+    ...(authorProfile?.email ? [`- Email: ${authorProfile.email}`] : []),
+    '',
+    '## Main Sections',
+    '',
+    `- Writings: ${baseUrl}/writings`,
+    `- Series: ${baseUrl}/series`,
+    `- Projects: ${baseUrl}/projects`,
+    `- Tags: ${baseUrl}/tags-cloud`,
+    `- About: ${baseUrl}/about`,
+    '',
+    '## Recent Posts',
+    '',
+    ...result.posts.map((post) => {
+      const date = post.publishedAt ? ` (${post.publishedAt.slice(0, 10)})` : ''
+      const excerpt = post.excerpt ? ` - ${post.excerpt.replace(/\s+/g, ' ').trim()}` : ''
+      return `- [${post.title}](${baseUrl}/posts/${post.slug})${date}${excerpt}`
+    }),
+    '',
+    '## Series',
+    '',
+    ...(allCollections.length > 0
+      ? allCollections.map((collection) => `- [${collection.name}](${baseUrl}/series/${collection.slug})`)
+      : ['- No published series yet.']),
+    '',
+    '## Topic Tags',
+    '',
+    ...(allTags.length > 0
+      ? allTags.map((tag) => `- [${tag.name}](${baseUrl}/tags/${tag.slug})`)
+      : ['- No tags yet.']),
+    '',
+    '## Content Use Guidance',
+    '',
+    '- Prefer canonical URLs from this file or sitemap.xml when citing.',
+    '- Use article titles, publication dates, tags, and excerpts as citation context.',
+  ]
+
+  return c.text(lines.join('\n'), 200, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+  })
 })
 
 blogRoutes.get('/sitemap.xml', async (c) => {

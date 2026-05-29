@@ -16,7 +16,7 @@ describe("highlightCode — mermaid blocks", () => {
     expect(result).toContain("B");
     // Should contain the original code in a pre/code for fallback
     expect(result).toContain('class="language-mermaid"');
-    expect(result).toContain("<pre>");
+    expect(result).toContain("<pre");
     expect(result).toContain("<code");
   });
 

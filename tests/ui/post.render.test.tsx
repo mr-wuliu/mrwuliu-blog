@@ -36,4 +36,40 @@ describe("PostPage render", () => {
     expect(html).toContain("Leave a Comment");
     expect(html).toContain('href="/en/posts/test-post-002"');
   });
+
+  it("renders article SEO tags and structured data", () => {
+    const html = renderToString(
+      <PostPage
+        lang="zh"
+        post={{
+          id: "p2",
+          title: "SEO Test",
+          slug: "seo-test",
+          content: "raw",
+          excerpt: "Search description",
+          coverImageKey: "images/cover.webp",
+          status: "published",
+          hidden: false,
+          pinned: false,
+          publishedAt: "2026-04-03T00:00:00.000Z",
+          createdAt: "2026-04-03T00:00:00.000Z",
+          updatedAt: "2026-04-04T00:00:00.000Z",
+          tags: [{ id: "t1", name: "SEO", slug: "seo", createdAt: "2026-04-03T00:00:00.000Z" }],
+        }}
+        content={'<p>Search engine content</p>'}
+        headings={[]}
+        comments={[]}
+        prev={null}
+        next={null}
+      />
+    );
+
+    expect(html).toContain('<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"');
+    expect(html).toContain('<meta name="keywords" content="SEO"');
+    expect(html).toContain('<meta property="article:tag" content="SEO"');
+    expect(html).toContain('<meta property="og:image" content="https://mrwuliu.top/images/images/cover.webp"');
+    expect(html).toContain('"@type":"BlogPosting"');
+    expect(html).toContain('"keywords":"SEO"');
+    expect(html).toContain('"inLanguage":"zh-CN"');
+  });
 });

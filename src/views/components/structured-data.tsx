@@ -16,6 +16,9 @@ type ArticleSchemaProps = {
   authorName?: string
   authorUrl?: string
   imageUrl?: string
+  tags?: string[]
+  lang?: 'zh' | 'en'
+  wordCount?: number
 }
 
 export const ArticleSchema: FC<{ data: ArticleSchemaProps }> = ({ data }) => {
@@ -25,8 +28,14 @@ export const ArticleSchema: FC<{ data: ArticleSchemaProps }> = ({ data }) => {
     headline: data.title,
     description: data.description,
     url: `${BASE_URL}${data.url}`,
+    inLanguage: data.lang === 'en' ? 'en' : 'zh-CN',
     datePublished: data.datePublished,
     ...(data.dateModified && { dateModified: data.dateModified }),
+    ...(data.tags && data.tags.length > 0 && {
+      keywords: data.tags.join(', '),
+      articleSection: data.tags[0],
+    }),
+    ...(data.wordCount && { wordCount: data.wordCount }),
     author: {
       '@type': 'Person',
       name: data.authorName || 'mrwuliu',

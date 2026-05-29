@@ -105,7 +105,7 @@ ${urls}
 
 function buildXhtmlLinks(loc: string, siteUrl: string): string {
   const zhPath = loc.replace(/^\/en/, '') || '/'
-  const enPath = loc.startsWith('/en') ? loc : `/en${loc}`
+  const enPath = loc.startsWith('/en') ? loc : (loc === '/' ? '/en' : `/en${loc}`)
   return `
     <xhtml:link rel="alternate" hreflang="zh-CN" href="${siteUrl}${zhPath}" />
     <xhtml:link rel="alternate" hreflang="en" href="${siteUrl}${enPath}" />
