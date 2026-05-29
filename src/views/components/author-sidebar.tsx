@@ -5,12 +5,14 @@ type AuthorProfile = {
   bio: string
   github: string
   email: string
+  wechat: string
+  xiaohongshu: string
 }
 
 const AuthorSidebar: FC<{ profile: AuthorProfile }> = ({ profile }) => {
-  const { avatar, bio, github, email } = profile
+  const { avatar, bio, github, email, wechat, xiaohongshu } = profile
 
-  if (!avatar && !bio && !github && !email) {
+  if (!avatar && !bio && !github && !email && !wechat && !xiaohongshu) {
     return null
   }
 
@@ -24,7 +26,7 @@ const AuthorSidebar: FC<{ profile: AuthorProfile }> = ({ profile }) => {
         />
       )}
       {bio && (
-        <p class="text-sm leading-relaxed opacity-70">{bio}</p>
+        <p class="text-sm leading-relaxed opacity-70 text-black" style="font-family: 'Georgia', 'Noto Serif SC', serif">{bio}</p>
       )}
       <div class="flex flex-wrap gap-2">
         {github && (
@@ -52,6 +54,20 @@ const AuthorSidebar: FC<{ profile: AuthorProfile }> = ({ profile }) => {
           {email}
         </a>
       )}
+      <div class="space-y-1">
+        {wechat && (
+          <span class="flex items-center gap-1.5">
+            <img src="/wechat.png" alt="公众号" class="w-4 h-4" />
+            <span class="text-sm text-black" style="font-family: 'Georgia', 'Noto Serif SC', serif">{wechat}</span>
+          </span>
+        )}
+        {xiaohongshu && (
+          <span class="flex items-center gap-1.5">
+            <img src="https://images.seeklogo.com/logo-png/55/2/xiaohongshu-logo-png_seeklogo-557258.png" alt="小红书" class="w-4 h-4" />
+            <span class="text-sm text-black" style="font-family: 'Georgia', 'Noto Serif SC', serif">{xiaohongshu}</span>
+          </span>
+        )}
+      </div>
     </div>
   )
 }

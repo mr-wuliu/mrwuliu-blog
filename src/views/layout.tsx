@@ -30,6 +30,7 @@ type LayoutProps = PropsWithChildren<{
   url?: string
   image?: string
   type?: 'website' | 'article'
+  tags?: string[]
   authorProfile?: AuthorProfile
   lang: Lang
   currentPath?: string
@@ -45,6 +46,7 @@ const Layout: FC<LayoutProps> = ({
   url,
   image,
   type = 'website',
+  tags,
   authorProfile,
   lang,
   currentPath = '/',
@@ -54,7 +56,7 @@ const Layout: FC<LayoutProps> = ({
   extraHead,
   children,
 }) => {
-  const hasSidebar = !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email))
+  const hasSidebar = !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
   const toggleHref = langPath(currentPath, otherLang(lang))
   const year = new Date().getFullYear()
 
@@ -93,11 +95,8 @@ const Layout: FC<LayoutProps> = ({
           'document.documentElement.lang=l==="zh"?"zh-CN":"en";' +
           '}'
         }} />
-        {lang === 'zh' ? (
-          <link rel="alternate" type="application/rss+xml" title="RSS Feed (中文)" href="/feed.xml" />
-        ) : (
-          <link rel="alternate" type="application/rss+xml" title="RSS Feed (English)" href="/en/feed.xml" />
-        )}
+        <link rel="alternate" type="application/rss+xml" title="RSS Feed (中文)" href="/feed.xml" />
+        <link rel="alternate" type="application/rss+xml" title="RSS Feed (English)" href="/en/feed.xml" />
         {type === 'article' && (
           <link
             rel="stylesheet"
@@ -130,6 +129,7 @@ const Layout: FC<LayoutProps> = ({
           url={url}
           image={image}
           type={type}
+          tags={tags}
           lang={lang}
           currentPath={currentPath}
           publishedTime={publishedTime}

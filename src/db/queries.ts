@@ -184,7 +184,7 @@ export async function deleteProject(db: Database, id: string) {
 }
 
 export async function getAuthorProfile(db: Database) {
-  const keys = ['author_avatar', 'author_bio', 'author_github', 'author_email']
+  const keys = ['author_avatar', 'author_bio', 'author_github', 'author_email', 'author_wechat', 'author_xiaohongshu']
   const results = await db.select().from(siteConfig).where(inArray(siteConfig.key, keys))
   const map: Record<string, string> = {}
   for (const r of results) {
@@ -195,6 +195,8 @@ export async function getAuthorProfile(db: Database) {
     bio: map['author_bio'] || '',
     github: map['author_github'] || '',
     email: map['author_email'] || '',
+    wechat: map['author_wechat'] || '',
+    xiaohongshu: map['author_xiaohongshu'] || '',
   }
 }
 
