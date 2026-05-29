@@ -143,10 +143,10 @@ const Layout: FC<LayoutProps> = ({
           <nav class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-4">
             {hasSidebar ? (
               <div class="lg:flex lg:gap-16">
-                <div class="flex-1 flex justify-between items-center">
+                <div class="flex-1 flex items-center justify-between gap-6 min-w-0">
                   <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
-                  <div class="flex items-center gap-6 ml-auto">
-                    <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0">
+                  <div class="flex-1 overflow-x-auto">
+                    <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
                       <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
                       <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
                       <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
@@ -154,26 +154,25 @@ const Layout: FC<LayoutProps> = ({
                       <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
                       <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                     </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                      <select class="theme-select" aria-label="Theme">
-                        <option value="default">Default</option>
-                        <option value="coffee">Coffee</option>
-                      </select>
-                      <a href={toggleHref} class="lang-toggle">
-                        <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
-                        <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
-                        <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
-                      </a>
-                    </div>
                   </div>
                 </div>
-                <div class="hidden lg:block w-40 shrink-0"></div>
+                <div class="flex items-center gap-3 shrink-0 ml-auto">
+                  <select class="theme-select" aria-label="Theme">
+                    <option value="default">Default</option>
+                    <option value="coffee">Coffee</option>
+                  </select>
+                  <a href={toggleHref} class="lang-toggle">
+                    <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                    <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
+                    <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
+                  </a>
+                </div>
               </div>
             ) : (
-              <div class="flex justify-between items-center">
+              <div class="flex items-center justify-between gap-6">
                 <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
-                <div class="flex items-center gap-6 ml-auto">
-                  <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0">
+                <div class="flex-1 overflow-x-auto">
+                  <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
                     <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
                     <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
                     <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
@@ -181,17 +180,17 @@ const Layout: FC<LayoutProps> = ({
                     <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
                     <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                   </div>
-                  <div class="flex items-center gap-3 shrink-0">
-                    <select class="theme-select" aria-label="Theme">
-                      <option value="default">Default</option>
-                      <option value="coffee">Coffee</option>
-                    </select>
-                    <a href={toggleHref} class="lang-toggle">
-                      <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
-                      <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
-                      <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
-                    </a>
-                  </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0 ml-auto">
+                  <select class="theme-select" aria-label="Theme">
+                    <option value="default">Default</option>
+                    <option value="coffee">Coffee</option>
+                  </select>
+                  <a href={toggleHref} class="lang-toggle">
+                    <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
+                    <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
+                    <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
+                  </a>
                 </div>
               </div>
             )}

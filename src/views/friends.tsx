@@ -23,27 +23,27 @@ const FriendLinkCard: FC<{ link: FriendLink; lang: Lang }> = ({ link, lang }) =>
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      class="block border-2 border-black p-4 hover:-translate-y-1 transition-all no-underline text-black"
+      class="flex items-start border-2 border-black p-4 hover:-translate-y-1 transition-all no-underline text-black"
     >
-      <div class="flex items-center mb-2">
-        {link.avatar ? (
-          <img
-            src={link.avatar}
-            alt={displayName}
-            class="w-8 h-8 border border-black mr-3 object-cover shrink-0"
-          />
-        ) : (
-          <div class="w-8 h-8 border border-black mr-3 flex items-center justify-center text-sm font-bold shrink-0">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <span class="font-bold text-sm uppercase tracking-wide truncate">
+      {link.avatar ? (
+        <img
+          src={link.avatar}
+          alt={displayName}
+          class="w-14 h-14 border border-black mr-4 object-cover shrink-0"
+        />
+      ) : (
+        <div class="w-14 h-14 border border-black mr-4 flex items-center justify-center text-lg font-bold shrink-0">
+          {displayName.charAt(0).toUpperCase()}
+        </div>
+      )}
+      <div class="min-w-0">
+        <span class="block font-bold text-sm uppercase tracking-wide truncate">
           {displayName}
         </span>
+        {displayDesc && (
+          <p class="text-xs text-gray-600 leading-relaxed line-clamp-2 mt-1">{displayDesc}</p>
+        )}
       </div>
-      {displayDesc && (
-        <p class="text-xs text-gray-600 leading-relaxed line-clamp-2">{displayDesc}</p>
-      )}
     </a>
   )
 }
@@ -80,7 +80,7 @@ const FriendsPage: FC<{ lang: Lang; links: FriendLink[]; authorProfile?: AuthorP
             <p data-t="friends.noLinks">{t(lang, 'friends.noLinks')}</p>
           </div>
         ) : (
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {links.map((link) => (
               <FriendLinkCard link={link} lang={lang} />
             ))}
