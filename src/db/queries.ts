@@ -79,7 +79,7 @@ export async function getPublishedPosts(
     .select()
     .from(posts)
     .where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
-    .orderBy(desc(posts.pinned), desc(posts.publishedAt))
+    .orderBy(desc(posts.pinned), desc(posts.createdAt))
     .limit(limit)
     .offset(offset)
 

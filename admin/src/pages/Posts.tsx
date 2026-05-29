@@ -46,8 +46,14 @@ export default function Posts() {
   const navigate = useNavigate()
   const { t } = useTranslation()
 
-  const [status, setStatus] = useState<StatusFilter>(null)
-  const [page, setPage] = useState(1)
+  const [status, setStatus] = useState<StatusFilter>(() => {
+    const saved = sessionStorage.getItem('posts-filter-status')
+    return saved === 'published' || saved === 'draft' ? saved : null
+  })
+  const [page, setPage] = useState(() => {
+    const saved = sessionStorage.getItem('posts-page')
+    return saved ? Math.max(1, Number(saved) || 1) : 1
+  })
   const [search, setSearch] = useState('')
   const [posts, setPosts] = useState<Post[]>([])
   const [total, setTotal] = useState(0)
@@ -68,6 +74,14 @@ export default function Posts() {
       setLoading(false)
     }
   }, [page, status])
+
+  useEffect(() => {
+    sessionStorage.setItem('posts-page', String(page))
+  }, [page])
+
+  useEffect(() => {
+    sessionStorage.setItem('posts-filter-status', status ?? '')
+  }, [status])
 
   useEffect(() => {
     fetchPosts()
