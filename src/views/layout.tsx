@@ -286,8 +286,7 @@ const Layout: FC<LayoutProps> = ({
           'document.querySelectorAll("[data-placeholder]").forEach(function(e){var v=__t(e.getAttribute("data-placeholder"));if(v)e.setAttribute("placeholder",v)});' +
           'document.querySelectorAll("[data-thref]").forEach(function(e){var k=e.getAttribute("data-thref");var b=nl==="en"?"/en":"";e.setAttribute("href",b+k)});' +
           'document.querySelectorAll("[data-comment-msg]").forEach(function(e){e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+nl));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+nl));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+nl))});' +
-          'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+nl);if(v)e.textContent=v});' +
-          '__prefetchLang(tg.href)}' +
+'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+nl);if(v)e.textContent=v})}' +
           '});' +
           '});'
         }} />
