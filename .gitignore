@@ -8,3 +8,4 @@ dist
 style.html
 public/admin/
 tmp/
+.playwright-mcp/
