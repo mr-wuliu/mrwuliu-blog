@@ -72,6 +72,7 @@ export default {
     nameLabel: '昵称 *',
     namePlaceholder: '昵称 *（默认 momo）',
     emailLabel: '邮箱（可选）',
+    emailNote: '您的邮箱不会被公开。',
     contentLabel: '评论内容 *',
     submit: '提交评论',
     commentSuccess: '评论已提交，需要人工审核后才会显示。',

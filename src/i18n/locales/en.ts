@@ -72,6 +72,7 @@ export default {
     nameLabel: 'Name *',
     namePlaceholder: 'Name * (defaults to momo)',
     emailLabel: 'Email (optional)',
+    emailNote: 'Your email will not be published.',
     contentLabel: 'Comment *',
     submit: 'Submit',
     commentSuccess: 'Comment submitted. It will appear after manual review.',

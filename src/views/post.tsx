@@ -250,6 +250,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
               placeholder={t(lang, 'post.emailLabel')}
               data-placeholder="post.emailLabel"
               class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
+            <p class="text-xs text-gray-400 mt-1" data-t="post.emailNote">{t(lang, 'post.emailNote')}</p>
           </div>
           <div>
             <textarea id="content" name="content" required maxlength={1000} rows={4}
