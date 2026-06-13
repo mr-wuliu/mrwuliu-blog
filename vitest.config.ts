@@ -17,6 +17,8 @@ export default defineConfig({
             ADMIN_USERNAME: "testadmin",
             ADMIN_PASSWORD: "testpassword123",
             API_KEY: "test-api-key-for-integration-tests",
+            RESEND_API_KEY: "test-resend-api-key",
+            MAIL_DOMAIN: "test.mail.example.com",
           },
         },
       };

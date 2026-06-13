@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes, collections } from '../db/schema'
@@ -19,10 +20,12 @@ import SeriesPage from '../views/series'
 import SeriesDetailPage from '../views/series-detail'
 import FriendsPage from '../views/friends'
 import UnsubscribePage from '../views/unsubscribe'
+import LoginPage from '../views/login'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
 import { getClientIp, getVisitorFingerprint, isBotAgent, trackPostView, trackSiteView } from '../utils/analytics'
 import { verifyToken } from '../utils/token'
+import { getSessionUser } from '../services/auth'
 import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
@@ -30,6 +33,8 @@ type Bindings = {
   IMAGES: R2Bucket
   ASSETS: Fetcher
   JWT_SECRET: string
+  RESEND_API_KEY: string
+  MAIL_DOMAIN: string
   ADMIN_USERNAME: string
   ADMIN_PASSWORD: string
 }
@@ -365,15 +370,30 @@ function createBlogRouter(lang: Lang) {
     const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
     const cf = c.req.raw as Request & { cf?: { country?: string } }
 
-    const autoApproveConfig = await getSiteConfig(db, 'comment_auto_approve')
-    const commentStatus = autoApproveConfig?.value === 'true' ? 'approved' : 'pending'
+    const accessCookie = getCookie(c, 'access_token')
+    const refreshCookie = getCookie(c, 'refresh_token')
+    const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
+    const sessionUser = session?.user ?? null
+
+    let commentStatus: 'pending' | 'approved'
+    if (sessionUser) {
+      const regAutoApprove = await getSiteConfig(db, 'comment_registered_auto_approve')
+      commentStatus = regAutoApprove?.value === 'false' ? 'pending' : 'approved'
+    } else {
+      const anonAutoApprove = await getSiteConfig(db, 'comment_anonymous_auto_approve')
+      commentStatus = anonAutoApprove?.value === 'true' ? 'approved' : 'pending'
+    }
+
+    const finalAuthorName = sessionUser ? sessionUser.name : escapeHtml(authorName)
+    const finalAuthorEmail = sessionUser ? sessionUser.email : (authorEmail ? escapeHtml(authorEmail) : null)
 
     await db.insert(comments).values({
       id,
       postId: post.id,
       parentId: parentId ? escapeHtml(parentId) : null,
-      authorName: escapeHtml(authorName),
-      authorEmail: authorEmail ? escapeHtml(authorEmail) : null,
+      authorName: finalAuthorName,
+      authorEmail: finalAuthorEmail,
+      userId: sessionUser ? sessionUser.id : null,
       visitorId: visitorId ? escapeHtml(visitorId) : null,
       ipHash,
       ipMasked,
@@ -381,7 +401,7 @@ function createBlogRouter(lang: Lang) {
       userAgent: userAgent.slice(0, 500),
       content: escapeHtml(content),
       status: commentStatus,
-      notifyOnReply: notifyOnReply && !!authorEmail,
+      notifyOnReply: notifyOnReply && !!finalAuthorEmail,
     })
 
     return c.redirect(langPath(`/posts/${slug}`, lang))
@@ -473,6 +493,12 @@ function createBlogRouter(lang: Lang) {
     const authorProfile = await getAuthorProfile(db)
     c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<FriendsPage lang={lang} links={links} authorProfile={authorProfile} />)
+  })
+
+  router.get('/login', async (c) => {
+    const nextPath = c.req.query('next') || langPath('/', lang)
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+    return c.html(<LoginPage lang={lang} nextPath={nextPath} />)
   })
 
   router.get('/unsubscribe', async (c) => {

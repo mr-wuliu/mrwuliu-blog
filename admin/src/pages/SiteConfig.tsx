@@ -19,7 +19,8 @@ export default function SiteConfig() {
   const [bio, setBio] = useState('')
   const [github, setGithub] = useState('')
   const [email, setEmail] = useState('')
-  const [autoApprove, setAutoApprove] = useState(false)
+  const [anonAutoApprove, setAnonAutoApprove] = useState(false)
+  const [regAutoApprove, setRegAutoApprove] = useState(true)
 
   const [uploading, setUploading] = useState(false)
   const [hoverAvatar, setHoverAvatar] = useState(false)
@@ -41,13 +42,25 @@ export default function SiteConfig() {
       api.get<SiteConfigData>('/site-config/author_bio').catch(() => null),
       api.get<SiteConfigData>('/site-config/author_github').catch(() => null),
       api.get<SiteConfigData>('/site-config/author_email').catch(() => null),
+      api.get<SiteConfigData>('/site-config/comment_anonymous_auto_approve').catch(() => null),
+      api.get<SiteConfigData>('/site-config/comment_registered_auto_approve').catch(() => null),
       api.get<SiteConfigData>('/site-config/comment_auto_approve').catch(() => null),
-    ]).then(([avatarData, bioData, githubData, emailData, autoApproveData]) => {
+    ]).then(([avatarData, bioData, githubData, emailData, anonData, regData, legacyData]) => {
       setAvatar(avatarData?.value || '')
       setBio(bioData?.value || '')
       setGithub(githubData?.value || '')
       setEmail(emailData?.value || '')
-      setAutoApprove(autoApproveData?.value === 'true')
+      // Migrate from legacy single toggle if new keys don't exist yet
+      if (anonData) {
+        setAnonAutoApprove(anonData.value === 'true')
+      } else if (legacyData && legacyData.value === 'true') {
+        setAnonAutoApprove(true)
+      }
+      if (regData) {
+        setRegAutoApprove(regData.value === 'true')
+      } else if (legacyData && legacyData.value === 'true') {
+        setRegAutoApprove(true)
+      }
     })
   }, [])
 
@@ -93,7 +106,8 @@ export default function SiteConfig() {
         api.put('/site-config', { key: 'author_bio', value: bio }),
         api.put('/site-config', { key: 'author_github', value: github }),
         api.put('/site-config', { key: 'author_email', value: email }),
-        api.put('/site-config', { key: 'comment_auto_approve', value: autoApprove ? 'true' : 'false' }),
+        api.put('/site-config', { key: 'comment_anonymous_auto_approve', value: anonAutoApprove ? 'true' : 'false' }),
+        api.put('/site-config', { key: 'comment_registered_auto_approve', value: regAutoApprove ? 'true' : 'false' }),
       ])
       alert(t('siteConfig.saveSuccess'))
     } catch {
@@ -210,22 +224,42 @@ export default function SiteConfig() {
       <div className="mt-8">
         <h2 className="text-xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">{t('siteConfig.commentSettings')}</h2>
 
-        <div className="flex items-center justify-between p-4 border-2 border-black">
-          <div>
-            <div className="text-sm font-bold uppercase tracking-widest">{t('siteConfig.commentAutoApproveLabel')}</div>
-            <div className="text-xs text-gray-500 mt-1">{t('siteConfig.commentAutoApproveHint')}</div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 border-2 border-black">
+            <div>
+              <div className="text-sm font-bold uppercase tracking-widest">{t('siteConfig.commentRegApproveLabel')}</div>
+              <div className="text-xs text-gray-500 mt-1">{t('siteConfig.commentRegApproveHint')}</div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={regAutoApprove}
+              onClick={() => setRegAutoApprove(!regAutoApprove)}
+              className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors flex-shrink-0 ${regAutoApprove ? 'bg-black' : 'bg-white'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transition-transform ${regAutoApprove ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-black'}`}
+              />
+            </button>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoApprove}
-            onClick={() => setAutoApprove(!autoApprove)}
-            className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors flex-shrink-0 ${autoApprove ? 'bg-black' : 'bg-white'}`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transition-transform ${autoApprove ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-black'}`}
-            />
-          </button>
+
+          <div className="flex items-center justify-between p-4 border-2 border-black">
+            <div>
+              <div className="text-sm font-bold uppercase tracking-widest">{t('siteConfig.commentAnonApproveLabel')}</div>
+              <div className="text-xs text-gray-500 mt-1">{t('siteConfig.commentAnonApproveHint')}</div>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={anonAutoApprove}
+              onClick={() => setAnonAutoApprove(!anonAutoApprove)}
+              className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors flex-shrink-0 ${anonAutoApprove ? 'bg-black' : 'bg-white'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transition-transform ${anonAutoApprove ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-black'}`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 

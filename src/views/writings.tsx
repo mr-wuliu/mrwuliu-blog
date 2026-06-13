@@ -49,7 +49,7 @@ const WritingsPage: FC<{ lang: Lang; posts: Post[]; authorProfile?: AuthorProfil
               <li>
                 <a
                   href={langPath(`/posts/${post.slug}`, lang)}
-                  class="flex justify-between items-baseline py-4 group hover:bg-black hover:bg-opacity-5 transition-colors px-2 -mx-2 no-underline text-black"
+                  class="flex justify-between items-baseline py-4 group hover:bg-black/5 transition-colors px-2 -mx-2 no-underline text-black"
                 >
                   <span class="text-base group-hover:underline">{post.title}</span>
                   <span class="text-xs uppercase tracking-widest opacity-50 shrink-0 ml-4">

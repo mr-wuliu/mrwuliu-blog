@@ -1,11 +1,13 @@
 import { Hono } from 'hono'
-import { eq, and, desc, sql } from 'drizzle-orm'
+import { eq, and, desc, sql, isNull } from 'drizzle-orm'
+import { getCookie } from 'hono/cookie'
 import { createDb } from '../db'
-import { comments, posts } from '../db/schema'
+import { comments, posts, users } from '../db/schema'
 import { getSiteConfig } from '../db/queries'
 import { checkRateLimit } from '../utils/rate-limit'
 import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
 import { sendReplyNotification } from '../services/email'
+import { getSessionUser, revokeAllUserTokens } from '../services/auth'
 
 type Bindings = {
   DB: D1Database
@@ -73,15 +75,30 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
   const cf = c.req.raw as Request & { cf?: { country?: string } }
 
-  const autoApproveConfig = await getSiteConfig(db, 'comment_auto_approve')
-  const commentStatus = autoApproveConfig?.value === 'true' ? 'approved' : 'pending'
+  const accessCookie = getCookie(c, 'access_token')
+  const refreshCookie = getCookie(c, 'refresh_token')
+  const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
+  const sessionUser = session?.user ?? null
+
+  let commentStatus: 'pending' | 'approved'
+  if (sessionUser) {
+    const regAutoApprove = await getSiteConfig(db, 'comment_registered_auto_approve')
+    commentStatus = regAutoApprove?.value === 'false' ? 'pending' : 'approved'
+  } else {
+    const anonAutoApprove = await getSiteConfig(db, 'comment_anonymous_auto_approve')
+    commentStatus = anonAutoApprove?.value === 'true' ? 'approved' : 'pending'
+  }
+
+  const finalAuthorName = sessionUser ? sessionUser.name : escapedName
+  const finalAuthorEmail = sessionUser ? sessionUser.email : escapedEmail
 
   await db.insert(comments).values({
     id,
     postId,
     parentId: escapedParentId,
-    authorName: escapedName,
-    authorEmail: escapedEmail,
+    authorName: finalAuthorName,
+    authorEmail: finalAuthorEmail,
+    userId: sessionUser ? sessionUser.id : null,
     visitorId: escapedVisitorId,
     ipHash,
     ipMasked,
@@ -89,10 +106,10 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     userAgent: userAgent.slice(0, 500),
     content: escapedContent,
     status: commentStatus,
-    notifyOnReply: body.notifyOnReply === true && !!escapedEmail,
+    notifyOnReply: body.notifyOnReply === true && !!finalAuthorEmail,
   })
 
-  return c.json({ id, status: commentStatus, authorName: escapedName, content: escapedContent }, 201)
+  return c.json({ id, status: commentStatus, authorName: finalAuthorName, content: escapedContent }, 201)
 })
 
 commentRoutes.get('/posts/:postId/comments', async (c) => {
@@ -223,6 +240,67 @@ commentRoutes.delete('/admin/comments/:id', async (c) => {
   }
 
   return c.json({ success: true })
+})
+
+// --- Admin user management ---
+
+commentRoutes.get('/admin/users', async (c) => {
+  const db = createDb(c.env.DB)
+  const page = Number(c.req.query('page') ?? 1)
+  const limit = Number(c.req.query('limit') ?? 20)
+  const offset = (page - 1) * limit
+  const search = c.req.query('search')?.trim()
+  const statusFilter = c.req.query('status')
+
+  const conditions: ReturnType<typeof eq>[] = []
+  if (search) {
+    conditions.push(sql`${users.email} LIKE ${'%' + search + '%'} OR ${users.name} LIKE ${'%' + search + '%'}`)
+  }
+  if (statusFilter && ['active', 'banned'].includes(statusFilter)) {
+    conditions.push(eq(users.status, statusFilter as 'active' | 'banned'))
+  }
+
+  const result = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      role: users.role,
+      status: users.status,
+      emailVerifiedAt: users.emailVerifiedAt,
+      lastLoginAt: users.lastLoginAt,
+      createdAt: users.createdAt,
+    })
+    .from(users)
+    .where(conditions.length ? and(...conditions) : undefined)
+    .orderBy(desc(users.createdAt))
+    .limit(limit)
+    .offset(offset)
+
+  const countResult = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(users)
+    .where(conditions.length ? and(...conditions) : undefined)
+
+  return c.json({ users: result, total: countResult[0]?.count ?? 0, page, limit })
+})
+
+commentRoutes.patch('/admin/users/:id', async (c) => {
+  const id = c.req.param('id')
+  const body = await c.req.json<{ status?: 'active' | 'banned' }>()
+
+  if (!body.status || !['active', 'banned'].includes(body.status)) {
+    return c.json({ error: 'Status must be active or banned' }, 400)
+  }
+
+  const db = createDb(c.env.DB)
+  const [existing] = await db.select().from(users).where(eq(users.id, id))
+  if (!existing) return c.json({ error: 'User not found' }, 404)
+
+  await db.update(users).set({ status: body.status, updatedAt: new Date().toISOString() }).where(eq(users.id, id))
+
+  const [updated] = await db.select().from(users).where(eq(users.id, id))
+  return c.json(updated)
 })
 
 export default commentRoutes

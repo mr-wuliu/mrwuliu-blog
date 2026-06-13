@@ -340,6 +340,26 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   if (emailInput && savedEmail) emailInput.value = savedEmail;
   if (notifyInput && savedNotify === 'true') notifyInput.checked = true;
 
+  var isLoggedIn = false;
+  fetch('/auth/me', { credentials: 'include' }).then(function(r) { return r.json() }).then(function(d) {
+    if (d && d.user) {
+      isLoggedIn = true;
+      var u = d.user;
+      if (nameInput) { nameInput.value = u.name; nameInput.closest('div').classList.add('hidden'); }
+      if (emailInput) { emailInput.closest('div').classList.add('hidden'); }
+      var banner = document.createElement('div');
+      banner.className = 'px-3 py-2 bg-gray-100 border border-gray-300 text-sm flex items-center justify-between';
+      banner.id = 'auth-user-banner';
+      banner.innerHTML = '<span>' + (typeof __t === 'function' ? __t('post.loggedInAs').replace('{name}', u.name) : u.name) + '</span><a href="#" class="text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100" id="comment-logout">' + (typeof __t === 'function' ? __t('nav.logout') : 'Logout') + '</a>';
+      form.insertBefore(banner, form.firstChild);
+      var lo = document.getElementById('comment-logout');
+      if (lo) lo.addEventListener('click', function(e) {
+        e.preventDefault();
+        fetch('/auth/logout', { method: 'POST', credentials: 'include' }).then(function() { window.location.reload() });
+      });
+    }
+  }).catch(function() {});
+
   form.addEventListener('submit', function(e) {
     e.preventDefault();
     var btn = form.querySelector('button[type="submit"]');
@@ -347,11 +367,11 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
     btn.disabled = true;
     btn.textContent = '...';
 
-    var authorName = form.querySelector('#authorName').value.trim() || 'momo';
+    var authorName = isLoggedIn ? '' : (form.querySelector('#authorName').value.trim() || 'momo');
     var data = {
       authorName: authorName,
-      authorEmail: form.querySelector('#authorEmail').value.trim() || undefined,
-      notifyOnReply: notifyInput ? notifyInput.checked : false,
+      authorEmail: isLoggedIn ? undefined : (form.querySelector('#authorEmail').value.trim() || undefined),
+      notifyOnReply: isLoggedIn ? false : (notifyInput ? notifyInput.checked : false),
       visitorId: visitorId,
       content: form.querySelector('#content').value.trim()
     };

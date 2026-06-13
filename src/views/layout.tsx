@@ -163,6 +163,8 @@ const Layout: FC<LayoutProps> = ({
                     <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                   </a>
                 </div>
+                <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="mobile-menu-link user-auth-login">{t(lang, 'nav.login')}</a>
+                <a href="#" class="mobile-menu-link user-auth-logout hidden">{t(lang, 'nav.logout')}</a>
                 <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="mobile-menu-link">{t(lang, 'nav.writings')}</a>
                 <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="mobile-menu-link">{t(lang, 'nav.series')}</a>
                 <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="mobile-menu-link">{t(lang, 'nav.projects')}</a>
@@ -199,6 +201,7 @@ const Layout: FC<LayoutProps> = ({
                       <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
                       <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                     </a>
+                    <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="user-auth-link text-sm font-bold uppercase tracking-widest text-black hover:opacity-70 no-underline">{t(lang, 'nav.login')}</a>
                   </div>
                 </div>
               ) : (
@@ -224,6 +227,7 @@ const Layout: FC<LayoutProps> = ({
                       <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
                       <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                     </a>
+                    <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="user-auth-link text-sm font-bold uppercase tracking-widest text-black hover:opacity-70 no-underline">{t(lang, 'nav.login')}</a>
                   </div>
                 </div>
               )}
@@ -329,6 +333,28 @@ const Layout: FC<LayoutProps> = ({
 'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+nl);if(v)e.textContent=v})}' +
           '});' +
           '});'
+        }} />
+        <script dangerouslySetInnerHTML={{ __html:
+          '(function(){' +
+          'function updateAuthLinks(){' +
+          'fetch("/auth/me",{credentials:"include"}).then(function(r){return r.json()}).then(function(d){' +
+          'var loggedIn=d&&d.user;' +
+          'var loginLabel=__t("nav.login");var logoutLabel=__t("nav.logout");var b=__cur==="en"?"/en":"";' +
+          'document.querySelectorAll(".user-auth-link").forEach(function(l){' +
+          'if(loggedIn){l.textContent=logoutLabel;l.href="#";l.removeAttribute("data-thref");l.classList.remove("hidden")}' +
+          'else{l.textContent=loginLabel;l.setAttribute("data-thref","/login");l.href=b+"/login";l.classList.remove("hidden")}' +
+          '});' +
+          'document.querySelectorAll(".user-auth-login").forEach(function(l){if(loggedIn)l.classList.add("hidden");else l.classList.remove("hidden")});' +
+          'document.querySelectorAll(".user-auth-logout").forEach(function(l){if(loggedIn)l.classList.remove("hidden");else l.classList.add("hidden")});' +
+          '}).catch(function(){})' +
+          '}' +
+          'updateAuthLinks();' +
+          'document.addEventListener("click",function(e){' +
+          'var tg=e.target.closest(".user-auth-logout");' +
+          'if(!tg)return;e.preventDefault();' +
+          'fetch("/auth/logout",{method:"POST",credentials:"include"}).then(function(){window.location.reload()}).catch(function(){window.location.reload()})' +
+          '});' +
+          '})();'
         }} />
       </body>
     </html>

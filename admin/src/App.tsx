@@ -9,6 +9,7 @@ import Collections from './pages/Collections'
 import FriendLinks from './pages/FriendLinks'
 import Analytics from './pages/Analytics'
 import PostAnalytics from './pages/PostAnalytics'
+import Users from './pages/Users'
 import Layout from './components/Layout'
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
         <Route path="/posts/new" element={<EditPost />} />
         <Route path="/posts/:id/edit" element={<EditPost />} />
         <Route path="/comments" element={<Comments />} />
+        <Route path="/users" element={<Users />} />
         <Route path="/site-config" element={<SiteConfig />} />
         <Route path="/projects" element={<Projects />} />
         <Route path="/collections" element={<Collections />} />

@@ -10,6 +10,7 @@ import projectsRoutes from './routes/projects'
 import collectionsRoutes from './routes/collections'
 import analyticsRoutes from './routes/analytics'
 import friendLinkRoutes from './routes/friend-links'
+import authRoutes from './routes/auth'
 
 type Bindings = {
   DB: D1Database
@@ -17,6 +18,9 @@ type Bindings = {
   ASSETS: Fetcher
   API_KEY: string
   DISABLE_API_AUTH?: string
+  JWT_SECRET: string
+  RESEND_API_KEY: string
+  MAIL_DOMAIN: string
 }
 
 const app = new Hono<{ Bindings: Bindings }>()
@@ -32,7 +36,7 @@ app.use('*', async (c, next) => {
   headers.set('X-Frame-Options', 'DENY')
   headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
   headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
-  if (c.req.path.startsWith('/api/')) {
+  if (c.req.path.startsWith('/api/') || c.req.path.startsWith('/auth/')) {
     headers.set('Cache-Control', 'no-store, no-cache, must-revalidate')
   }
   c.res = new Response(res.body, { status: res.status, statusText: res.statusText, headers })
@@ -90,6 +94,7 @@ app.get('/favicon.ico', (c) => {
 })
 
 app.route('/', blogRoutes)
+app.route('/', authRoutes)
 
 app.route('/api/tags', tagRoutes)
 app.route('/api/posts', postRoutes)

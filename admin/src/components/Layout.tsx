@@ -106,6 +106,20 @@ export default function Layout() {
             </li>
             <li>
               <NavLink
+                to="/users"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-4 py-2.5 border-l-2 text-sm transition-all ${
+                    isActive
+                      ? 'border-black font-bold text-black bg-black bg-opacity-5'
+                      : 'border-transparent text-black opacity-70 hover:opacity-100 hover:border-black'
+                  }`
+                }
+              >
+                <span>{t('layout.users')}</span>
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
                 to="/site-config"
                 className={({ isActive }) =>
                   `flex items-center gap-3 px-4 py-2.5 border-l-2 text-sm transition-all ${

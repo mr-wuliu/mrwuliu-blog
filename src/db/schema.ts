@@ -50,6 +50,7 @@ export const comments = sqliteTable('comments', {
   authorName: text('author_name').notNull(),
   authorEmail: text('author_email'),
   visitorId: text('visitor_id'),
+  userId: text('user_id'),
   ipHash: text('ip_hash'),
   ipMasked: text('ip_masked'),
   country: text('country'),
@@ -64,6 +65,7 @@ export const comments = sqliteTable('comments', {
   comments_parent_id_idx: index('comments_parent_id_idx').on(table.parentId),
   comments_status_idx: index('comments_status_idx').on(table.status),
   comments_ip_hash_idx: index('comments_ip_hash_idx').on(table.ipHash),
+  comments_user_id_idx: index('comments_user_id_idx').on(table.userId),
 }))
 
 // images table (tracks R2 objects)
@@ -225,4 +227,48 @@ export const friendLinks = sqliteTable('friend_links', {
 }, (table) => ({
   friend_links_status_idx: index('friend_links_status_idx').on(table.status),
   friend_links_sort_order_idx: index('friend_links_sort_order_idx').on(table.sortOrder),
+}))
+
+// users table (registered commenters — email + OTP login, no passwords)
+export const users = sqliteTable('users', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  name: text('name').notNull(),
+  role: text('role', { enum: ['user', 'admin'] }).notNull().default('user'),
+  status: text('status', { enum: ['active', 'banned'] }).notNull().default('active'),
+  emailVerifiedAt: text('email_verified_at'),
+  lastLoginAt: text('last_login_at'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  users_status_idx: index('users_status_idx').on(table.status),
+}))
+
+// email_otps table (6-digit login codes, 10-min expiry)
+export const emailOtps = sqliteTable('email_otps', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  codeHash: text('code_hash').notNull(),
+  expiresAt: text('expires_at').notNull(),
+  consumedAt: text('consumed_at'),
+  attempts: integer('attempts').notNull().default(0),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  email_otps_email_idx: index('email_otps_email_idx').on(table.email),
+  email_otps_expires_idx: index('email_otps_expires_idx').on(table.expiresAt),
+}))
+
+// refresh_tokens table (long-lived session tokens, sliding 30-day expiry)
+export const refreshTokens = sqliteTable('refresh_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  tokenHash: text('token_hash').notNull(),
+  expiresAt: text('expires_at').notNull(),
+  revokedAt: text('revoked_at'),
+  userAgent: text('user_agent'),
+  ipHash: text('ip_hash'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+}, (table) => ({
+  refresh_tokens_user_id_idx: index('refresh_tokens_user_id_idx').on(table.userId),
+  refresh_tokens_token_hash_idx: index('refresh_tokens_token_hash_idx').on(table.tokenHash),
 }))

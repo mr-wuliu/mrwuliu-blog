@@ -107,7 +107,7 @@ const TagPage: FC<TagPageProps> = ({ lang, tag, posts, allTags, pagination, auth
                 <a
                   href={langPath(`/tags/${at.slug}`, lang)}
                   class={at.slug === tag.slug
-                    ? 'block text-sm px-4 py-2 border-l-2 border-black font-bold text-black bg-black bg-opacity-5 no-underline transition-all'
+                    ? 'block text-sm px-4 py-2 border-l-2 border-black font-bold text-black bg-black/5 no-underline transition-all'
                     : 'block text-sm px-4 py-2 border-l-2 border-transparent text-black opacity-70 hover:opacity-100 hover:border-black no-underline transition-all'
                   }
                 >
