@@ -10,6 +10,8 @@ type CloudflareEnv = {
   API_KEY: string
   DISABLE_API_AUTH?: string
   TEST_MIGRATIONS: { name: string; queries: string[] }[]
+  RESEND_API_KEY: string
+  MAIL_DOMAIN: string
 }
 
 // https://developers.cloudflare.com/workers/languages/typescript/#generate-types

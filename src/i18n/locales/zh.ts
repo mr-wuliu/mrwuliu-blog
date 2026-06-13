@@ -72,7 +72,7 @@ export default {
     nameLabel: '昵称 *',
     namePlaceholder: '昵称 *（默认 momo）',
     emailLabel: '邮箱（可选）',
-    emailNote: '您的邮箱不会被公开。',
+    emailNote: '您的邮箱不会被公开。勾选下方选项可在收到回复时获得邮件提醒。',
     contentLabel: '评论内容 *',
     submit: '提交评论',
     commentSuccess: '评论已提交，需要人工审核后才会显示。',
@@ -80,6 +80,7 @@ export default {
     reply: '回复',
     replyTo: (name: string) => `回复 ${name}`,
     cancelReply: '取消回复',
+    notifyOnReply: '收到回复时邮件提醒我',
   },
   about: {
     title: '自述',
@@ -99,6 +100,14 @@ export default {
     message: '页面未找到',
     backHome: '← 返回首页',
     description: '页面未找到',
+  },
+  unsubscribe: {
+    title: '取消订阅',
+    success: '已取消订阅',
+    successDesc: '您将不再收到回复提醒邮件。',
+    invalid: '链接无效',
+    invalidDesc: '退订链接已失效或过期。',
+    backHome: '← 返回首页',
   },
   footer: {
     copyright: (year: number) => `© ${year} Blog. Powered by Cloudflare Workers.`,

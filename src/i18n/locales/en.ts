@@ -72,7 +72,7 @@ export default {
     nameLabel: 'Name *',
     namePlaceholder: 'Name * (defaults to momo)',
     emailLabel: 'Email (optional)',
-    emailNote: 'Your email will not be published.',
+    emailNote: 'Your email will not be published. Check the option below to get notified on replies.',
     contentLabel: 'Comment *',
     submit: 'Submit',
     commentSuccess: 'Comment submitted. It will appear after manual review.',
@@ -80,6 +80,7 @@ export default {
     reply: 'Reply',
     replyTo: (name: string) => `Reply to ${name}`,
     cancelReply: 'Cancel Reply',
+    notifyOnReply: 'Email me when someone replies',
   },
   about: {
     title: 'About',
@@ -99,6 +100,14 @@ export default {
     message: 'Page not found',
     backHome: '← Back to Home',
     description: 'Page not found',
+  },
+  unsubscribe: {
+    title: 'Unsubscribe',
+    success: 'Unsubscribed',
+    successDesc: 'You will no longer receive reply notification emails.',
+    invalid: 'Invalid Link',
+    invalidDesc: 'The unsubscribe link is invalid or expired.',
+    backHome: '← Back to Home',
   },
   footer: {
     copyright: (year: number) => `© ${year} Blog. Powered by Cloudflare Workers.`,

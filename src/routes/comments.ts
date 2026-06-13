@@ -5,12 +5,15 @@ import { comments, posts } from '../db/schema'
 import { getSiteConfig } from '../db/queries'
 import { checkRateLimit } from '../utils/rate-limit'
 import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
+import { sendReplyNotification } from '../services/email'
 
 type Bindings = {
   DB: D1Database
   IMAGES: R2Bucket
   ASSETS: Fetcher
   JWT_SECRET: string
+  RESEND_API_KEY: string
+  MAIL_DOMAIN: string
 }
 
 const commentRoutes = new Hono<{ Bindings: Bindings }>()
@@ -29,7 +32,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     return c.json({ error: 'Too many requests. Please try again later.' }, 429)
   }
 
-  const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string }>()
+  const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
 
   if (!body.authorName || body.authorName.length < 1 || body.authorName.length > 50) {
     return c.json({ error: 'Author name must be 1-50 characters' }, 400)
@@ -86,6 +89,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     userAgent: userAgent.slice(0, 500),
     content: escapedContent,
     status: commentStatus,
+    notifyOnReply: body.notifyOnReply === true && !!escapedEmail,
   })
 
   return c.json({ id, status: commentStatus, authorName: escapedName, content: escapedContent }, 201)
@@ -167,6 +171,30 @@ commentRoutes.put('/admin/comments/:id', async (c) => {
       cache.delete(new Request(`${origin}/posts/${post.slug}`)),
       cache.delete(new Request(`${origin}/en/posts/${post.slug}`)),
     ])
+  }
+
+  // If a reply was approved, notify the parent comment author (if they opted in)
+  if (status === 'approved' && existing.parentId) {
+    const origin = new URL(c.req.url).origin
+    c.executionCtx.waitUntil(
+      sendReplyNotification({
+        db,
+        env: {
+          RESEND_API_KEY: c.env.RESEND_API_KEY,
+          MAIL_DOMAIN: c.env.MAIL_DOMAIN,
+          JWT_SECRET: c.env.JWT_SECRET,
+        },
+        replyComment: {
+          id: existing.id,
+          parentId: existing.parentId,
+          authorName: existing.authorName,
+          content: existing.content,
+          postId: existing.postId,
+        },
+        origin,
+        lang: 'zh',
+      }).catch((err) => console.error('[email] sendReplyNotification failed:', err)),
+    )
   }
 
   const [updated] = await db.select().from(comments).where(eq(comments.id, id))

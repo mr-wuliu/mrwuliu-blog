@@ -252,6 +252,11 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
               class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
             <p class="text-xs text-gray-400 mt-1" data-t="post.emailNote">{t(lang, 'post.emailNote')}</p>
           </div>
+          <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
+            <input type="checkbox" id="notifyOnReply" name="notifyOnReply"
+              class="w-4 h-4 border border-black cursor-pointer" />
+            <span data-t="post.notifyOnReply">{t(lang, 'post.notifyOnReply')}</span>
+          </label>
           <div>
             <textarea id="content" name="content" required maxlength={1000} rows={4}
               placeholder={t(lang, 'post.contentLabel')}
@@ -322,6 +327,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
 
   var savedName = localStorage.getItem('comment_authorName');
   var savedEmail = localStorage.getItem('comment_authorEmail');
+  var savedNotify = localStorage.getItem('comment_notifyOnReply');
   var visitorId = localStorage.getItem('comment_visitorId');
   if (!visitorId) {
     visitorId = 'v_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
@@ -329,8 +335,10 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   }
   var nameInput = form.querySelector('#authorName');
   var emailInput = form.querySelector('#authorEmail');
+  var notifyInput = form.querySelector('#notifyOnReply');
   if (nameInput && savedName) nameInput.value = savedName;
   if (emailInput && savedEmail) emailInput.value = savedEmail;
+  if (notifyInput && savedNotify === 'true') notifyInput.checked = true;
 
   form.addEventListener('submit', function(e) {
     e.preventDefault();
@@ -343,6 +351,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
     var data = {
       authorName: authorName,
       authorEmail: form.querySelector('#authorEmail').value.trim() || undefined,
+      notifyOnReply: notifyInput ? notifyInput.checked : false,
       visitorId: visitorId,
       content: form.querySelector('#content').value.trim()
     };
@@ -357,6 +366,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       if (res.ok) {
         localStorage.setItem('comment_authorName', data.authorName);
         if (data.authorEmail) localStorage.setItem('comment_authorEmail', data.authorEmail);
+        localStorage.setItem('comment_notifyOnReply', data.notifyOnReply ? 'true' : 'false');
         showToast(getMsg(), 'success');
         form.reset();
         clearReply();

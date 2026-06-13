@@ -18,9 +18,11 @@ import ProjectDetailPage from '../views/project-detail'
 import SeriesPage from '../views/series'
 import SeriesDetailPage from '../views/series-detail'
 import FriendsPage from '../views/friends'
+import UnsubscribePage from '../views/unsubscribe'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
 import { getClientIp, getVisitorFingerprint, isBotAgent, trackPostView, trackSiteView } from '../utils/analytics'
+import { verifyToken } from '../utils/token'
 import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
@@ -312,21 +314,24 @@ function createBlogRouter(lang: Lang) {
     let visitorId: string | undefined
     let content: string
     let parentId: string | undefined
+    let notifyOnReply: boolean
 
     if (contentType.includes('application/json')) {
-      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string }>()
+      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
       authorName = body.authorName
       authorEmail = body.authorEmail
       visitorId = body.visitorId
       content = body.content
       parentId = body.parentId
+      notifyOnReply = body.notifyOnReply === true
     } else {
-      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string }>()
+      const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: string }>()
       authorName = String(formData.authorName ?? '')
       authorEmail = formData.authorEmail ? String(formData.authorEmail) : undefined
       visitorId = formData.visitorId ? String(formData.visitorId) : undefined
       content = String(formData.content ?? '')
       parentId = formData.parentId ? String(formData.parentId) : undefined
+      notifyOnReply = formData.notifyOnReply === 'on' || formData.notifyOnReply === 'true'
     }
 
     if (!authorName || authorName.length < 1 || authorName.length > 50) {
@@ -376,6 +381,7 @@ function createBlogRouter(lang: Lang) {
       userAgent: userAgent.slice(0, 500),
       content: escapeHtml(content),
       status: commentStatus,
+      notifyOnReply: notifyOnReply && !!authorEmail,
     })
 
     return c.redirect(langPath(`/posts/${slug}`, lang))
@@ -467,6 +473,31 @@ function createBlogRouter(lang: Lang) {
     const authorProfile = await getAuthorProfile(db)
     c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<FriendsPage lang={lang} links={links} authorProfile={authorProfile} />)
+  })
+
+  router.get('/unsubscribe', async (c) => {
+    const token = c.req.query('token')
+    if (!token) {
+      return c.html(<UnsubscribePage lang={lang} status="invalid" />, 400)
+    }
+
+    const commentId = await verifyToken(token, c.env.JWT_SECRET)
+    if (!commentId) {
+      return c.html(<UnsubscribePage lang={lang} status="invalid" />, 400)
+    }
+
+    const db = createDb(c.env.DB)
+    const [comment] = await db.select().from(comments).where(eq(comments.id, commentId))
+    if (!comment) {
+      return c.html(<UnsubscribePage lang={lang} status="invalid" />, 400)
+    }
+
+    await db.update(comments)
+      .set({ notifyOnReply: false })
+      .where(eq(comments.id, commentId))
+
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+    return c.html(<UnsubscribePage lang={lang} status="success" />)
   })
 
   return router

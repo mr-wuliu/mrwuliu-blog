@@ -56,6 +56,8 @@ export const comments = sqliteTable('comments', {
   userAgent: text('user_agent'),
   content: text('content').notNull(),
   status: text('status', { enum: ['pending', 'approved', 'rejected'] }).notNull().default('pending'),
+  notifyOnReply: integer('notify_on_reply', { mode: 'boolean' }).notNull().default(false),
+  replyNotified: integer('reply_notified', { mode: 'boolean' }).notNull().default(false),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({
   comments_post_id_idx: index('comments_post_id_idx').on(table.postId),
