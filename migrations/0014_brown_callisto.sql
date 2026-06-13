@@ -35,7 +35,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 );--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS `users_email_unique` ON `users` (`email`);--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS `users_status_idx` ON `users` (`status`);--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS `comments_user_id_idx` ON `comments` (`user_id`);--> statement-breakpoint
 INSERT OR IGNORE INTO `users` (`id`, `email`, `name`, `created_at`, `updated_at`)
 SELECT
   lower(hex(randomblob(16))),
@@ -48,13 +47,9 @@ SELECT
 FROM `comments`
 WHERE `author_email` IS NOT NULL AND `author_email` != ''
 GROUP BY lower(`author_email`);--> statement-breakpoint
-UPDATE `comments`
-SET `user_id` = (
-  SELECT `u`.`id` FROM `users` `u` WHERE lower(`u`.`email`) = lower(`comments`.`author_email`)
-)
-WHERE `author_email` IS NOT NULL AND `author_email` != ''
-  AND `user_id` IS NULL;--> statement-breakpoint
 INSERT OR IGNORE INTO `site_config` (`key`, `value`, `updated_at`)
 VALUES ('comment_anonymous_auto_approve', 'false', datetime('now'));--> statement-breakpoint
 INSERT OR IGNORE INTO `site_config` (`key`, `value`, `updated_at`)
-VALUES ('comment_registered_auto_approve', 'true', datetime('now'));
+VALUES ('comment_registered_auto_approve', 'true', datetime('now'));--> statement-breakpoint
+ALTER TABLE `comments` ADD `user_id` text;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS `comments_user_id_idx` ON `comments` (`user_id`);
