@@ -55,15 +55,17 @@ export async function generateOtp(
   const code = generateOtpCode()
   const codeHash = await hashString(code)
   const expiresAt = new Date(Date.now() + OTP_TTL * 1000).toISOString()
+  const id = crypto.randomUUID()
 
   await db.insert(emailOtps).values({
-    id: crypto.randomUUID(),
+    id,
     email: email.toLowerCase(),
     codeHash,
     expiresAt,
     attempts: 0,
   })
 
+  console.log(`[auth] otp generated email=${email} id=${id} expires=${expiresAt}`)
   return { code, expiresAt }
 }
 
@@ -87,9 +89,18 @@ export async function verifyOtp(
     .orderBy(sql`${emailOtps.createdAt} DESC`)
     .limit(1)
 
-  if (!otp) return { valid: false }
-  if (otp.expiresAt < now) return { valid: false }
-  if (otp.attempts >= OTP_MAX_ATTEMPTS) return { valid: false }
+  if (!otp) {
+    console.warn(`[auth] otp verify no-record email=${email}`)
+    return { valid: false }
+  }
+  if (otp.expiresAt < now) {
+    console.warn(`[auth] otp verify expired email=${email} id=${otp.id} expires=${otp.expiresAt} now=${now}`)
+    return { valid: false }
+  }
+  if (otp.attempts >= OTP_MAX_ATTEMPTS) {
+    console.warn(`[auth] otp verify max-attempts email=${email} id=${otp.id} attempts=${otp.attempts}`)
+    return { valid: false }
+  }
 
   const codeHash = await hashString(code)
   if (codeHash !== otp.codeHash) {
@@ -97,6 +108,7 @@ export async function verifyOtp(
       .update(emailOtps)
       .set({ attempts: otp.attempts + 1 })
       .where(eq(emailOtps.id, otp.id))
+    console.warn(`[auth] otp verify hash-mismatch email=${email} id=${otp.id} input=${codeHash.slice(0, 8)} stored=${otp.codeHash.slice(0, 8)}`)
     return { valid: false }
   }
 
@@ -104,17 +116,22 @@ export async function verifyOtp(
     .update(emailOtps)
     .set({ consumedAt: now })
     .where(eq(emailOtps.id, otp.id))
+  console.log(`[auth] otp consumed email=${email} id=${otp.id}`)
 
   const [existingUser] = await db
     .select()
     .from(users)
     .where(eq(users.email, email))
+  console.log(`[auth] user lookup email=${email} exists=${!!existingUser}`)
 
   let userId: string
   let isNewUser = false
 
   if (existingUser) {
-    if (existingUser.status === 'banned') return { valid: false }
+    if (existingUser.status === 'banned') {
+      console.warn(`[auth] user banned email=${email} id=${existingUser.id}`)
+      return { valid: false }
+    }
     userId = existingUser.id
     await db
       .update(users)
@@ -124,6 +141,7 @@ export async function verifyOtp(
         updatedAt: now,
       })
       .where(eq(users.id, userId))
+    console.log(`[auth] user login userId=${userId}`)
   } else {
     userId = crypto.randomUUID()
     isNewUser = true
@@ -135,6 +153,7 @@ export async function verifyOtp(
       emailVerifiedAt: now,
       lastLoginAt: now,
     })
+    console.log(`[auth] user created userId=${userId} email=${email}`)
   }
 
   return { valid: true, userId, isNewUser }
@@ -148,6 +167,7 @@ export async function issueTokens(
 ): Promise<AuthTokens> {
   const now = Math.floor(Date.now() / 1000)
   const jti = generateJti()
+  console.log(`[auth] issuing tokens userId=${user.id} hasJwtSecret=${!!env.JWT_SECRET} hasResendKey=${!!env.RESEND_API_KEY} mailDomain=${env.MAIL_DOMAIN || '(unset)'}`)
 
   const accessToken = await signJwt(
     {
@@ -185,6 +205,7 @@ export async function issueTokens(
     userAgent: metadata.userAgent,
     ipHash: metadata.ipHash,
   })
+  console.log(`[auth] tokens issued userId=${user.id} jti=${jti}`)
 
   return {
     accessToken,

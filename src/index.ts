@@ -27,6 +27,14 @@ const app = new Hono<{ Bindings: Bindings }>()
 
 app.use('*', logger())
 
+// Global error handler — logs uncaught exceptions to Workers Logs (observability)
+app.onError((err, c) => {
+  const msg = err instanceof Error ? err.message : String(err)
+  const stack = err instanceof Error ? err.stack : ''
+  console.error(`[uncaught] ${c.req.method} ${c.req.path} :: ${msg}`, stack)
+  return c.json({ error: 'internal_server_error' }, 500)
+})
+
 app.use('*', async (c, next) => {
   await next()
   const res = c.res

@@ -34,6 +34,8 @@ authRoutes.post('/auth/otp/send', async (c) => {
   const body = await c.req.json().catch(() => ({} as Record<string, unknown>))
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
 
+  console.log(`[auth] /otp/send email=${email || '(invalid)'}`)
+
   if (!email || !isValidEmail(email)) {
     return c.json({ error: 'invalid_email' }, 400)
   }
@@ -66,9 +68,11 @@ authRoutes.post('/auth/otp/send', async (c) => {
   })
 
   if (!sent) {
+    console.error(`[auth] otp email send failed email=${email} from=${from}`)
     return c.json({ error: 'email_send_failed' }, 500)
   }
 
+  console.log(`[auth] otp email sent email=${email}`)
   return c.json({ ok: true })
 })
 
@@ -76,6 +80,8 @@ authRoutes.post('/auth/otp/verify', async (c) => {
   const body = await c.req.json().catch(() => ({} as Record<string, unknown>))
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const code = typeof body.code === 'string' ? body.code.trim() : ''
+
+  console.log(`[auth] /otp/verify email=${email || '(invalid)'} codeLen=${code.length}`)
 
   if (!email || !isValidEmail(email) || !/^\d{6}$/.test(code)) {
     return c.json({ error: 'invalid_input' }, 400)
@@ -91,6 +97,7 @@ authRoutes.post('/auth/otp/verify', async (c) => {
 
   const result = await verifyOtp(db, email, code)
   if (!result.valid || !result.userId) {
+    console.warn(`[auth] /otp/verify invalid email=${email} valid=${result.valid}`)
     return c.json({ error: 'invalid_code' }, 401)
   }
 
@@ -100,6 +107,7 @@ authRoutes.post('/auth/otp/verify', async (c) => {
     .where(eq(users.id, result.userId))
 
   if (!user) {
+    console.error(`[auth] /otp/verify user_not_found email=${email} userId=${result.userId}`)
     return c.json({ error: 'user_not_found' }, 404)
   }
 
@@ -133,6 +141,7 @@ authRoutes.post('/auth/otp/verify', async (c) => {
     maxAge: 30 * 24 * 60 * 60,
   })
 
+  console.log(`[auth] /otp/verify success email=${email} userId=${user.id} isNewUser=${!!result.isNewUser}`)
   return c.json({
     user: {
       id: user.id,
