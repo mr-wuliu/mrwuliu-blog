@@ -758,6 +758,47 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
       <PostNav prev={prev} next={next} lang={lang} />
 
       <CommentSection comments={comments} postSlug={post.slug} lang={lang} />
+
+      <button
+        type="button"
+        id="back-to-top"
+        aria-label={t(lang, 'post.backToTop')}
+        data-aria-zh={t('zh', 'post.backToTop')}
+        data-aria-en={t('en', 'post.backToTop')}
+        class="fixed bottom-6 right-6 z-40 w-11 h-11 sm:w-12 sm:h-12 flex items-center justify-center bg-white border border-black rounded-none opacity-0 pointer-events-none transition-opacity duration-300 hover:bg-black hover:text-white"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></svg>
+      </button>
+      <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  var btn = document.getElementById('back-to-top');
+  if (!btn) return;
+
+  function updateAria() {
+    var l = (window.__cur === 'en') ? 'en' : 'zh';
+    var v = btn.getAttribute('data-aria-' + l);
+    if (v) btn.setAttribute('aria-label', v);
+  }
+  updateAria();
+  var html = document.documentElement;
+  var observer = new MutationObserver(function() { updateAria(); });
+  observer.observe(html, { attributes: true, attributeFilter: ['lang'] });
+
+  function onScroll() {
+    if (window.scrollY > 400) {
+      btn.classList.remove('opacity-0', 'pointer-events-none');
+    } else {
+      btn.classList.add('opacity-0', 'pointer-events-none');
+    }
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  btn.addEventListener('click', function() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+})();
+      ` }} />
     </Layout>
   )
 }
