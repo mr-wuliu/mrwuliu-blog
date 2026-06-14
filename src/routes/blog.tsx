@@ -21,6 +21,7 @@ import SeriesDetailPage from '../views/series-detail'
 import FriendsPage from '../views/friends'
 import UnsubscribePage from '../views/unsubscribe'
 import LoginPage from '../views/login'
+import SettingsPage from '../views/settings'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
 import { getClientIp, getVisitorFingerprint, isBotAgent, trackPostView, trackSiteView } from '../utils/analytics'
@@ -312,6 +313,15 @@ function createBlogRouter(lang: Lang) {
       return c.json({ error: 'Rate limit exceeded. Try again later.' }, 429)
     }
 
+    const accessCookie = getCookie(c, 'access_token')
+    const refreshCookie = getCookie(c, 'refresh_token')
+    const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
+    if (!session?.user) {
+      const postUrl = langPath(`/posts/${slug}`, lang)
+      return c.redirect(langPath(`/login?next=${encodeURIComponent(postUrl)}`, lang))
+    }
+    const sessionUser = session.user
+
     const contentType = c.req.header('Content-Type') ?? ''
 
     let authorName: string
@@ -319,7 +329,6 @@ function createBlogRouter(lang: Lang) {
     let visitorId: string | undefined
     let content: string
     let parentId: string | undefined
-    let notifyOnReply: boolean
 
     if (contentType.includes('application/json')) {
       const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
@@ -328,7 +337,6 @@ function createBlogRouter(lang: Lang) {
       visitorId = body.visitorId
       content = body.content
       parentId = body.parentId
-      notifyOnReply = body.notifyOnReply === true
     } else {
       const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: string }>()
       authorName = String(formData.authorName ?? '')
@@ -336,12 +344,8 @@ function createBlogRouter(lang: Lang) {
       visitorId = formData.visitorId ? String(formData.visitorId) : undefined
       content = String(formData.content ?? '')
       parentId = formData.parentId ? String(formData.parentId) : undefined
-      notifyOnReply = formData.notifyOnReply === 'on' || formData.notifyOnReply === 'true'
     }
 
-    if (!authorName || authorName.length < 1 || authorName.length > 50) {
-      return c.redirect(langPath(`/posts/${slug}`, lang))
-    }
     if (!content || content.length < 1 || content.length > 1000) {
       return c.redirect(langPath(`/posts/${slug}`, lang))
     }
@@ -370,30 +374,16 @@ function createBlogRouter(lang: Lang) {
     const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
     const cf = c.req.raw as Request & { cf?: { country?: string } }
 
-    const accessCookie = getCookie(c, 'access_token')
-    const refreshCookie = getCookie(c, 'refresh_token')
-    const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
-    const sessionUser = session?.user ?? null
-
-    let commentStatus: 'pending' | 'approved'
-    if (sessionUser) {
-      const regAutoApprove = await getSiteConfig(db, 'comment_registered_auto_approve')
-      commentStatus = regAutoApprove?.value === 'false' ? 'pending' : 'approved'
-    } else {
-      const anonAutoApprove = await getSiteConfig(db, 'comment_anonymous_auto_approve')
-      commentStatus = anonAutoApprove?.value === 'true' ? 'approved' : 'pending'
-    }
-
-    const finalAuthorName = sessionUser ? sessionUser.name : escapeHtml(authorName)
-    const finalAuthorEmail = sessionUser ? sessionUser.email : (authorEmail ? escapeHtml(authorEmail) : null)
+    const regAutoApprove = await getSiteConfig(db, 'comment_registered_auto_approve')
+    const commentStatus: 'pending' | 'approved' = regAutoApprove?.value === 'false' ? 'pending' : 'approved'
 
     await db.insert(comments).values({
       id,
       postId: post.id,
       parentId: parentId ? escapeHtml(parentId) : null,
-      authorName: finalAuthorName,
-      authorEmail: finalAuthorEmail,
-      userId: sessionUser ? sessionUser.id : null,
+      authorName: sessionUser.name,
+      authorEmail: sessionUser.email,
+      userId: sessionUser.id,
       visitorId: visitorId ? escapeHtml(visitorId) : null,
       ipHash,
       ipMasked,
@@ -401,8 +391,17 @@ function createBlogRouter(lang: Lang) {
       userAgent: userAgent.slice(0, 500),
       content: escapeHtml(content),
       status: commentStatus,
-      notifyOnReply: notifyOnReply && !!finalAuthorEmail,
+      notifyOnReply: sessionUser.notifyOnReply,
     })
+
+    if (commentStatus === 'approved') {
+      const cache = (caches as unknown as { default: Cache }).default
+      const origin = new URL(c.req.url).origin
+      c.executionCtx.waitUntil(Promise.all([
+        cache.delete(new Request(`${origin}/posts/${slug}`)),
+        cache.delete(new Request(`${origin}/en/posts/${slug}`)),
+      ]))
+    }
 
     return c.redirect(langPath(`/posts/${slug}`, lang))
   })
@@ -499,6 +498,18 @@ function createBlogRouter(lang: Lang) {
     const nextPath = c.req.query('next') || langPath('/', lang)
     c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
     return c.html(<LoginPage lang={lang} nextPath={nextPath} />)
+  })
+
+  router.get('/settings', async (c) => {
+    const accessToken = getCookie(c, 'access_token')
+    const refreshToken = getCookie(c, 'refresh_token')
+    const db = createDb(c.env.DB)
+    const session = await getSessionUser(db, c.env, accessToken, refreshToken)
+    if (!session?.user) {
+      return c.redirect(langPath('/login?next=' + encodeURIComponent(langPath('/settings', lang)), lang))
+    }
+    c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+    return c.html(<SettingsPage lang={lang} user={session.user} />)
   })
 
   router.get('/unsubscribe', async (c) => {

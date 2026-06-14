@@ -238,6 +238,10 @@ export const users = sqliteTable('users', {
   status: text('status', { enum: ['active', 'banned'] }).notNull().default('active'),
   emailVerifiedAt: text('email_verified_at'),
   lastLoginAt: text('last_login_at'),
+  avatarSeed: text('avatar_seed').notNull().default(''),
+  avatarType: text('avatar_type', { enum: ['identicon', 'gravatar', 'uploaded'] }).notNull().default('identicon'),
+  avatarR2Key: text('avatar_r2_key').notNull().default(''),
+  notifyOnReply: integer('notify_on_reply', { mode: 'boolean' }).notNull().default(true),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
   updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => ({

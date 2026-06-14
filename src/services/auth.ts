@@ -20,6 +20,10 @@ export interface SessionUser {
   name: string
   role: 'user' | 'admin'
   status: 'active' | 'banned'
+  avatarSeed: string
+  avatarType: 'identicon' | 'gravatar' | 'uploaded'
+  avatarR2Key: string
+  notifyOnReply: boolean
 }
 
 export interface AuthTokens {
@@ -225,6 +229,10 @@ export async function rotateRefreshToken(
     name: user.name,
     role: user.role,
     status: user.status,
+    avatarSeed: user.avatarSeed,
+    avatarType: user.avatarType,
+    avatarR2Key: user.avatarR2Key,
+    notifyOnReply: user.notifyOnReply,
   }, metadata)
 }
 
@@ -271,6 +279,10 @@ export async function getSessionUser(
         name: user.name,
         role: user.role,
         status: user.status,
+        avatarSeed: user.avatarSeed,
+        avatarType: user.avatarType,
+        avatarR2Key: user.avatarR2Key,
+        notifyOnReply: user.notifyOnReply,
       },
       newTokens,
     }
@@ -286,6 +298,10 @@ export async function getSessionUser(
       name: user.name,
       role: user.role,
       status: user.status,
+      avatarSeed: user.avatarSeed,
+      avatarType: user.avatarType,
+      avatarR2Key: user.avatarR2Key,
+      notifyOnReply: user.notifyOnReply,
     },
   }
 }

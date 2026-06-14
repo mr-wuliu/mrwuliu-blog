@@ -5,42 +5,7 @@ import { ArticleSchema, BreadcrumbSchema } from './components/structured-data'
 import type { TocHeading } from '../utils/latex'
 import type { AuthorProfile } from './components/author-sidebar'
 import { type Lang, t, tf, langPath, formatDateLang, otherLang } from '../i18n'
-
-function identicon(seed: string, size = 40): string {
-  function hashStr(s: string): number {
-    let h = 0x811c9dc5
-    for (let i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i)
-      h = Math.imul(h, 0x01000193)
-    }
-    return h >>> 0
-  }
-  function rot(x: number, k: number): number {
-    return ((x << k) | (x >>> (32 - k))) >>> 0
-  }
-  const h0 = hashStr(seed)
-  const h1 = hashStr(seed + '#1')
-  const h2 = hashStr(seed + '#2')
-  const hue = (h0 % 360 + 360) % 360
-  const fg = `hsl(${hue},65%,55%)`
-  const cells: string[] = []
-  const gridSize = 5
-  const cellSize = size / gridSize
-  for (let row = 0; row < gridSize; row++) {
-    for (let col = 0; col < 3; col++) {
-      const bit = h1 >>> (row * 3 + col) & 1
-      if (bit) {
-        const x = col * cellSize
-        const y = row * cellSize
-        cells.push(`<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fg}"/>`)
-        if (col < 2) {
-          cells.push(`<rect x="${(gridSize - 1 - col) * cellSize}" y="${y}" width="${cellSize}" height="${cellSize}" fill="${fg}"/>`)
-        }
-      }
-    }
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}" style="display:block">${cells.join('')}</svg>`
-}
+import { identicon } from '../utils/identicon'
 
 function md5(input: string): string {
   const bytes = new TextEncoder().encode(input)
@@ -155,6 +120,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   const replyLabel = t(lang, 'post.reply')
   const cancelReplyLabel = t(lang, 'post.cancelReply')
 
+  const loginUrl = langPath(`/login?next=${encodeURIComponent(langPath(`/posts/${postSlug}`, lang))}`, lang)
+
   const topLevelComments = comments.filter(c => !c.parentId)
   const repliesByParent: Record<string, Comment[]> = {}
   for (const c of comments) {
@@ -177,6 +144,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       data-comment-url-en={lang === 'en' ? submitUrl : otherSubmitUrl}
       data-reply-label={replyLabel}
       data-cancel-reply-label={cancelReplyLabel}
+      data-login-url={loginUrl}
+      data-logged-in-as={tf(lang, 'post.loggedInAs')('{name}')}
     >
       <h2 class="text-xl font-bold tracking-tight mb-4"
         data-comment-count={comments.length}
@@ -227,7 +196,13 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
         </div>
       )}
 
-      <details class="border border-black group">
+      <div id="comment-login-required" class="mb-8 px-4 py-6 border border-gray-300 bg-gray-100 text-center">
+        <p class="text-sm font-bold mb-1" data-t="post.loginToComment">{t(lang, 'post.loginToComment')}</p>
+        <p class="text-xs text-gray-500 mb-3" data-t="post.loginToCommentDesc">{t(lang, 'post.loginToCommentDesc')}</p>
+        <a href={loginUrl} class="inline-block px-6 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest hover:opacity-70 transition-all" data-t="nav.login">{t(lang, 'nav.login')}</a>
+      </div>
+
+      <details class="hidden border border-black group">
         <summary class="list-none cursor-pointer px-4 py-3 text-sm font-bold uppercase tracking-widest select-none flex items-center justify-between">
           <span data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</span>
           <span class="transition-transform group-open:rotate-45">+</span>
@@ -252,11 +227,6 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
               class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
             <p class="text-xs text-gray-400 mt-1" data-t="post.emailNote">{t(lang, 'post.emailNote')}</p>
           </div>
-          <label class="flex items-center gap-2 text-sm cursor-pointer select-none">
-            <input type="checkbox" id="notifyOnReply" name="notifyOnReply"
-              class="w-4 h-4 border border-black cursor-pointer" />
-            <span data-t="post.notifyOnReply">{t(lang, 'post.notifyOnReply')}</span>
-          </label>
           <div>
             <textarea id="content" name="content" required maxlength={1000} rows={4}
               placeholder={t(lang, 'post.contentLabel')}
@@ -280,6 +250,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   function getUrl() { return section.getAttribute('data-comment-url'); }
   function getReplyLabel() { return section.getAttribute('data-reply-label'); }
   function getCancelReplyLabel() { return section.getAttribute('data-cancel-reply-label'); }
+  var loginUrl = section.getAttribute('data-login-url');
 
   var parentInput = document.getElementById('comment-parent-id');
   var replyIndicator = document.getElementById('reply-indicator');
@@ -308,6 +279,10 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
 
   document.querySelectorAll('.reply-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
+      if (!isLoggedIn) {
+        window.location.href = loginUrl;
+        return;
+      }
       var replyTo = btn.getAttribute('data-reply-to');
       var replyName = btn.getAttribute('data-reply-name');
       parentInput.value = replyTo;
@@ -327,7 +302,6 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
 
   var savedName = localStorage.getItem('comment_authorName');
   var savedEmail = localStorage.getItem('comment_authorEmail');
-  var savedNotify = localStorage.getItem('comment_notifyOnReply');
   var visitorId = localStorage.getItem('comment_visitorId');
   if (!visitorId) {
     visitorId = 'v_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
@@ -335,33 +309,41 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   }
   var nameInput = form.querySelector('#authorName');
   var emailInput = form.querySelector('#authorEmail');
-  var notifyInput = form.querySelector('#notifyOnReply');
   if (nameInput && savedName) nameInput.value = savedName;
   if (emailInput && savedEmail) emailInput.value = savedEmail;
-  if (notifyInput && savedNotify === 'true') notifyInput.checked = true;
 
   var isLoggedIn = false;
+  var loginPrompt = document.getElementById('comment-login-required');
+  var detailsEl = form.closest('details');
   fetch('/auth/me', { credentials: 'include' }).then(function(r) { return r.json() }).then(function(d) {
     if (d && d.user) {
       isLoggedIn = true;
+      if (loginPrompt) loginPrompt.classList.add('hidden');
+      if (detailsEl) detailsEl.classList.remove('hidden');
       var u = d.user;
       if (nameInput) { nameInput.value = u.name; nameInput.closest('div').classList.add('hidden'); }
       if (emailInput) { emailInput.closest('div').classList.add('hidden'); }
+      var loggedInAsTpl = section.getAttribute('data-logged-in-as') || '';
       var banner = document.createElement('div');
-      banner.className = 'px-3 py-2 bg-gray-100 border border-gray-300 text-sm flex items-center justify-between';
+      banner.className = 'px-3 py-2 bg-gray-100 border border-gray-300 text-sm';
       banner.id = 'auth-user-banner';
-      banner.innerHTML = '<span>' + (typeof __t === 'function' ? __t('post.loggedInAs').replace('{name}', u.name) : u.name) + '</span><a href="#" class="text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100" id="comment-logout">' + (typeof __t === 'function' ? __t('nav.logout') : 'Logout') + '</a>';
+      banner.textContent = loggedInAsTpl ? loggedInAsTpl.replace('{name}', u.name) : u.name;
       form.insertBefore(banner, form.firstChild);
-      var lo = document.getElementById('comment-logout');
-      if (lo) lo.addEventListener('click', function(e) {
-        e.preventDefault();
-        fetch('/auth/logout', { method: 'POST', credentials: 'include' }).then(function() { window.location.reload() });
-      });
+    } else {
+      if (loginPrompt) loginPrompt.classList.remove('hidden');
+      if (detailsEl) detailsEl.classList.add('hidden');
     }
-  }).catch(function() {});
+  }).catch(function() {
+    if (loginPrompt) loginPrompt.classList.remove('hidden');
+    if (detailsEl) detailsEl.classList.add('hidden');
+  });
 
   form.addEventListener('submit', function(e) {
     e.preventDefault();
+    if (!isLoggedIn) {
+      window.location.href = loginUrl;
+      return;
+    }
     var btn = form.querySelector('button[type="submit"]');
     var orig = btn.textContent;
     btn.disabled = true;
@@ -371,7 +353,6 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
     var data = {
       authorName: authorName,
       authorEmail: isLoggedIn ? undefined : (form.querySelector('#authorEmail').value.trim() || undefined),
-      notifyOnReply: isLoggedIn ? false : (notifyInput ? notifyInput.checked : false),
       visitorId: visitorId,
       content: form.querySelector('#content').value.trim()
     };
@@ -384,14 +365,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
       body: JSON.stringify(data)
     }).then(function(res) {
       if (res.ok) {
-        localStorage.setItem('comment_authorName', data.authorName);
-        if (data.authorEmail) localStorage.setItem('comment_authorEmail', data.authorEmail);
-        localStorage.setItem('comment_notifyOnReply', data.notifyOnReply ? 'true' : 'false');
         showToast(getMsg(), 'success');
-        form.reset();
-        clearReply();
-        if (nameInput) nameInput.value = data.authorName;
-        if (emailInput && data.authorEmail) emailInput.value = data.authorEmail;
+        setTimeout(function() { window.location.reload(); }, 900);
       } else {
         return res.json().then(function(d) {
           showToast(d.error || getErr(), 'error');

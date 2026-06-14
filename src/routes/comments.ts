@@ -20,10 +20,6 @@ type Bindings = {
 
 const commentRoutes = new Hono<{ Bindings: Bindings }>()
 
-function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-}
-
 commentRoutes.post('/posts/:postId/comments', async (c) => {
   const postId = c.req.param('postId')
   const db = createDb(c.env.DB)
@@ -34,16 +30,10 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     return c.json({ error: 'Too many requests. Please try again later.' }, 429)
   }
 
-  const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
+  const body = await c.req.json<{ authorName?: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
 
-  if (!body.authorName || body.authorName.length < 1 || body.authorName.length > 50) {
-    return c.json({ error: 'Author name must be 1-50 characters' }, 400)
-  }
   if (!body.content || body.content.length < 1 || body.content.length > 1000) {
     return c.json({ error: 'Content must be 1-1000 characters' }, 400)
-  }
-  if (body.authorEmail && !isValidEmail(body.authorEmail)) {
-    return c.json({ error: 'Invalid email format' }, 400)
   }
 
   const [post] = await db.select().from(posts).where(eq(posts.id, postId))
@@ -66,9 +56,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   }
 
   const id = crypto.randomUUID()
-  const escapedName = escapeHtml(body.authorName)
   const escapedContent = escapeHtml(body.content)
-  const escapedEmail = body.authorEmail ? escapeHtml(body.authorEmail) : null
   const escapedVisitorId = body.visitorId ? escapeHtml(body.visitorId) : null
   const escapedParentId = body.parentId ? escapeHtml(body.parentId) : null
   const userAgent = c.req.header('user-agent') || 'unknown'
@@ -78,27 +66,21 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   const accessCookie = getCookie(c, 'access_token')
   const refreshCookie = getCookie(c, 'refresh_token')
   const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
-  const sessionUser = session?.user ?? null
-
-  let commentStatus: 'pending' | 'approved'
-  if (sessionUser) {
-    const regAutoApprove = await getSiteConfig(db, 'comment_registered_auto_approve')
-    commentStatus = regAutoApprove?.value === 'false' ? 'pending' : 'approved'
-  } else {
-    const anonAutoApprove = await getSiteConfig(db, 'comment_anonymous_auto_approve')
-    commentStatus = anonAutoApprove?.value === 'true' ? 'approved' : 'pending'
+  if (!session?.user) {
+    return c.json({ error: 'login_required' }, 401)
   }
+  const sessionUser = session.user
 
-  const finalAuthorName = sessionUser ? sessionUser.name : escapedName
-  const finalAuthorEmail = sessionUser ? sessionUser.email : escapedEmail
+  const regAutoApprove = await getSiteConfig(db, 'comment_registered_auto_approve')
+  const commentStatus: 'pending' | 'approved' = regAutoApprove?.value === 'false' ? 'pending' : 'approved'
 
   await db.insert(comments).values({
     id,
     postId,
     parentId: escapedParentId,
-    authorName: finalAuthorName,
-    authorEmail: finalAuthorEmail,
-    userId: sessionUser ? sessionUser.id : null,
+    authorName: sessionUser.name,
+    authorEmail: sessionUser.email,
+    userId: sessionUser.id,
     visitorId: escapedVisitorId,
     ipHash,
     ipMasked,
@@ -106,10 +88,10 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     userAgent: userAgent.slice(0, 500),
     content: escapedContent,
     status: commentStatus,
-    notifyOnReply: body.notifyOnReply === true && !!finalAuthorEmail,
+    notifyOnReply: sessionUser.notifyOnReply,
   })
 
-  return c.json({ id, status: commentStatus, authorName: finalAuthorName, content: escapedContent }, 201)
+  return c.json({ id, status: commentStatus, authorName: sessionUser.name, content: escapedContent }, 201)
 })
 
 commentRoutes.get('/posts/:postId/comments', async (c) => {

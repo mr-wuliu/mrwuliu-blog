@@ -163,8 +163,9 @@ const Layout: FC<LayoutProps> = ({
                     <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                   </a>
                 </div>
-                <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="mobile-menu-link user-auth-login">{t(lang, 'nav.login')}</a>
-                <a href="#" class="mobile-menu-link user-auth-logout hidden">{t(lang, 'nav.logout')}</a>
+                <div class="user-auth-mobile">
+                  <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="mobile-menu-link user-auth-login">{t(lang, 'nav.login')}</a>
+                </div>
                 <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="mobile-menu-link">{t(lang, 'nav.writings')}</a>
                 <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="mobile-menu-link">{t(lang, 'nav.series')}</a>
                 <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="mobile-menu-link">{t(lang, 'nav.projects')}</a>
@@ -201,7 +202,9 @@ const Layout: FC<LayoutProps> = ({
                       <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
                       <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                     </a>
-                    <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="user-auth-link text-sm font-bold uppercase tracking-widest text-black hover:opacity-70 no-underline">{t(lang, 'nav.login')}</a>
+                    <div class="user-auth-zone relative shrink-0">
+                      <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="user-auth-link text-sm font-bold uppercase tracking-widest text-black hover:opacity-70 no-underline">{t(lang, 'nav.login')}</a>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -227,7 +230,9 @@ const Layout: FC<LayoutProps> = ({
                       <span class={`lang-toggle-option${lang === 'zh' ? ' lang-toggle-option-active' : ''}`} data-lang="zh">中文</span>
                       <span class={`lang-toggle-thumb${lang === 'en' ? '' : ' lang-toggle-thumb-end'}`}>{lang === 'en' ? 'EN' : '中文'}</span>
                     </a>
-                    <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="user-auth-link text-sm font-bold uppercase tracking-widest text-black hover:opacity-70 no-underline">{t(lang, 'nav.login')}</a>
+                    <div class="user-auth-zone relative shrink-0">
+                      <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="user-auth-link text-sm font-bold uppercase tracking-widest text-black hover:opacity-70 no-underline">{t(lang, 'nav.login')}</a>
+                    </div>
                   </div>
                 </div>
               )}
@@ -336,20 +341,46 @@ const Layout: FC<LayoutProps> = ({
         }} />
         <script dangerouslySetInnerHTML={{ __html:
           '(function(){' +
-          'function updateAuthLinks(){' +
+          'function identicon(seed,size){' +
+          'function hashStr(s){var h=0x811c9dc5;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)}return h>>>0}' +
+          'var h0=hashStr(seed),h1=hashStr(seed+"#1");var hue=(h0%360+360)%360;var fg="hsl("+hue+",65%,55%)";' +
+          'var cells=[],gs=5,cs=size/gs;' +
+          'for(var row=0;row<gs;row++){for(var col=0;col<3;col++){var bit=(h1>>>(row*3+col))&1;' +
+          'if(bit){var x=col*cs,y=row*cs;cells.push("<rect x=\\""+x+"\\" y=\\""+y+"\\" width=\\""+cs+"\\" height=\\""+cs+"\\" fill=\\""+fg+"\\"/>");' +
+          'if(col<2)cells.push("<rect x=\\""+(gs-1-col)*cs+"\\" y=\\""+y+"\\" width=\\""+cs+"\\" height=\\""+cs+"\\" fill=\\""+fg+"\\"/>")}}}' +
+          'return "<svg xmlns=\\"http://www.w3.org/2000/svg\\" viewBox=\\"0 0 "+size+" "+size+"\\" width=\\""+size+"\\" height=\\""+size+"\\" style=\\"display:block\\">"+cells.join("")+"</svg>"}' +
+          'function avatarImg(u,size){var seed=u.avatarSeed||u.id;var img=document.createElement("img");img.style.cssText="width:100%;height:100%;object-fit:cover;display:block";img.setAttribute("alt","");var ic="data:image/svg+xml,"+encodeURIComponent(identicon(seed,size));if(u.avatarUrl){img.src=u.avatarUrl;img.onerror=function(){img.onerror=null;img.src=ic}}else{img.src=ic}return img}' +
+          'function avatarBox(u,size){var d=document.createElement("div");d.style.cssText="width:"+size+"px;height:"+size+"px;overflow:hidden;line-height:0;font-size:0";d.appendChild(avatarImg(u,size));return d}' +
+          'var b=__cur==="en"?"/en":"";' +
           'fetch("/auth/me",{credentials:"include"}).then(function(r){return r.json()}).then(function(d){' +
-          'var loggedIn=d&&d.user;' +
-          'var loginLabel=__t("nav.login");var logoutLabel=__t("nav.logout");var b=__cur==="en"?"/en":"";' +
-          'document.querySelectorAll(".user-auth-link").forEach(function(l){' +
-          'if(loggedIn){l.textContent=logoutLabel;l.href="#";l.removeAttribute("data-thref");l.classList.remove("hidden")}' +
-          'else{l.textContent=loginLabel;l.setAttribute("data-thref","/login");l.href=b+"/login";l.classList.remove("hidden")}' +
-          '});' +
-          'document.querySelectorAll(".user-auth-login").forEach(function(l){if(loggedIn)l.classList.add("hidden");else l.classList.remove("hidden")});' +
-          'document.querySelectorAll(".user-auth-logout").forEach(function(l){if(loggedIn)l.classList.remove("hidden");else l.classList.add("hidden")});' +
-          '}).catch(function(){})' +
-          '}' +
-          'updateAuthLinks();' +
+          'var u=d&&d.user;if(!u)return;' +
+          'document.querySelectorAll(".user-auth-zone").forEach(function(zone){' +
+          'var link=zone.querySelector(".user-auth-link");if(link)link.classList.add("hidden");' +
+          'if(zone.querySelector(".user-avatar-wrap"))return;' +
+          'var wrap=document.createElement("div");wrap.className="user-avatar-wrap relative";' +
+          'var btn=document.createElement("button");btn.type="button";' +
+          'btn.style.cssText="width:32px;height:32px;border:1px solid #000;overflow:hidden;line-height:0;font-size:0;cursor:pointer;padding:0;background:#fff";' +
+          'btn.className="user-avatar-btn";btn.appendChild(avatarImg(u,32));' +
+          'var menu=document.createElement("div");' +
+          'menu.className="user-avatar-menu hidden absolute right-0 top-full mt-2 bg-white border border-black z-50";' +
+          'menu.style.minWidth="160px";' +
+          'menu.innerHTML=' +
+          '"<a href=\\""+b+"/settings\\" data-thref=\\"/settings\\" data-t=\\"nav.settings\\" class=\\"block px-4 py-2 text-xs font-bold uppercase tracking-widest text-black hover:bg-black hover:text-white no-underline\\">"+__t("nav.settings")+"</a>"+' +
+          '"<a href=\\"#\\" class=\\"user-auth-logout block px-4 py-2 text-xs font-bold uppercase tracking-widest text-black hover:bg-black hover:text-white no-underline\\" data-t=\\"nav.logout\\">"+__t("nav.logout")+"</a>";' +
+          'wrap.appendChild(btn);wrap.appendChild(menu);zone.appendChild(wrap);' +
+          'btn.addEventListener("click",function(e){e.stopPropagation();menu.classList.toggle("hidden")})});' +
+          'document.querySelectorAll(".user-auth-mobile").forEach(function(zone){' +
+          'zone.innerHTML="";' +
+          'var row=document.createElement("div");row.className="flex items-center gap-3 py-2";' +
+          'row.appendChild(avatarBox(u,36));' +
+          'var nm=document.createElement("span");nm.className="text-sm font-bold text-black truncate";nm.textContent=u.name;row.appendChild(nm);' +
+          'zone.appendChild(row);' +
+          'var sl=document.createElement("a");sl.href=b+"/settings";sl.setAttribute("data-thref","/settings");sl.setAttribute("data-t","nav.settings");sl.className="mobile-menu-link";sl.textContent=__t("nav.settings");zone.appendChild(sl);' +
+          'var ll=document.createElement("a");ll.href="#";ll.className="mobile-menu-link user-auth-logout";ll.setAttribute("data-t","nav.logout");ll.textContent=__t("nav.logout");zone.appendChild(ll)' +
+          '})' +
+          '}).catch(function(){});' +
           'document.addEventListener("click",function(e){' +
+          'if(!e.target.closest(".user-avatar-wrap")){document.querySelectorAll(".user-avatar-menu").forEach(function(m){m.classList.add("hidden")})}' +
           'var tg=e.target.closest(".user-auth-logout");' +
           'if(!tg)return;e.preventDefault();' +
           'fetch("/auth/logout",{method:"POST",credentials:"include"}).then(function(){window.location.reload()}).catch(function(){window.location.reload()})' +
