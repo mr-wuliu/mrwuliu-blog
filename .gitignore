@@ -3,7 +3,6 @@ dist
 .wrangler
 .env
 .dev.vars
-.sisyphus
 .omo/
 style.html
 public/admin/

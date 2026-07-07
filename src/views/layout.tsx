@@ -66,6 +66,7 @@ const Layout: FC<LayoutProps> = ({
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9567625576719604" crossorigin="anonymous"></script>
         <script dangerouslySetInnerHTML={{ __html:
           '(function(){' +
           'var ts=["default","coffee"];' +
