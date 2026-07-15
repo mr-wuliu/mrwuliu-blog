@@ -5,67 +5,35 @@ import { ArticleSchema, BreadcrumbSchema } from './components/structured-data'
 import type { TocHeading } from '../utils/latex'
 import type { AuthorProfile } from './components/author-sidebar'
 import { type Lang, t, tf, langPath, formatDateLang, otherLang } from '../i18n'
-import { identicon } from '../utils/identicon'
+import { userAvatarHtml, type UserAvatarType } from '../utils/avatar'
 
-function md5(input: string): string {
-  const bytes = new TextEncoder().encode(input)
-  const len = bytes.length
-  const bitLen = len * 8
-  const padLen = ((56 - (len + 1) % 64) + 64) % 64
-  const buf = new Uint8Array(len + 1 + padLen + 8)
-  buf.set(bytes)
-  buf[len] = 0x80
-  const dv = new DataView(buf.buffer)
-  dv.setUint32(buf.length - 8, bitLen >>> 0, true)
-  dv.setUint32(buf.length - 4, 0, true)
-  const K = [
-    0xd76aa478,0xe8c7b756,0x242070db,0xc1bdceee,0xf57c0faf,0x4787c62a,0xa8304613,0xfd469501,
-    0x698098d8,0x8b44f7af,0xffff5bb1,0x895cd7be,0x6b901122,0xfd987193,0xa679438e,0x49b40821,
-    0xf61e2562,0xc040b340,0x265e5a51,0xe9b6c7aa,0xd62f105d,0x02441453,0xd8a1e681,0xe7d3fbc8,
-    0x21e1cde6,0xc33707d6,0xf4d50d87,0x455a14ed,0xa9e3e905,0xfcefa3f8,0x676f02d9,0x8d2a4c8a,
-    0xfffa3942,0x8771f681,0x6d9d6122,0xfde5380c,0xa4beea44,0x4bdecfa9,0xf6bb4b60,0xbebfbc70,
-    0x289b7ec6,0xeaa127fa,0xd4ef3085,0x04881d05,0xd9d4d039,0xe6db99e5,0x1fa27cf8,0xc4ac5665,
-    0xf4292244,0x432aff97,0xab9423a7,0xfc93a039,0x655b59c3,0x8f0ccc92,0xffeff47d,0x85845dd1,
-    0x6fa87e4f,0xfe2ce6e0,0xa3014314,0x4e0811a1,0xf7537e82,0xbd3af235,0x2ad7d2bb,0xeb86d391,
-  ]
-  const S = [
-    7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
-    5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
-    4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
-    6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21,
-  ]
-  let a0=0x67452301, b0=0xefcdab89, c0=0x98badcfe, d0=0x10325476
-  for (let off = 0; off < buf.length; off += 64) {
-    const M = new Int32Array(16)
-    for (let j = 0; j < 16; j++) M[j] = dv.getUint32(off + j * 4, true)
-    let A=a0, B=b0, C=c0, D=d0
-    for (let i = 0; i < 64; i++) {
-      let F: number, g: number
-      if (i < 16)      { F = (B & C) | (~B & D); g = i }
-      else if (i < 32) { F = (D & B) | (~D & C); g = (5*i+1) % 16 }
-      else if (i < 48) { F = B ^ C ^ D;          g = (3*i+5) % 16 }
-      else              { F = C ^ (B | ~D);       g = (7*i) % 16 }
-      F = (F + A + K[i] + M[g]) >>> 0
-      A = D; D = C; C = B
-      B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) >>> 0
-    }
-    a0 = (a0+A)>>>0; b0 = (b0+B)>>>0; c0 = (c0+C)>>>0; d0 = (d0+D)>>>0
-  }
-  const out = new Uint8Array(16)
-  const ov = new DataView(out.buffer)
-  ov.setUint32(0,a0,true); ov.setUint32(4,b0,true); ov.setUint32(8,c0,true); ov.setUint32(12,d0,true)
-  return Array.from(out, b => b.toString(16).padStart(2,'0')).join('')
-}
-
-function avatarHtml(email: string | null, fallbackSeed: string, size: number): string {
-  if (!email) return identicon(fallbackSeed, size)
-  const hash = md5(email.trim().toLowerCase())
-  return `<img src="https://www.gravatar.com/avatar/${hash}?s=${size*2}&d=404" loading="lazy" alt="" style="width:100%;height:100%;object-fit:cover;display:block" onerror="this.parentNode.innerHTML=this.parentNode.getAttribute('data-fb')" />`
+function commentAvatarHtml(c: Comment, size: number): string {
+  return userAvatarHtml({
+    avatarType: c.avatarType ?? 'identicon',
+    avatarR2Key: c.avatarR2Key ?? '',
+    email: c.authorEmail ?? '',
+    avatarSeed: c.avatarSeed || c.visitorId || ((c.authorEmail || '') + c.authorName) || c.id,
+    id: c.id,
+  }, size)
 }
 
 type Post = InferSelectModel<typeof import('../db/schema').posts>
 type Tag = InferSelectModel<typeof import('../db/schema').tags>
-type Comment = InferSelectModel<typeof import('../db/schema').comments>
+type Comment = {
+  id: string
+  postId: string
+  parentId: string | null
+  authorName: string
+  authorEmail: string | null
+  visitorId: string | null
+  userId: string | null
+  content: string
+  status: 'pending' | 'approved' | 'rejected'
+  createdAt: string
+  avatarType: UserAvatarType | null
+  avatarR2Key: string | null
+  avatarSeed: string | null
+}
 
 interface PostWithTags extends Omit<Post, never> {
   tags: Tag[]
@@ -158,7 +126,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
           {topLevelComments.map((c) => (
             <div class="p-4 sm:p-6 bg-white border border-black mb-2" id={`comment-${c.id}`}>
               <div class="flex gap-3">
-                <div class="flex-shrink-0 mt-0.5 border border-gray-300 h-[40px] w-[40px] overflow-hidden" style="line-height:0;font-size:0" {...(c.authorEmail ? { 'data-fb': identicon(c.visitorId || ((c.authorEmail || '') + c.authorName), 40) } : {})} dangerouslySetInnerHTML={{ __html: avatarHtml(c.authorEmail, c.visitorId || ((c.authorEmail || '') + c.authorName), 40) }} />
+                <div class="flex-shrink-0 mt-0.5 border border-gray-300 h-[40px] w-[40px] overflow-hidden" style="line-height:0;font-size:0" dangerouslySetInnerHTML={{ __html: commentAvatarHtml(c, 40) }} />
                 <div class="flex-1 min-w-0">
                   <div class="flex items-baseline gap-2 mb-1">
                     <span class="text-sm font-bold text-black">{c.authorName}</span>
@@ -172,7 +140,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
                 <div class="ml-6 sm:ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2">
                   {(repliesByParent[c.id] || []).map((r) => (
                     <div class="flex gap-3 py-2" id={`comment-${r.id}`}>
-                      <div class="flex-shrink-0 mt-0.5 border border-gray-200 h-[32px] w-[32px] overflow-hidden" style="line-height:0;font-size:0" {...(r.authorEmail ? { 'data-fb': identicon(r.visitorId || ((r.authorEmail || '') + r.authorName), 32) } : {})} dangerouslySetInnerHTML={{ __html: avatarHtml(r.authorEmail, r.visitorId || ((r.authorEmail || '') + r.authorName), 32) }} />
+                      <div class="flex-shrink-0 mt-0.5 border border-gray-200 h-[32px] w-[32px] overflow-hidden" style="line-height:0;font-size:0" dangerouslySetInnerHTML={{ __html: commentAvatarHtml(r, 32) }} />
                       <div class="flex-1 min-w-0">
                         <div class="flex items-baseline gap-2 mb-1">
                           <span class="text-sm font-bold text-black">{r.authorName}</span>

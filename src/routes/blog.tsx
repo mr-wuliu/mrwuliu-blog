@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
-import { posts, tags, postTags, comments, postLikes, collections } from '../db/schema'
+import { posts, tags, postTags, comments, postLikes, collections, users } from '../db/schema'
 import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
@@ -249,7 +249,24 @@ function createBlogRouter(lang: Lang) {
     const resolvedPost = resolvePostLang(postWithTags, lang)
 
     const [approvedComments, prevPost, nextPost, authorProfile, postCollections] = await Promise.all([
-      db.select().from(comments)
+      db.select({
+        id: comments.id,
+        postId: comments.postId,
+        parentId: comments.parentId,
+        authorName: comments.authorName,
+        authorEmail: comments.authorEmail,
+        visitorId: comments.visitorId,
+        userId: comments.userId,
+        content: comments.content,
+        status: comments.status,
+        createdAt: comments.createdAt,
+        // joined from users (nullable — legacy visitor comments have no userId)
+        avatarType: users.avatarType,
+        avatarR2Key: users.avatarR2Key,
+        avatarSeed: users.avatarSeed,
+      })
+        .from(comments)
+        .leftJoin(users, eq(comments.userId, users.id))
         .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
         .orderBy(asc(comments.createdAt)),
       getAdjacentPost(db, postWithTags.publishedAt, 'prev'),
