@@ -59,3 +59,7 @@ run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/en/feed.xml"
 [[env.production.routes]]
 pattern = "mrwuliu.top"
 custom_domain = true
+
+[[env.production.routes]]
+pattern = "www.mrwuliu.top"
+custom_domain = true
