@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { Editor as TipTapEditor } from '@tiptap/core'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
+import { isEditorDirty, setEditorDirty } from '../lib/editor-dirty'
 import { preRenderMermaidInHtml } from '../lib/mermaid-pre-render'
 import Editor from '../components/Editor'
 import TableOfContents from '../components/TableOfContents'
@@ -56,14 +57,15 @@ export default function EditPost() {
   const [infoExpanded, setInfoExpanded] = useState(true)
   const [collectionsExpanded, setCollectionsExpanded] = useState(true)
   const [loadedPostId, setLoadedPostId] = useState<string | undefined>(id)
-  const dirtyRef = useRef(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const originalRef = useRef<{ title: string; content: string; slug: string; excerpt: string; tagsInput: string; hidden: boolean; pinned: boolean; titleEn: string; excerptEn: string; contentEn: string } | null>(null)
 
-  const markDirty = useCallback(() => { dirtyRef.current = true }, [])
+  const markDirty = useCallback(() => { setEditorDirty(true) }, [])
 
   const confirmLeave = useCallback(() => {
-    if (dirtyRef.current && !window.confirm(t('editPost.confirmLeave'))) return false
-    dirtyRef.current = false
+    if (isEditorDirty() && !window.confirm(t('editPost.confirmLeave'))) return false
+    setEditorDirty(false)
     return true
   }, [t])
 
@@ -91,6 +93,7 @@ export default function EditPost() {
   useEffect(() => {
     if (!id) return
     setLoading(true)
+    setLoadError(null)
     api.get<PostData>(`/posts/${id}`).then((post) => {
       setTitle(post.title)
       setSlug(post.slug)
@@ -103,22 +106,26 @@ export default function EditPost() {
       setExcerptEn(post.excerptEn ?? '')
       setContentEn(post.contentEn ?? '')
       setLoadedPostId(id)
-      dirtyRef.current = false
+      setEditorDirty(false)
       originalRef.current = { title: post.title, content: post.content, slug: post.slug, excerpt: post.excerpt ?? '', tagsInput: post.tags.map((tag) => tag.name).join(', '), hidden: post.hidden ?? false, pinned: post.pinned ?? false, titleEn: post.titleEn ?? '', excerptEn: post.excerptEn ?? '', contentEn: post.contentEn ?? '' }
       setLoading(false)
-    }).catch(() => {
+    }).catch((err) => {
+      console.error('Failed to load post', err)
+      setLoadError(err instanceof Error && err.message ? err.message : 'unknown error')
       setLoading(false)
     })
     api.get<{ collections: { id: string; name: string; nameEn: string | null; slug: string; posts: { id: string; title: string; slug: string }[] }[] }>(`/collections/by-post/${id}`).then((res) => {
       setPostCollections(res.collections)
-    }).catch(() => {
+    }).catch((err) => {
+      // Collections sidebar is optional enrichment — the editor works without it.
+      console.error('Failed to load post collections', err)
       setPostCollections([])
     })
   }, [id])
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (dirtyRef.current) {
+      if (isEditorDirty()) {
         e.preventDefault()
       }
     }
@@ -142,6 +149,7 @@ export default function EditPost() {
 
   const handleSave = useCallback(async (status: 'draft' | 'published') => {
     setSaving(true)
+    setSaveError(null)
     const tags = tagsInput
       .split(',')
       .map((tag) => tag.trim())
@@ -169,19 +177,39 @@ export default function EditPost() {
       } else {
         await api.post('/posts', body)
       }
-      dirtyRef.current = false
+      setEditorDirty(false)
       navigate('/posts')
-    } catch {
-      // Save failed — re-enable buttons
+    } catch (err) {
+      console.error('Failed to save post', err)
+      setSaveError(
+        err instanceof ApiError ? `${t('common.saveFailed')}: ${err.message}` : t('common.saveFailed')
+      )
     } finally {
       setSaving(false)
     }
-  }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn])
+  }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn, t])
 
   if (loading && !title) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-sm opacity-50">{t('editPost.loading')}</p>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-sm font-bold text-red-600">
+          {t('editPost.loadFailed')}: {loadError}
+        </p>
+        <button
+          type="button"
+          onClick={() => navigate('/posts')}
+          className="px-4 py-2 text-xs font-bold uppercase tracking-widest border border-black hover:bg-black hover:text-white transition-all cursor-pointer"
+        >
+          {t('posts.title')}
+        </button>
       </div>
     )
   }
@@ -193,6 +221,7 @@ export default function EditPost() {
           type="button"
           onClick={() => guardedNavigate('/posts')}
           title={t('editPost.cancel')}
+          aria-label={t('editPost.cancel')}
           className="h-7 px-2 flex items-center justify-center text-sm opacity-50 hover:opacity-100 hover:bg-black hover:text-white transition-all cursor-pointer"
         >
           ←
@@ -245,6 +274,11 @@ export default function EditPost() {
         {saving && (
           <span className="text-[9px] font-bold uppercase tracking-widest opacity-50">
             {t('editPost.saving')}
+          </span>
+        )}
+        {saveError && (
+          <span className="text-[9px] font-bold uppercase tracking-widest text-red-600" role="alert">
+            {saveError}
           </span>
         )}
 

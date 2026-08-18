@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
+import type { MouseEvent } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
+import { isEditorDirty, setEditorDirty } from '../lib/editor-dirty'
 
 type CommentsCountResponse = { comments: unknown[]; total: number }
 
@@ -12,12 +14,27 @@ export default function Layout() {
   const fetchPendingCount = useCallback(() => {
     api.get<CommentsCountResponse>('/admin/comments?status=pending&limit=1')
       .then((data) => setPendingCount(data.total))
-      .catch(() => {})
+      .catch((err) => {
+        // Badge count is optional enrichment — keep the nav usable without it.
+        console.error('Failed to load pending comment count', err)
+      })
   }, [])
 
   useEffect(() => {
     fetchPendingCount()
   }, [fetchPendingCount])
+
+  // Sidebar links bypass the editor page's own navigation guard; intercept the
+  // click before react-router handles it so unsaved changes get a confirm().
+  const guardNavigation = useCallback((e: MouseEvent) => {
+    if (!(e.target instanceof Element) || !e.target.closest('a')) return
+    if (!isEditorDirty()) return
+    if (window.confirm(t('editPost.confirmLeave'))) {
+      setEditorDirty(false)
+    } else {
+      e.preventDefault()
+    }
+  }, [t])
 
   return (
     <div className="h-screen flex bg-white overflow-hidden">
@@ -26,7 +43,7 @@ export default function Layout() {
           <h1 className="text-lg font-bold tracking-tight text-black">{t('layout.adminTitle')}</h1>
         </div>
 
-        <nav className="flex-1 py-4">
+        <nav className="flex-1 py-4" onClickCapture={guardNavigation}>
           <ul className="space-y-1 px-4">
             <li>
               <NavLink
