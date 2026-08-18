@@ -4,6 +4,18 @@ const SITE_NAME = "mrwuliu's blog"
 const BASE_URL = 'https://mrwuliu.top'
 
 /**
+ * Serialize schema JSON for inline <script> embedding. Escapes "<" so a
+ * literal "</script>" inside titles/excerpts cannot break out of the script
+ * tag, plus U+2028/U+2029 which are invalid in JavaScript string literals.
+ */
+function schemaScriptHtml(schema: unknown): string {
+  return JSON.stringify(schema)
+    .replace(/</g, '\\u003c')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+}
+
+/**
  * Article schema — add to every blog post page.
  * AI engines use author, publisher, datePublished, dateModified to evaluate source credibility.
  */
@@ -62,7 +74,7 @@ export const ArticleSchema: FC<{ data: ArticleSchemaProps }> = ({ data }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: schemaScriptHtml(schema) }}
     />
   )
 }
@@ -107,7 +119,7 @@ export const OrganizationSchema: FC<OrganizationSchemaProps> = ({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: schemaScriptHtml(schema) }}
     />
   )
 }
@@ -133,7 +145,7 @@ export const BreadcrumbSchema: FC<{ items: BreadcrumbItem[] }> = ({ items }) => 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: schemaScriptHtml(schema) }}
     />
   )
 }
@@ -161,7 +173,7 @@ export const WebSiteSchema: FC = () => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: schemaScriptHtml(schema) }}
     />
   )
 }
@@ -192,7 +204,7 @@ export const CollectionPageSchema: FC<{ data: CollectionPageSchemaProps }> = ({ 
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: schemaScriptHtml(schema) }}
     />
   )
 }
@@ -220,7 +232,7 @@ export const ItemListSchema: FC<{ data: ItemListSchemaProps }> = ({ data }) => {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: schemaScriptHtml(schema) }}
     />
   )
 }
