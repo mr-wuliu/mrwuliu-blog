@@ -6,7 +6,7 @@
  * Uses plain fetch — no SDK dependency needed.
  */
 import type { Database } from '../db'
-import { comments, posts } from '../db/schema'
+import { comments, posts, users } from '../db/schema'
 import { eq, and } from 'drizzle-orm'
 import { signToken } from '../utils/token'
 
@@ -163,6 +163,16 @@ export async function sendReplyNotification(params: ReplyNotificationParams): Pr
 
   // Parent must have opted in to notifications
   if (!parent.notifyOnReply) return
+
+  // Registered users are governed by their current users.notifyOnReply setting;
+  // visitors (and deleted users) by the comment's stored flag.
+  if (parent.userId) {
+    const [parentUser] = await db
+      .select({ notifyOnReply: users.notifyOnReply })
+      .from(users)
+      .where(eq(users.id, parent.userId))
+    if (parentUser && !parentUser.notifyOnReply) return
+  }
 
   // Parent must have an email
   if (!parent.authorEmail) return
