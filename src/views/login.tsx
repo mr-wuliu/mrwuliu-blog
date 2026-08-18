@@ -16,6 +16,7 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
       title={t(lang, 'login.title')}
       lang={lang}
       currentPath={loginPath}
+      extraHead={<meta name="robots" content="noindex, nofollow" />}
     >
       <div class="grid grid-cols-1 lg:grid-cols-2 border border-black bg-white overflow-hidden max-w-4xl mx-auto">
         {/* Left panel — decorative SVG illustration */}

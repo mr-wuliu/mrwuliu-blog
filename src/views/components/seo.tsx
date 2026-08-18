@@ -18,6 +18,7 @@ type SEOProps = {
   authorName?: string
   currentPath?: string
   lang?: Lang
+  noindex?: boolean
 }
 
 const SEO: FC<SEOProps> = ({
@@ -33,6 +34,7 @@ const SEO: FC<SEOProps> = ({
   authorName,
   currentPath,
   lang = 'zh',
+  noindex,
 }) => {
   const desc = description || t(lang, 'home.description')
   const fullTitle = title === siteName ? title : `${title} | ${siteName}`
@@ -52,7 +54,7 @@ const SEO: FC<SEOProps> = ({
     <>
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
-      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+      <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'} />
       <meta name="application-name" content={siteName} />
       <meta name="generator" content="Hono on Cloudflare Workers" />
       {tags.length > 0 && <meta name="keywords" content={tags.join(', ')} />}
