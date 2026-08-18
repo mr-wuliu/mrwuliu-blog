@@ -112,10 +112,16 @@ export async function verifyOtp(
     return { valid: false }
   }
 
-  await db
+  const consumed = await db
     .update(emailOtps)
     .set({ consumedAt: now })
-    .where(eq(emailOtps.id, otp.id))
+    .where(and(eq(emailOtps.id, otp.id), isNull(emailOtps.consumedAt)))
+    .returning({ id: emailOtps.id })
+
+  if (consumed.length === 0) {
+    console.warn(`[auth] otp verify concurrent-consume email=${email} id=${otp.id}`)
+    return { valid: false }
+  }
   console.log(`[auth] otp consumed email=${email} id=${otp.id}`)
 
   const [existingUser] = await db
@@ -239,10 +245,13 @@ export async function rotateRefreshToken(
 
   if (!user || user.status === 'banned') return null
 
-  await db
+  const revoked = await db
     .update(refreshTokens)
     .set({ revokedAt: new Date().toISOString() })
-    .where(eq(refreshTokens.id, stored.id))
+    .where(and(eq(refreshTokens.id, stored.id), isNull(refreshTokens.revokedAt)))
+    .returning({ id: refreshTokens.id })
+
+  if (revoked.length === 0) return null
 
   return issueTokens(db, env, {
     id: user.id,
