@@ -12,6 +12,15 @@ export async function checkRateLimit(
 ): Promise<boolean> {
   const windowStart = `-${windowSeconds} seconds`
 
+  // Rate-limit rows are never deleted otherwise — prune old ones opportunistically.
+  if (Math.random() < 0.1) {
+    try {
+      await db.run(sql`DELETE FROM rate_limits WHERE created_at < datetime('now', '-1 hour')`)
+    } catch (err) {
+      console.error('[rate-limit] prune failed:', err)
+    }
+  }
+
   const rows = await db
     .select({ count: sql<number>`count(*)` })
     .from(rateLimits)
