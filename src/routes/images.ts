@@ -63,6 +63,6 @@ imageServeRoutes.get('/*', async (c) => {
     return new Response('Not Found', { status: 404 })
   }
 
-  const response = await serveImage(c.env, key)
+  const response = await serveImage(c.env, key, c.req.raw)
   return response
 })

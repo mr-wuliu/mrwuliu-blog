@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/d1'
 import { images } from '../db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 
 type Bindings = {
   DB: D1Database
@@ -74,10 +74,23 @@ export async function uploadImage(
   }
 }
 
+// If-None-Match comparison per RFC 7232: token list, W/ weak prefix, and * wildcard
+function requestMatchesEtag(ifNoneMatch: string, etag: string): boolean {
+  return ifNoneMatch
+    .split(',')
+    .map((token) => token.trim())
+    .some((token) => {
+      if (token === '*') return true
+      const candidate = token.startsWith('W/') ? token.slice(2) : token
+      return candidate.toLowerCase() === etag.toLowerCase()
+    })
+}
+
 // Serve an image from R2 with cache headers
 export async function serveImage(
   env: Bindings,
   key: string,
+  request?: Request,
 ): Promise<Response> {
   let object = await env.IMAGES.get(key)
 
@@ -116,7 +129,16 @@ export async function serveImage(
   object.writeHttpMetadata(headers)
   headers.set('Cache-Control', 'public, max-age=31536000, immutable')
   headers.set('ETag', object.etag)
+  if (object.httpMetadata?.contentType === 'image/svg+xml') {
+    headers.set('Content-Security-Policy', "default-src 'none'; sandbox")
+  }
 
+  const ifNoneMatch = request?.headers.get('if-none-match')
+  if (ifNoneMatch && requestMatchesEtag(ifNoneMatch, object.etag)) {
+    return new Response(null, { status: 304, headers })
+  }
+
+  headers.set('Content-Length', String(object.size))
   return new Response(object.body, { headers })
 }
 
@@ -150,13 +172,12 @@ export async function listImages(
   const db = drizzle(env.DB)
   const offset = (page - 1) * limit
 
-  const allImages = await db.select().from(images).limit(limit).offset(offset)
-  // Note: D1 doesn't have a great count mechanism, but for a blog this is fine
-  // We'll get total from a separate query if needed
-  const allRecords = await db.select().from(images)
+  const pageImages = await db.select().from(images).limit(limit).offset(offset)
+  const countResult = await db.select({ count: sql<number>`count(*)` }).from(images)
+  const total = countResult[0]?.count ?? 0
 
   return {
-    images: allImages,
-    total: allRecords.length,
+    images: pageImages,
+    total,
   }
 }
