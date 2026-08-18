@@ -6,6 +6,7 @@ import type { TocHeading } from '../utils/latex'
 import type { AuthorProfile } from './components/author-sidebar'
 import { type Lang, t, tf, langPath, formatDateLang, otherLang } from '../i18n'
 import { userAvatarHtml, type UserAvatarType } from '../utils/avatar'
+import { countWords } from '../utils/word-count'
 
 function commentAvatarHtml(c: Comment, size: number): string {
   return userAvatarHtml({
@@ -60,7 +61,7 @@ const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => 
   if (headings.length === 0) return <></>
 
   return (
-    <nav class="my-6 sm:my-8 p-4 sm:p-6 bg-white border border-black rounded-none">
+    <nav id="toc-nav" class="my-6 sm:my-8 p-4 sm:p-6 bg-white border border-black rounded-none">
       <h2 class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4" data-t="post.toc">{t(lang, 'post.toc')}</h2>
       <ul class="space-y-1">
         {headings.map((h) => (
@@ -387,7 +388,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
   const coverImageUrl = post.coverImageKey ? `/images/${post.coverImageKey}` : undefined
   const tagNames = post.tags.map((tag) => tag.name)
   const textContent = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
-  const wordCount = textContent ? textContent.split(/\s+/).length : undefined
+  const wordCount = textContent ? countWords(textContent) : undefined
 
   return (
     <Layout
@@ -477,7 +478,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
 
         <script dangerouslySetInnerHTML={{ __html: `
 (function() {
-  var toc = document.querySelector('nav.my-8');
+  var toc = document.getElementById('toc-nav');
   if (!toc) return;
   toc.addEventListener('click', function(e) {
     var a = e.target.closest('a');

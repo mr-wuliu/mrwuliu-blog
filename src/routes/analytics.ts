@@ -3,13 +3,12 @@ import { createDb } from '../db'
 import { posts, postStats, postViewEvents } from '../db/schema'
 import { eq, sql, gte, desc, and } from 'drizzle-orm'
 import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
+import { countWords } from '../utils/word-count'
 
 function wordCount(html: string | null): number {
   if (!html) return 0
   const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
-  if (!text) return 0
-  const cjk = text.match(/[\u4e00-\u9fff]/g)?.length ?? 0
-  return text.split(/\s+/).filter(Boolean).length + cjk
+  return countWords(text)
 }
 
 type Bindings = {
