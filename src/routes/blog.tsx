@@ -3,7 +3,7 @@ import { getCookie } from 'hono/cookie'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes, collections, users } from '../db/schema'
-import { getPublishedPosts, getPostWithTags, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks } from '../db/queries'
+import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
@@ -52,7 +52,9 @@ function createBlogRouter(lang: Lang) {
       if (isBotAgent(userAgent)) return
       const ip = getClientIp(c.req.raw.headers)
       const db = createDb(c.env.DB)
-      await trackSiteView(db, { lang, ip, userAgent, salt: c.env.JWT_SECRET })
+      c.executionCtx.waitUntil(
+        trackSiteView(db, { lang, ip, userAgent, salt: c.env.JWT_SECRET })
+      )
     } catch {
       // analytics tracking should never break page rendering
     }
@@ -96,17 +98,25 @@ function createBlogRouter(lang: Lang) {
       ).map(r => [r.postId, r.count])
     ) : {}
 
-    const postsWithTags = await Promise.all(
-      result.posts.map(async (post) => {
-        const postWithTags = await getPostWithTags(db, post.id)
-        return {
-          ...post,
-          tags: postWithTags?.tags ?? [],
-          commentCount: commentCounts[post.id] ?? 0,
-          likeCount: likeCounts[post.id] ?? 0,
-        }
-      })
-    )
+    const tagRows = postIds.length ? await db
+      .select({ postId: postTags.postId, tag: tags })
+      .from(postTags)
+      .innerJoin(tags, eq(postTags.tagId, tags.id))
+      .where(inArray(postTags.postId, postIds)) : []
+
+    const tagsByPost: Record<string, (typeof tags.$inferSelect)[]> = {}
+    for (const row of tagRows) {
+      const existing = tagsByPost[row.postId]
+      if (existing) existing.push(row.tag)
+      else tagsByPost[row.postId] = [row.tag]
+    }
+
+    const postsWithTags = result.posts.map((post) => ({
+      ...post,
+      tags: tagsByPost[post.id] ?? [],
+      commentCount: commentCounts[post.id] ?? 0,
+      likeCount: likeCounts[post.id] ?? 0,
+    }))
 
     const resolvedPosts = postsWithTags.map(p => resolvePostLang(p, lang))
     const totalPages = Math.ceil(result.total / limit)
@@ -159,15 +169,25 @@ function createBlogRouter(lang: Lang) {
     const total = countResult[0]?.count ?? 0
     const totalPages = Math.ceil(total / limit)
 
-    const postsWithTags = await Promise.all(
-      tagPosts.map(async ({ post }) => {
-        const postWithTags = await getPostWithTags(db, post.id)
-        return {
-          ...post,
-          tags: postWithTags?.tags ?? [],
-        }
-      })
-    )
+    const tagPostIds = tagPosts.map(({ post }) => post.id)
+
+    const tagRows = tagPostIds.length ? await db
+      .select({ postId: postTags.postId, tag: tags })
+      .from(postTags)
+      .innerJoin(tags, eq(postTags.tagId, tags.id))
+      .where(inArray(postTags.postId, tagPostIds)) : []
+
+    const tagsByPost: Record<string, (typeof tags.$inferSelect)[]> = {}
+    for (const row of tagRows) {
+      const existing = tagsByPost[row.postId]
+      if (existing) existing.push(row.tag)
+      else tagsByPost[row.postId] = [row.tag]
+    }
+
+    const postsWithTags = tagPosts.map(({ post }) => ({
+      ...post,
+      tags: tagsByPost[post.id] ?? [],
+    }))
 
     const resolvedPosts = postsWithTags.map(p => resolvePostLang(p, lang))
 
@@ -348,7 +368,10 @@ function createBlogRouter(lang: Lang) {
     let parentId: string | undefined
 
     if (contentType.includes('application/json')) {
-      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
+      const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>().catch(() => null)
+      if (!body) {
+        return c.json({ error: 'Invalid JSON body' }, 400)
+      }
       authorName = body.authorName
       authorEmail = body.authorEmail
       visitorId = body.visitorId
@@ -369,6 +392,9 @@ function createBlogRouter(lang: Lang) {
 
     const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
     if (!post) return c.redirect(langPath(`/posts/${slug}`, lang))
+    if (post.status !== 'published' || post.hidden) {
+      return c.html(<NotFoundPage lang={lang} />, 404)
+    }
 
     if (parentId) {
       const [parentComment] = await db.select().from(comments).where(eq(comments.id, parentId))
@@ -425,8 +451,8 @@ function createBlogRouter(lang: Lang) {
 
   router.get('/writings', async (c) => {
     const db = createDb(c.env.DB)
-    const result = await getPublishedPosts(db, { page: 1, limit: 1000 })
-    const resolvedPosts = result.posts.map(p => resolvePostLang(p, lang))
+    const allPosts = await getPublishedPostSummaries(db, { page: 1, limit: 1000 })
+    const resolvedPosts = allPosts.map(p => resolvePostLang(p, lang))
     const authorProfile = await getAuthorProfile(db)
     c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
     return c.html(<WritingsPage lang={lang} posts={resolvedPosts} authorProfile={authorProfile} />)
@@ -566,10 +592,10 @@ blogRoutes.get('/en/', (c) => c.redirect('/en'))
 blogRoutes.get('/feed.xml', async (c) => {
   const db = createDb(c.env.DB)
 
-  const result = await getPublishedPosts(db, { page: 1, limit: 20 })
+  const recentPosts = await getPublishedPostSummaries(db, { page: 1, limit: 20, order: 'newestPublished' })
 
   const baseUrl = new URL(c.req.url).origin
-  const rssXml = generateRSS(result.posts, baseUrl, 'zh')
+  const rssXml = generateRSS(recentPosts, baseUrl, 'zh')
 
   return c.body(rssXml, 200, {
     'Content-Type': 'application/xml',
@@ -580,10 +606,10 @@ blogRoutes.get('/feed.xml', async (c) => {
 blogRoutes.get('/en/feed.xml', async (c) => {
   const db = createDb(c.env.DB)
 
-  const result = await getPublishedPosts(db, { page: 1, limit: 20 })
+  const recentPosts = await getPublishedPostSummaries(db, { page: 1, limit: 20, order: 'newestPublished' })
 
   const baseUrl = new URL(c.req.url).origin
-  const rssXml = generateRSS(result.posts, baseUrl, 'en')
+  const rssXml = generateRSS(recentPosts, baseUrl, 'en')
 
   return c.body(rssXml, 200, {
     'Content-Type': 'application/xml',
@@ -615,9 +641,9 @@ blogRoutes.get('/robots.txt', (c) => {
 blogRoutes.get('/llms.txt', async (c) => {
   const db = createDb(c.env.DB)
   const baseUrl = new URL(c.req.url).origin
-  const [authorProfile, result, allTags, allCollections] = await Promise.all([
+  const [authorProfile, recentPosts, allTags, allCollections] = await Promise.all([
     getAuthorProfile(db),
-    getPublishedPosts(db, { page: 1, limit: 30 }),
+    getPublishedPostSummaries(db, { page: 1, limit: 30, order: 'newestPublished' }),
     db.select({ name: tags.name, slug: tags.slug }).from(tags).limit(40),
     db.select({
       name: collections.name,
@@ -653,7 +679,7 @@ blogRoutes.get('/llms.txt', async (c) => {
     '',
     '## Recent Posts',
     '',
-    ...result.posts.map((post) => {
+    ...recentPosts.map((post) => {
       const date = post.publishedAt ? ` (${post.publishedAt.slice(0, 10)})` : ''
       const excerpt = post.excerpt ? ` - ${post.excerpt.replace(/\s+/g, ' ').trim()}` : ''
       return `- [${post.title}](${baseUrl}/posts/${post.slug})${date}${excerpt}`

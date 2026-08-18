@@ -92,6 +92,38 @@ export async function getPublishedPosts(
   return { posts: result, total, page, limit }
 }
 
+// Get published posts with summary columns only, for list/feed pages that never render post bodies
+export async function getPublishedPostSummaries(
+  db: Database,
+  options: { page?: number; limit?: number; order?: 'pinnedFirst' | 'newestPublished' }
+) {
+  const page = options.page ?? 1
+  const limit = options.limit ?? 10
+  const offset = (page - 1) * limit
+
+  const orderBy = options.order === 'newestPublished'
+    ? [desc(posts.publishedAt)]
+    : [desc(posts.pinned), desc(posts.createdAt)]
+
+  return db
+    .select({
+      id: posts.id,
+      title: posts.title,
+      titleEn: posts.titleEn,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      excerptEn: posts.excerptEn,
+      publishedAt: posts.publishedAt,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
+    .from(posts)
+    .where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
+    .orderBy(...orderBy)
+    .limit(limit)
+    .offset(offset)
+}
+
 // Site config queries
 export async function getSiteConfig(db: Database, key: string) {
   const [config] = await db.select().from(siteConfig).where(eq(siteConfig.key, key))
@@ -293,7 +325,11 @@ export async function getPublishedCollectionWithPosts(db: Database, slug: string
     })
     .from(collectionPosts)
     .innerJoin(posts, eq(collectionPosts.postId, posts.id))
-    .where(eq(collectionPosts.collectionId, collection.id))
+    .where(and(
+      eq(collectionPosts.collectionId, collection.id),
+      eq(posts.status, 'published'),
+      eq(posts.hidden, false),
+    ))
     .orderBy(asc(collectionPosts.sortOrder))
 
   return { ...collection, posts: result }
@@ -384,7 +420,11 @@ export async function getBatchCollectionsWithPosts(
     })
     .from(collectionPosts)
     .innerJoin(posts, eq(collectionPosts.postId, posts.id))
-    .where(inArray(collectionPosts.collectionId, collectionIds))
+    .where(and(
+      inArray(collectionPosts.collectionId, collectionIds),
+      eq(posts.status, 'published'),
+      eq(posts.hidden, false),
+    ))
     .orderBy(asc(collectionPosts.sortOrder))
 
   return collectionRows.map((col) => ({
