@@ -120,6 +120,13 @@
       "when": 1781377601284,
       "tag": "0016_bumpy_unicorn",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1787038091697,
+      "tag": "0017_lucky_monster_badoon",
+      "breakpoints": true
     }
   ]
 }

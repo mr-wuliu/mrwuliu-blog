@@ -23,6 +23,11 @@ export const posts = sqliteTable('posts', {
   posts_published_at_idx: index('posts_published_at_idx').on(table.publishedAt),
   posts_hidden_idx: index('posts_hidden_idx').on(table.hidden),
   posts_pinned_idx: index('posts_pinned_idx').on(table.pinned),
+  posts_created_at_idx: index('posts_created_at_idx').on(table.createdAt),
+  // Serves: WHERE status/hidden ORDER BY pinned DESC, createdAt DESC
+  posts_public_list_idx: index('posts_public_list_idx').on(table.status, table.hidden, table.pinned, table.createdAt),
+  // Serves: WHERE status/hidden ORDER BY publishedAt DESC (feeds)
+  posts_feed_idx: index('posts_feed_idx').on(table.status, table.hidden, table.publishedAt),
 }))
 
 // tags table
