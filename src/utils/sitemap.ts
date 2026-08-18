@@ -14,6 +14,12 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;')
 }
 
+// Truncate mixed lastmod inputs (D1 "YYYY-MM-DD HH:MM:SS" or ISO "...T...Z") to
+// date-only — the only form valid for both sources per the sitemap protocol.
+function normalizeLastmod(value: string): string {
+  return value.slice(0, 10)
+}
+
 export function generateSitemap(
   posts: { slug: string; publishedAt: string | null; updatedAt: string | null }[],
   tags: { slug: string }[],
@@ -89,7 +95,7 @@ export function generateSitemap(
       const loc = `${siteUrl}${page.loc}`
       const xhtmlLinks = buildXhtmlLinks(page.loc, siteUrl)
       return `  <url>
-    <loc>${escapeXml(loc)}</loc>${page.lastmod ? `\n    <lastmod>${escapeXml(page.lastmod)}</lastmod>` : ''}
+    <loc>${escapeXml(loc)}</loc>${page.lastmod ? `\n    <lastmod>${escapeXml(normalizeLastmod(page.lastmod))}</lastmod>` : ''}
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>${xhtmlLinks}
   </url>`

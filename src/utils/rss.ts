@@ -14,6 +14,10 @@ function escapeXml(str: string): string {
     .replace(/'/g, '&apos;')
 }
 
+function escapeCData(str: string): string {
+  return str.replace(/]]>/g, ']]]]><![CDATA[>')
+}
+
 function toRFC822(dateStr: string): string {
   const date = new Date(dateStr)
   return date.toUTCString()
@@ -31,7 +35,7 @@ export function generateRSS(posts: RSSPost[], baseUrl: string, lang: 'zh' | 'en'
       const link = `${siteUrl}${postPathPrefix}/${post.slug}`
       const pubDate = post.publishedAt ? toRFC822(post.publishedAt) : ''
       const description = post.excerpt
-        ? `<![CDATA[${post.excerpt}]]>`
+        ? `<![CDATA[${escapeCData(post.excerpt)}]]>`
         : ''
 
       return `    <item>
