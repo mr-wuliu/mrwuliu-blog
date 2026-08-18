@@ -3,7 +3,7 @@ import { type Lang, t, langPath } from '../../i18n'
 
 const SITE_NAME = "mrwuliu's blog"
 const BASE_URL = 'https://mrwuliu.top'
-const DEFAULT_OG_IMAGE = `${BASE_URL}/favicon.svg`
+const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`
 
 type SEOProps = {
   title: string
