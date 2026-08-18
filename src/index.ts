@@ -25,6 +25,21 @@ type Bindings = {
 
 const app = new Hono<{ Bindings: Bindings }>()
 
+async function timingSafeEqual(a: string, b: string): Promise<boolean> {
+  const encoder = new TextEncoder()
+  const [digestA, digestB] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(a)),
+    crypto.subtle.digest('SHA-256', encoder.encode(b)),
+  ])
+  const bytesA = new Uint8Array(digestA)
+  const bytesB = new Uint8Array(digestB)
+  let diff = 0
+  for (let i = 0; i < 32; i++) {
+    diff |= bytesA[i] ^ bytesB[i]
+  }
+  return diff === 0
+}
+
 app.use('*', logger())
 
 // Global error handler — logs uncaught exceptions to Workers Logs (observability)
@@ -76,9 +91,17 @@ app.use('/api/*', async (c, next) => {
     return
   }
 
+  // Public like toggle — no auth required (called from blog pages)
+  if (c.req.method === 'POST' && /^\/api\/posts\/[^/]+\/like$/.test(c.req.path)) {
+    await next()
+    return
+  }
+
   // Allow: valid API Key (machine access) OR Cloudflare Zero Trust identity (browser access)
   const apiKey = c.req.header('X-API-Key')
-  const hasApiKey = apiKey && apiKey === c.env.API_KEY
+  const hasApiKey = apiKey !== undefined && c.env.API_KEY !== undefined
+    ? await timingSafeEqual(apiKey, c.env.API_KEY)
+    : false
   const hasZeroTrustIdentity = !!c.req.header('Cf-Access-Jwt-Assertion') || !!c.req.header('Cf-Authorization')
 
   if (!hasApiKey && !hasZeroTrustIdentity) {
