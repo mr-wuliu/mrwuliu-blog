@@ -3,7 +3,7 @@ import { getCookie } from 'hono/cookie'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes, collections, users } from '../db/schema'
-import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks } from '../db/queries'
+import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks, getVisibleTags } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
@@ -191,7 +191,7 @@ function createBlogRouter(lang: Lang) {
 
     const resolvedPosts = postsWithTags.map(p => resolvePostLang(p, lang))
 
-    const allTags = await db.select().from(tags)
+    const allTags = await getVisibleTags(db)
     const authorProfile = await getAuthorProfile(db)
 
     return c.html(
@@ -469,16 +469,8 @@ function createBlogRouter(lang: Lang) {
 
   router.get('/tags-cloud', async (c) => {
     const db = createDb(c.env.DB)
-    const allTags = await db.select({
-      id: tags.id,
-      name: tags.name,
-      slug: tags.slug,
-      postCount: sql<number>`count(${posts.id})`
-    }).from(tags)
-      .leftJoin(postTags, eq(tags.id, postTags.tagId))
-      .leftJoin(posts, and(eq(postTags.postId, posts.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
-      .groupBy(tags.id)
-      .orderBy(desc(sql`count(${posts.id})`))
+    const visibleTags = await getVisibleTags(db)
+    const allTags = [...visibleTags].sort((a, b) => b.postCount - a.postCount)
 
     const authorProfile = await getAuthorProfile(db)
     c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
@@ -641,15 +633,16 @@ blogRoutes.get('/robots.txt', (c) => {
 blogRoutes.get('/llms.txt', async (c) => {
   const db = createDb(c.env.DB)
   const baseUrl = new URL(c.req.url).origin
-  const [authorProfile, recentPosts, allTags, allCollections] = await Promise.all([
+  const [authorProfile, recentPosts, allTagRows, allCollections] = await Promise.all([
     getAuthorProfile(db),
     getPublishedPostSummaries(db, { page: 1, limit: 30, order: 'newestPublished' }),
-    db.select({ name: tags.name, slug: tags.slug }).from(tags).limit(40),
+    getVisibleTags(db),
     db.select({
       name: collections.name,
       slug: collections.slug,
     }).from(collections).where(eq(collections.status, 'published')).limit(20),
   ])
+  const allTags = allTagRows.slice(0, 40)
 
   const lines = [
     "# mrwuliu's blog",
@@ -719,7 +712,7 @@ blogRoutes.get('/sitemap.xml', async (c) => {
   const result = await getAllPublishedPostsForSitemap(db)
   const baseUrl = new URL(c.req.url).origin
 
-  const allTags = await db.select({ slug: tags.slug }).from(tags)
+  const allTags = await getVisibleTags(db)
   const allCollections = await db.select({
     slug: collections.slug,
     updatedAt: collections.updatedAt,

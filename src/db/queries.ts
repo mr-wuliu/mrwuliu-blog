@@ -124,6 +124,28 @@ export async function getPublishedPostSummaries(
     .offset(offset)
 }
 
+// Tags having >=1 published, non-hidden post — excludes draft-only/orphaned tags
+// so public pages never list tags with postCount 0
+export async function getVisibleTags(db: Database) {
+  return db
+    .select({
+      id: tags.id,
+      name: tags.name,
+      slug: tags.slug,
+      createdAt: tags.createdAt,
+      postCount: sql<number>`count(${posts.id})`,
+    })
+    .from(tags)
+    .innerJoin(postTags, eq(tags.id, postTags.tagId))
+    .innerJoin(posts, and(
+      eq(postTags.postId, posts.id),
+      eq(posts.status, 'published'),
+      eq(posts.hidden, false),
+    ))
+    .groupBy(tags.id)
+    .orderBy(asc(tags.createdAt), asc(tags.slug))
+}
+
 // Site config queries
 export async function getSiteConfig(db: Database, key: string) {
   const [config] = await db.select().from(siteConfig).where(eq(siteConfig.key, key))
