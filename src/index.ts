@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
+import { sql } from 'drizzle-orm'
+import { createDb } from './db'
 import tagRoutes from './routes/tags'
 import postRoutes from './routes/posts'
 import commentRoutes from './routes/comments'
@@ -154,4 +156,33 @@ app.get('/admin/*', async (c) => {
   })
 })
 
-export default app
+// Scheduled housekeeping (cron configured in wrangler.toml [triggers]).
+// Retention is 731 days for analytics events: dashboards compare against a
+// previous period of up to days*2 = 730 days of raw events, so pruning must
+// stay beyond that horizon or historical comparisons silently zero out.
+async function runScheduledCleanup(env: Bindings): Promise<void> {
+  const db = createDb(env.DB)
+  const results = await Promise.all([
+    db.run(sql`DELETE FROM post_view_events WHERE created_at < datetime('now', '-731 days')`),
+    db.run(sql`DELETE FROM site_visitor_events WHERE created_at < datetime('now', '-731 days')`),
+    db.run(sql`DELETE FROM email_otps WHERE expires_at < datetime('now', '-1 day')`),
+    db.run(sql`DELETE FROM refresh_tokens WHERE expires_at < datetime('now', '-30 days')`),
+  ])
+  console.log(
+    `[scheduled] cleanup: postViewEvents=${String(results[0].meta?.changes ?? 0)} ` +
+    `siteVisitorEvents=${String(results[1].meta?.changes ?? 0)} ` +
+    `emailOtps=${String(results[2].meta?.changes ?? 0)} ` +
+    `refreshTokens=${String(results[3].meta?.changes ?? 0)}`,
+  )
+}
+
+export default {
+  fetch: app.fetch,
+  scheduled: async (_event: ScheduledController, env: Bindings, _ctx: ExecutionContext) => {
+    try {
+      await runScheduledCleanup(env)
+    } catch (err) {
+      console.error('[scheduled] cleanup failed:', err)
+    }
+  },
+}

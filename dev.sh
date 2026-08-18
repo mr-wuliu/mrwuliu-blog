@@ -75,7 +75,7 @@ cmd_start() {
   else
     info "Starting dev server on :$PORT ..."
     setsid node "$PROJECT_DIR/node_modules/wrangler/bin/wrangler.js" dev \
-      --ip 0.0.0.0 --port "$PORT" \
+      --ip 0.0.0.0 --port "$PORT" --test-scheduled \
       > "$LOG_DIR/api.log" 2>&1 &
     echo $! > "$PID_FILE"
 

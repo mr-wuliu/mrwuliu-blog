@@ -11,6 +11,14 @@ compatibility_flags = ["nodejs_compat"]
 enabled = true
 
 # ============================================================
+# Scheduled handler — daily housekeeping (analytics-event and
+# expired-token pruning, see runScheduledCleanup in src/index.ts)
+# ============================================================
+
+[triggers]
+crons = ["0 3 * * *"]
+
+# ============================================================
 # Default (local dev)
 # ============================================================
 
