@@ -19,6 +19,7 @@ import BlockMathView from './math/BlockMathView'
 import InlineMathView from './math/InlineMathView'
 import { normalizeCodeBlockLanguage } from './codeBlockLanguages'
 import CodeBlockNodeView from './CodeBlockNodeView'
+import { api } from '../lib/api'
 
 const lowlight = createLowlight(common)
 const INDENT = '    '
@@ -59,19 +60,13 @@ function promptTableSize() {
   }
 }
 
+// Alt text for inserted images: strip any path segments, then the extension.
+function altFromFileName(file: File): string {
+  return (file.name.split(/[\\/]/).pop() ?? file.name).replace(/\.[^.]+$/, '')
+}
+
 async function uploadImage(file: File): Promise<string> {
-  const formData = new FormData()
-  formData.append('file', file)
-  const response = await fetch('/api/images', {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
-  })
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({ error: 'Upload failed' }))
-    throw new Error(err.error || 'Upload failed')
-  }
-  const data: { id: string; url: string } = await response.json()
+  const data = await api.upload<{ id: string; url: string }>('/images', file)
   return data.url
 }
 
@@ -103,14 +98,19 @@ const ImagePaste = Extension.create({
                 const file = item.getAsFile()
                 if (!file) continue
 
-                const pos = view.state.selection.from
+                // Capture the paste position before the async upload; the doc
+                // may change while uploading, so clamp before inserting.
+                const pastePos = view.state.selection.from
                 uploadImage(file)
                   .then((url) => {
-                    const { tr } = view.state
-                    const node = view.state.schema.nodes.image.create({ src: url })
-                    view.dispatch(tr.insert(pos, node))
+                    const pos = Math.min(pastePos, view.state.doc.content.size)
+                    const node = view.state.schema.nodes.image.create({ src: url, alt: altFromFileName(file) })
+                    view.dispatch(view.state.tr.insert(pos, node).scrollIntoView())
                   })
-                  .catch(() => {})
+                  .catch((err: unknown) => {
+                    console.error('Image paste upload failed', err)
+                    window.alert(`Image upload failed${err instanceof Error && err.message ? `: ${err.message}` : ''}`)
+                  })
                 return true
               }
             }
@@ -212,7 +212,11 @@ const CustomMathematics = Mathematics.extend({
       addInputRules() {
         return [
           new InputRule({
-            find: /(?<!\$)\$([^$\n]+?)\$(?!\$)/,
+            // Tight inline-math delimiters only: content between the `$`s must
+            // be non-empty and must not start or end with whitespace, so prose
+            // like "$5 and $10" is not treated as math. `$$...$$` display math
+            // is excluded by the lookaround guards.
+            find: /(?<!\$)\$([^\s$](?:[^$\n]*[^\s$])?)\$(?!\$)/,
             handler: ({ state, range, match }) => {
               const [, latex] = match
               state.tr.replaceWith(range.from, range.to, this.type.create({ latex }))
@@ -482,9 +486,10 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
     if (!file || !editor) return
     try {
       const url = await uploadImage(file)
-      editor.chain().focus().setImage({ src: url }).run()
-    } catch {
-      // Image upload failed
+      editor.chain().focus().setImage({ src: url, alt: altFromFileName(file) }).run()
+    } catch (err) {
+      console.error('Image upload failed', err)
+      window.alert(`Image upload failed${err instanceof Error && err.message ? `: ${err.message}` : ''}`)
     }
     e.target.value = ''
   }, [editor])
@@ -540,38 +545,39 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
 
   type Btn = {
     label: string
+    ariaLabel: string
     active?: boolean
     onClick: () => void
     disabled?: boolean
   }
 
   const buttons: Btn[] = [
-    { label: 'H1', active: editor.isActive('heading', { level: 1 }), onClick: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
-    { label: 'H2', active: editor.isActive('heading', { level: 2 }), onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
-    { label: 'H3', active: editor.isActive('heading', { level: 3 }), onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run() },
-    { label: 'H4', active: editor.isActive('heading', { level: 4 }), onClick: () => editor.chain().focus().toggleHeading({ level: 4 }).run() },
-    { label: 'H5', active: editor.isActive('heading', { level: 5 }), onClick: () => editor.chain().focus().toggleHeading({ level: 5 }).run() },
-    { label: 'H6', active: editor.isActive('heading', { level: 6 }), onClick: () => editor.chain().focus().toggleHeading({ level: 6 }).run() },
-    { label: 'B', active: editor.isActive('bold'), onClick: () => editor.chain().focus().toggleBold().run() },
-    { label: 'I', active: editor.isActive('italic'), onClick: () => editor.chain().focus().toggleItalic().run() },
-    { label: '</>', active: editor.isActive('code'), onClick: () => editor.chain().focus().toggleCode().run() },
-    { label: '{ }', active: editor.isActive('codeBlock'), onClick: () => editor.chain().focus().toggleCodeBlock().run() },
-    { label: '❝', active: editor.isActive('blockquote'), onClick: () => editor.chain().focus().toggleBlockquote().run() },
-    { label: '•', active: editor.isActive('bulletList'), onClick: () => editor.chain().focus().toggleBulletList().run() },
-    { label: '1.', active: editor.isActive('orderedList'), onClick: () => editor.chain().focus().toggleOrderedList().run() },
-    { label: '—', onClick: () => editor.chain().focus().setHorizontalRule().run() },
-    { label: '🔗', active: editor.isActive('link'), onClick: addLink },
-    { label: '📷', onClick: () => fileInputRef.current?.click() },
-    { label: 'Tbl', active: editor.isActive('table'), onClick: addTable },
-    { label: '∑', onClick: addMathBlock },
+    { label: 'H1', ariaLabel: 'Heading 1', active: editor.isActive('heading', { level: 1 }), onClick: () => editor.chain().focus().toggleHeading({ level: 1 }).run() },
+    { label: 'H2', ariaLabel: 'Heading 2', active: editor.isActive('heading', { level: 2 }), onClick: () => editor.chain().focus().toggleHeading({ level: 2 }).run() },
+    { label: 'H3', ariaLabel: 'Heading 3', active: editor.isActive('heading', { level: 3 }), onClick: () => editor.chain().focus().toggleHeading({ level: 3 }).run() },
+    { label: 'H4', ariaLabel: 'Heading 4', active: editor.isActive('heading', { level: 4 }), onClick: () => editor.chain().focus().toggleHeading({ level: 4 }).run() },
+    { label: 'H5', ariaLabel: 'Heading 5', active: editor.isActive('heading', { level: 5 }), onClick: () => editor.chain().focus().toggleHeading({ level: 5 }).run() },
+    { label: 'H6', ariaLabel: 'Heading 6', active: editor.isActive('heading', { level: 6 }), onClick: () => editor.chain().focus().toggleHeading({ level: 6 }).run() },
+    { label: 'B', ariaLabel: 'Bold', active: editor.isActive('bold'), onClick: () => editor.chain().focus().toggleBold().run() },
+    { label: 'I', ariaLabel: 'Italic', active: editor.isActive('italic'), onClick: () => editor.chain().focus().toggleItalic().run() },
+    { label: '</>', ariaLabel: 'Inline code', active: editor.isActive('code'), onClick: () => editor.chain().focus().toggleCode().run() },
+    { label: '{ }', ariaLabel: 'Code block', active: editor.isActive('codeBlock'), onClick: () => editor.chain().focus().toggleCodeBlock().run() },
+    { label: '❝', ariaLabel: 'Blockquote', active: editor.isActive('blockquote'), onClick: () => editor.chain().focus().toggleBlockquote().run() },
+    { label: '•', ariaLabel: 'Bullet list', active: editor.isActive('bulletList'), onClick: () => editor.chain().focus().toggleBulletList().run() },
+    { label: '1.', ariaLabel: 'Ordered list', active: editor.isActive('orderedList'), onClick: () => editor.chain().focus().toggleOrderedList().run() },
+    { label: '—', ariaLabel: 'Horizontal rule', onClick: () => editor.chain().focus().setHorizontalRule().run() },
+    { label: '🔗', ariaLabel: 'Link', active: editor.isActive('link'), onClick: addLink },
+    { label: '📷', ariaLabel: 'Insert image', onClick: () => fileInputRef.current?.click() },
+    { label: 'Tbl', ariaLabel: 'Insert table', active: editor.isActive('table'), onClick: addTable },
+    { label: '∑', ariaLabel: 'Math block', onClick: addMathBlock },
   ]
   const tableButtons: Btn[] = editor.isActive('table') ? [
-    { label: '+R', onClick: () => editor.chain().focus().addRowAfter().run() },
-    { label: '-R', onClick: () => editor.chain().focus().deleteRow().run() },
-    { label: '+C', onClick: () => editor.chain().focus().addColumnAfter().run() },
-    { label: '-C', onClick: () => editor.chain().focus().deleteColumn().run() },
-    { label: 'Hdr', onClick: () => editor.chain().focus().toggleHeaderRow().run() },
-    { label: 'DelTbl', onClick: () => editor.chain().focus().deleteTable().run() },
+    { label: '+R', ariaLabel: 'Add row', onClick: () => editor.chain().focus().addRowAfter().run() },
+    { label: '-R', ariaLabel: 'Delete row', onClick: () => editor.chain().focus().deleteRow().run() },
+    { label: '+C', ariaLabel: 'Add column', onClick: () => editor.chain().focus().addColumnAfter().run() },
+    { label: '-C', ariaLabel: 'Delete column', onClick: () => editor.chain().focus().deleteColumn().run() },
+    { label: 'Hdr', ariaLabel: 'Toggle header row', onClick: () => editor.chain().focus().toggleHeaderRow().run() },
+    { label: 'DelTbl', ariaLabel: 'Delete table', onClick: () => editor.chain().focus().deleteTable().run() },
   ] : []
   const currentHeadingLevel = (() => {
     for (let i = 1; i <= 6; i++) {
@@ -592,6 +598,8 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
             type="button"
             onClick={btn.onClick}
             disabled={btn.disabled}
+            aria-label={btn.ariaLabel}
+            title={btn.ariaLabel}
             className={`px-2 py-1 text-xs font-mono rounded-none transition-colors ${
               btn.active
                 ? 'bg-black text-white'
@@ -626,6 +634,8 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
                 type="button"
                 onClick={btn.onClick}
                 disabled={btn.disabled}
+                aria-label={btn.ariaLabel}
+                title={btn.ariaLabel}
                 className={`px-2 py-1 text-xs font-mono border border-black transition-colors ${
                   btn.active
                     ? 'bg-black text-white'
