@@ -549,6 +549,7 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
     active?: boolean
     onClick: () => void
     disabled?: boolean
+    labelClassName?: string
   }
 
   const buttons: Btn[] = [
@@ -560,6 +561,8 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
     { label: 'H6', ariaLabel: 'Heading 6', active: editor.isActive('heading', { level: 6 }), onClick: () => editor.chain().focus().toggleHeading({ level: 6 }).run() },
     { label: 'B', ariaLabel: 'Bold', active: editor.isActive('bold'), onClick: () => editor.chain().focus().toggleBold().run() },
     { label: 'I', ariaLabel: 'Italic', active: editor.isActive('italic'), onClick: () => editor.chain().focus().toggleItalic().run() },
+    { label: 'S', ariaLabel: 'Strikethrough', labelClassName: 'line-through', active: editor.isActive('strike'), onClick: () => editor.chain().focus().toggleStrike().run() },
+    { label: 'U', ariaLabel: 'Underline', labelClassName: 'underline', active: editor.isActive('underline'), onClick: () => editor.chain().focus().toggleUnderline().run() },
     { label: '</>', ariaLabel: 'Inline code', active: editor.isActive('code'), onClick: () => editor.chain().focus().toggleCode().run() },
     { label: '{ }', ariaLabel: 'Code block', active: editor.isActive('codeBlock'), onClick: () => editor.chain().focus().toggleCodeBlock().run() },
     { label: '❝', ariaLabel: 'Blockquote', active: editor.isActive('blockquote'), onClick: () => editor.chain().focus().toggleBlockquote().run() },
@@ -606,7 +609,11 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
                 : 'text-black hover:bg-black hover:text-white'
             } ${btn.disabled ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
           >
-            {btn.label}
+            {btn.labelClassName ? (
+              <span className={btn.labelClassName}>{btn.label}</span>
+            ) : (
+              btn.label
+            )}
           </button>
         ))}
         <input
