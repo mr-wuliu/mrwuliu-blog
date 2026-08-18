@@ -67,7 +67,9 @@ export default function Posts() {
       const data = await api.get<PostsResponse>(`/posts?${params.toString()}`)
       setPosts(data.posts)
       setTotal(data.total)
-    } catch {
+    } catch (err) {
+      // List falls back to the empty state below; logged for diagnosis.
+      console.error('Failed to load posts', err)
       setPosts([])
       setTotal(0)
     } finally {
@@ -93,7 +95,7 @@ export default function Posts() {
       await api.delete(`/posts/${id}`)
       await fetchPosts()
     } catch {
-      void 0
+      alert(t('common.deleteFailed'))
     }
   }
 
@@ -102,7 +104,7 @@ export default function Posts() {
       await api.put(`/posts/${id}`, { hidden: !currentHidden })
       await fetchPosts()
     } catch {
-      void 0
+      alert(t('common.saveFailed'))
     }
   }
 
@@ -111,7 +113,7 @@ export default function Posts() {
       await api.put(`/posts/${id}`, { pinned: !currentPinned })
       await fetchPosts()
     } catch {
-      void 0
+      alert(t('common.saveFailed'))
     }
   }
 

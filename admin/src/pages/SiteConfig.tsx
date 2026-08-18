@@ -35,8 +35,12 @@ export default function SiteConfig() {
         }
         setLoaded(true)
       })
-      .catch(() => setLoaded(true))
+      .catch((err) => {
+        console.error('Failed to load about content', err)
+        setLoaded(true)
+      })
 
+    // Optional keys: unset keys legitimately 404, so failures fall back to defaults.
     Promise.all([
       api.get<SiteConfigData>('/site-config/author_avatar').catch(() => null),
       api.get<SiteConfigData>('/site-config/author_bio').catch(() => null),

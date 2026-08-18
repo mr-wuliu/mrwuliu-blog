@@ -49,7 +49,10 @@ export default function Users() {
         setUsers(data.users)
         setTotal(data.total)
       })
-      .catch(() => {})
+      .catch((err) => {
+        // List falls back to the empty state below; logged for diagnosis.
+        console.error('Failed to load users', err)
+      })
       .finally(() => setLoading(false))
   }, [page, search])
 
@@ -143,6 +146,8 @@ export default function Users() {
               <button
                 onClick={() => setPage(Math.max(1, page - 1))}
                 disabled={page <= 1}
+                aria-label={t('common.previous')}
+                title={t('common.previous')}
                 className="px-3 py-1 text-sm border border-black disabled:opacity-30 cursor-pointer hover:bg-black hover:text-white transition-colors"
               >
                 ←
@@ -151,6 +156,8 @@ export default function Users() {
               <button
                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                 disabled={page >= totalPages}
+                aria-label={t('common.next')}
+                title={t('common.next')}
                 className="px-3 py-1 text-sm border border-black disabled:opacity-30 cursor-pointer hover:bg-black hover:text-white transition-colors"
               >
                 →

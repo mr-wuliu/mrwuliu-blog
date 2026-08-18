@@ -107,6 +107,7 @@ export default function InlineMathView({ node, updateAttributes, deleteNode, edi
       try {
         return katex.renderToString(latex, { displayMode: false, throwOnError: false })
       } catch {
+        // KaTeX refused the input — fall through to the raw-latex error span below.
         return null
       }
     }

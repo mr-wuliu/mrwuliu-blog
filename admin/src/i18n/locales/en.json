@@ -252,7 +252,8 @@
     "collections": "Collections",
     "toggleCollections": "Toggle Collections",
     "noCollections": "This post is not in any collection",
-    "confirmLeave": "You have unsaved changes. Are you sure you want to leave?"
+    "confirmLeave": "You have unsaved changes. Are you sure you want to leave?",
+    "loadFailed": "Failed to load post"
   },
   "analytics": {
     "title": "Analytics",

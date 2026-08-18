@@ -97,12 +97,18 @@ export default function Analytics() {
     const trendsPromise = api
       .get<TrendsResponse>(`/analytics/trends?days=${days}`)
       .then((data) => setTrendData(data.trends ?? []))
-      .catch(() => setTrendData([]))
+      .catch((err) => {
+        console.error('Failed to load analytics trends', err)
+        setTrendData([])
+      })
 
     const postsPromise = api
       .get<PostsTableResponse>(`/analytics/posts-table?days=${days}`)
       .then((data) => setPosts(data.posts ?? []))
-      .catch(() => setPosts([]))
+      .catch((err) => {
+        console.error('Failed to load analytics posts table', err)
+        setPosts([])
+      })
 
     Promise.all([trendsPromise, postsPromise]).finally(() => setLoading(false))
   }, [days])

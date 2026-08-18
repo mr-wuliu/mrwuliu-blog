@@ -89,7 +89,10 @@ export default function Dashboard() {
       })
 
     Promise.all([postsPromise, commentsPromise])
-      .catch(() => {})
+      .catch((err) => {
+        // Cards/lists fall back to zeros and empty states; logged for diagnosis.
+        console.error('Failed to load dashboard data', err)
+      })
       .finally(() => setLoading(false))
   }, [])
 

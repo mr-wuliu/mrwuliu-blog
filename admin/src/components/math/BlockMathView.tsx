@@ -114,6 +114,7 @@ export default function BlockMathView({ node, updateAttributes, deleteNode, edit
       try {
         return katex.renderToString(latex, { displayMode: true, throwOnError: false })
       } catch {
+        // KaTeX refused the input — fall through to the raw-latex error view below.
         return null
       }
     }
@@ -125,6 +126,7 @@ export default function BlockMathView({ node, updateAttributes, deleteNode, edit
     try {
       return katex.renderToString(draft, { displayMode: true, throwOnError: false })
     } catch {
+      // Live preview only — keep editing when the draft doesn't parse yet.
       return null
     }
   }, [draft, isEditing])

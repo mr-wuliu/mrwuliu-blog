@@ -143,6 +143,7 @@ async function renderMermaidBlock(code: string): Promise<string | null> {
 
     return postProcessSvg(svg)
   } catch {
+    // Save must not fail on a broken diagram — keep the original markup instead.
     return null
   }
 }

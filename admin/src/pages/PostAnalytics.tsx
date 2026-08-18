@@ -58,7 +58,10 @@ export default function PostAnalytics() {
     api
       .get<PostReport>(`/analytics/post/${postId}/report?days=${days}`)
       .then(setData)
-      .catch(() => setData(null))
+      .catch((err) => {
+        console.error('Failed to load post analytics', err)
+        setData(null)
+      })
       .finally(() => setLoading(false))
   }, [postId, days])
 

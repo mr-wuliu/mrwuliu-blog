@@ -252,7 +252,8 @@
     "collections": "集合",
     "toggleCollections": "切换集合",
     "noCollections": "该文章不属于任何集合",
-    "confirmLeave": "有未保存的修改，确定要离开吗？"
+    "confirmLeave": "有未保存的修改，确定要离开吗？",
+    "loadFailed": "加载文章失败"
   },
   "analytics": {
     "title": "数据分析",

@@ -84,6 +84,9 @@ export default function Comments() {
       )
       setComments(res.comments)
       setTotal(res.total)
+    } catch (err) {
+      // List falls back to the empty state below; logged for diagnosis.
+      console.error('Failed to load comments', err)
     } finally {
       setLoading(false)
     }
@@ -99,14 +102,22 @@ export default function Comments() {
   }
 
   const updateStatus = async (id: string, status: CommentStatus) => {
-    await api.put(`/admin/comments/${id}`, { status })
-    await fetchComments()
+    try {
+      await api.put(`/admin/comments/${id}`, { status })
+      await fetchComments()
+    } catch {
+      alert(t('common.saveFailed'))
+    }
   }
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(t('comments.confirmDelete'))) return
-    await api.delete(`/admin/comments/${id}`)
-    await fetchComments()
+    try {
+      await api.delete(`/admin/comments/${id}`)
+      await fetchComments()
+    } catch {
+      alert(t('common.deleteFailed'))
+    }
   }
 
   return (
