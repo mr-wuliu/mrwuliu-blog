@@ -30,14 +30,19 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     return c.json({ error: 'Too many requests. Please try again later.' }, 429)
   }
 
-  const body = await c.req.json<{ authorName?: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>()
+  const body = await c.req.json<{ authorName?: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>().catch(() => null)
+  if (!body) {
+    return c.json({ error: 'Invalid JSON body' }, 400)
+  }
 
   if (!body.content || body.content.length < 1 || body.content.length > 1000) {
     return c.json({ error: 'Content must be 1-1000 characters' }, 400)
   }
 
   const [post] = await db.select().from(posts).where(eq(posts.id, postId))
-  if (!post) return c.json({ error: 'Post not found' }, 404)
+  if (!post || post.status !== 'published' || post.hidden) {
+    return c.json({ error: 'Post not found' }, 404)
+  }
 
   if (body.parentId) {
     const [parentComment] = await db.select().from(comments).where(eq(comments.id, body.parentId))
@@ -99,7 +104,17 @@ commentRoutes.get('/posts/:postId/comments', async (c) => {
   const db = createDb(c.env.DB)
 
   const result = await db
-    .select()
+    .select({
+      id: comments.id,
+      postId: comments.postId,
+      parentId: comments.parentId,
+      authorName: comments.authorName,
+      visitorId: comments.visitorId,
+      userId: comments.userId,
+      content: comments.content,
+      status: comments.status,
+      createdAt: comments.createdAt,
+    })
     .from(comments)
     .where(and(eq(comments.postId, postId), eq(comments.status, 'approved')))
     .orderBy(desc(comments.createdAt))
@@ -110,8 +125,10 @@ commentRoutes.get('/posts/:postId/comments', async (c) => {
 commentRoutes.get('/admin/comments', async (c) => {
   const db = createDb(c.env.DB)
   const status = c.req.query('status') as 'pending' | 'approved' | 'rejected' | undefined
-  const page = Number(c.req.query('page') ?? 1)
-  const limit = Number(c.req.query('limit') ?? 20)
+  const rawPage = Number(c.req.query('page'))
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
+  const rawLimit = Number(c.req.query('limit'))
+  const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 20
   const offset = (page - 1) * limit
 
   const conditions = status ? [eq(comments.status, status)] : []
@@ -149,7 +166,11 @@ commentRoutes.get('/admin/comments', async (c) => {
 
 commentRoutes.put('/admin/comments/:id', async (c) => {
   const id = c.req.param('id')
-  const { status } = await c.req.json<{ status: 'approved' | 'rejected' }>()
+  const body = await c.req.json<{ status: 'approved' | 'rejected' }>().catch(() => null)
+  if (!body) {
+    return c.json({ error: 'Invalid JSON body' }, 400)
+  }
+  const { status } = body
 
   if (!status || !['approved', 'rejected'].includes(status)) {
     return c.json({ error: 'Status must be approved or rejected' }, 400)
@@ -228,8 +249,10 @@ commentRoutes.delete('/admin/comments/:id', async (c) => {
 
 commentRoutes.get('/admin/users', async (c) => {
   const db = createDb(c.env.DB)
-  const page = Number(c.req.query('page') ?? 1)
-  const limit = Number(c.req.query('limit') ?? 20)
+  const rawPage = Number(c.req.query('page'))
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
+  const rawLimit = Number(c.req.query('limit'))
+  const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 20
   const offset = (page - 1) * limit
   const search = c.req.query('search')?.trim()
   const statusFilter = c.req.query('status')
@@ -269,8 +292,10 @@ commentRoutes.get('/admin/users', async (c) => {
 
 commentRoutes.patch('/admin/users/:id', async (c) => {
   const id = c.req.param('id')
-  const body = await c.req.json<{ status?: 'active' | 'banned' }>()
-
+  const body = await c.req.json<{ status?: 'active' | 'banned' }>().catch(() => null)
+  if (!body) {
+    return c.json({ error: 'Invalid JSON body' }, 400)
+  }
   if (!body.status || !['active', 'banned'].includes(body.status)) {
     return c.json({ error: 'Status must be active or banned' }, 400)
   }
