@@ -6,6 +6,7 @@ import { api, ApiError } from '../lib/api'
 import { isEditorDirty, setEditorDirty } from '../lib/editor-dirty'
 import { preRenderMermaidInHtml } from '../lib/mermaid-pre-render'
 import Editor from '../components/Editor'
+import AutoGrowTextarea from '../components/AutoGrowTextarea'
 import TableOfContents from '../components/TableOfContents'
 
 interface PostData {
@@ -397,10 +398,10 @@ export default function EditPost() {
                     <label className="block text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">
                       {t('editPost.titlePlaceholder')}
                     </label>
-                    <input
-                      type="text"
+                    <AutoGrowTextarea
                       value={title}
-                      onChange={(e) => handleTitleChange(e.target.value)}
+                      onChange={(v) => handleTitleChange(v.replace(/\n/g, ' '))}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={t('editPost.titlePlaceholder')}
                       className="w-full text-sm font-bold bg-transparent border border-black border-opacity-30 px-3 py-2 outline-none placeholder-black placeholder-opacity-30 text-black focus:border-black transition-colors"
                     />
@@ -433,12 +434,12 @@ export default function EditPost() {
                     <label className="block text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">
                       {t('editPost.excerptPlaceholder')}
                     </label>
-                    <textarea
+                    <AutoGrowTextarea
                       value={excerpt}
-                      onChange={(e) => { markDirty(); setExcerpt(e.target.value) }}
+                      onChange={(v) => { markDirty(); setExcerpt(v) }}
                       placeholder={t('editPost.excerptPlaceholder')}
-                      rows={3}
-                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black transition-colors"
+                      minRows={3}
+                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black transition-colors"
                     />
                   </div>
                   <div className="flex items-center gap-6">
@@ -458,10 +459,10 @@ export default function EditPost() {
                     <label className="block text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">
                       {t('editPost.titleEnPlaceholder')}
                     </label>
-                    <input
-                      type="text"
+                    <AutoGrowTextarea
                       value={titleEn}
-                      onChange={(e) => { markDirty(); setTitleEn(e.target.value) }}
+                      onChange={(v) => { markDirty(); setTitleEn(v.replace(/\n/g, ' ')) }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={t('editPost.titleEnPlaceholder')}
                       className="w-full text-sm font-bold bg-transparent border border-black border-opacity-30 px-3 py-2 outline-none placeholder-black placeholder-opacity-30 text-black focus:border-black transition-colors"
                     />
@@ -470,12 +471,12 @@ export default function EditPost() {
                     <label className="block text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">
                       {t('editPost.excerptEnPlaceholder')}
                     </label>
-                    <textarea
+                    <AutoGrowTextarea
                       value={excerptEn}
-                      onChange={(e) => { markDirty(); setExcerptEn(e.target.value) }}
+                      onChange={(v) => { markDirty(); setExcerptEn(v) }}
                       placeholder={t('editPost.excerptEnPlaceholder')}
-                      rows={3}
-                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 resize-none focus:border-black transition-colors"
+                      minRows={3}
+                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black transition-colors"
                     />
                   </div>
                 </>
