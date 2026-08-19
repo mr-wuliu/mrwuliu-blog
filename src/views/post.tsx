@@ -759,7 +759,7 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
 
   return (
     <nav class="mt-16 sm:mt-40 pt-3 border-t-2 border-black flex flex-col sm:flex-row gap-3 sm:justify-between">
-      <div>
+      <div class="min-w-0">
         {prev && (
           <a href={langPath(`/posts/${prev.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5 max-w-full">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5" /><path d="m12 19-7-7 7-7" /></svg>
@@ -767,7 +767,7 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
           </a>
         )}
       </div>
-      <div>
+      <div class="min-w-0">
         {next && (
           <a href={langPath(`/posts/${next.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5 max-w-full justify-end text-right">
             <span class="truncate">{next.title}</span>
