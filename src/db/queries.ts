@@ -92,6 +92,29 @@ export async function getPublishedPosts(
   return { posts: result, total, page, limit }
 }
 
+// All published, visible post ids in home-list order (pinned first, newest next) —
+// basis for the home page's block-based pagination (standalone posts + series stacks)
+export async function getPublishedPostOrder(db: Database) {
+  return db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
+    .orderBy(desc(posts.pinned), desc(posts.createdAt))
+}
+
+// Full published rows for a set of ids (order not preserved — map by id)
+export async function getPublishedPostsByIds(db: Database, ids: string[]) {
+  if (ids.length === 0) return []
+  return db
+    .select()
+    .from(posts)
+    .where(and(
+      inArray(posts.id, ids),
+      eq(posts.status, 'published'),
+      eq(posts.hidden, false),
+    ))
+}
+
 // Get published posts with summary columns only, for list/feed pages that never render post bodies
 export async function getPublishedPostSummaries(
   db: Database,
@@ -415,6 +438,56 @@ export async function getPostCollections(db: Database, postId: string) {
     .from(collectionPosts)
     .innerJoin(collections, eq(collectionPosts.collectionId, collections.id))
     .where(eq(collectionPosts.postId, postId))
+}
+
+// Map posts to their published collections — drives homepage series grouping
+export async function getPublishedCollectionsForPosts(db: Database, postIds: string[]) {
+  if (postIds.length === 0) return []
+  return db
+    .select({
+      postId: collectionPosts.postId,
+      collectionId: collections.id,
+      name: collections.name,
+      nameEn: collections.nameEn,
+      slug: collections.slug,
+      sortOrder: collectionPosts.sortOrder,
+    })
+    .from(collectionPosts)
+    .innerJoin(collections, eq(collectionPosts.collectionId, collections.id))
+    .where(and(
+      inArray(collectionPosts.postId, postIds),
+      eq(collections.status, 'published'),
+    ))
+    .orderBy(asc(collectionPosts.sortOrder))
+}
+
+// All published members of the given collections in reading order — the
+// homepage stack lists the complete series regardless of pagination.
+export async function getPublishedCollectionMembers(db: Database, collectionIds: string[]) {
+  if (collectionIds.length === 0) return []
+  return db
+    .select({
+      collectionId: collectionPosts.collectionId,
+      id: posts.id,
+      title: posts.title,
+      titleEn: posts.titleEn,
+      slug: posts.slug,
+      excerpt: posts.excerpt,
+      excerptEn: posts.excerptEn,
+      status: posts.status,
+      pinned: posts.pinned,
+      publishedAt: posts.publishedAt,
+      createdAt: posts.createdAt,
+      updatedAt: posts.updatedAt,
+    })
+    .from(collectionPosts)
+    .innerJoin(posts, eq(collectionPosts.postId, posts.id))
+    .where(and(
+      inArray(collectionPosts.collectionId, collectionIds),
+      eq(posts.status, 'published'),
+      eq(posts.hidden, false),
+    ))
+    .orderBy(asc(collectionPosts.sortOrder))
 }
 
 // Batch-fetch collections with their posts — replaces N+1 getCollectionWithPosts calls
