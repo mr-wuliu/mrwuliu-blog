@@ -879,3 +879,16 @@ a[class*="hover:bg-black"]:hover {
 [data-theme="coffee"] .post-content .mermaid-diagram svg .label {
   color: #3e2723;
 }
+
+/* Series catalog iOS-style wheel (custom flywheel physics — no native snap) */
+.series-wheel { overscroll-behavior: contain; scrollbar-width: none; -ms-overflow-style: none; }
+.series-wheel::-webkit-scrollbar { display: none; }
+.series-wheel.is-scrollable .series-wheel-inner { will-change: transform; }
+.series-wheel-wrap { position: relative; }
+.series-wheel-fade {
+  position: absolute; left: 0; right: 0; height: 28px; z-index: 10;
+  pointer-events: none; display: none;
+}
+.series-wheel-fade-top { top: 0; background: linear-gradient(to bottom, #fff, rgba(255, 255, 255, 0)); }
+.series-wheel-fade-bottom { bottom: 0; background: linear-gradient(to top, #fff, rgba(255, 255, 255, 0)); }
+.series-wheel.is-scrollable ~ .series-wheel-fade { display: block; }

@@ -66,6 +66,7 @@ export default {
   },
   post: {
     toc: '目录',
+    seriesToc: '系列目录',
     backToTop: '返回顶部',
     copyCode: '复制',
     copiedCode: '已复制',

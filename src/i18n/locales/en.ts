@@ -66,6 +66,7 @@ export default {
   },
   post: {
     toc: 'Table of Contents',
+    seriesToc: 'In this series',
     backToTop: 'Back to top',
     copyCode: 'COPY',
     copiedCode: 'COPIED',

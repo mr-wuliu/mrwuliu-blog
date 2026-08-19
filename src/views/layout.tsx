@@ -38,6 +38,7 @@ type LayoutProps = PropsWithChildren<{
   modifiedTime?: string
   authorName?: string
   extraHead?: unknown
+  sidebarExtra?: unknown
 }>
 
 const Layout: FC<LayoutProps> = ({
@@ -54,6 +55,7 @@ const Layout: FC<LayoutProps> = ({
   modifiedTime,
   authorName,
   extraHead,
+  sidebarExtra,
   children,
 }) => {
   const hasSidebar = !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
@@ -246,10 +248,24 @@ const Layout: FC<LayoutProps> = ({
               <div class="flex-1 min-w-0">
                 {children}
               </div>
-              <aside class="w-full lg:w-40 shrink-0 mt-12 lg:mt-0">
-                <div class="lg:sticky lg:top-24">
-                  <AuthorSidebar profile={authorProfile} />
-                </div>
+              <aside class={`w-full ${sidebarExtra ? 'lg:w-60' : 'lg:w-40'} shrink-0 mt-12 lg:mt-0`}>
+                {sidebarExtra ? (
+                  <>
+                    <div class="lg:hidden">
+                      <AuthorSidebar profile={authorProfile} />
+                    </div>
+                    <div class="hidden lg:flex lg:flex-col lg:sticky lg:top-24 max-h-[calc(100vh-8rem)] gap-6">
+                      <div class="shrink-0">
+                        <AuthorSidebar profile={authorProfile} />
+                      </div>
+                      {sidebarExtra}
+                    </div>
+                  </>
+                ) : (
+                  <div class="lg:sticky lg:top-24">
+                    <AuthorSidebar profile={authorProfile} />
+                  </div>
+                )}
               </aside>
             </div>
           ) : (

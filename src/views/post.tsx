@@ -45,6 +45,14 @@ interface PostNav {
   title: string
 }
 
+interface CollectionInfo {
+  id: string
+  name: string
+  nameEn: string | null
+  slug: string
+  posts: { id: string; title: string; slug: string }[]
+}
+
 interface PostPageProps {
   lang: Lang
   post: PostWithTags
@@ -54,7 +62,7 @@ interface PostPageProps {
   prev: PostNav | null
   next: PostNav | null
   authorProfile?: AuthorProfile
-  collections?: { id: string; name: string; nameEn: string | null; slug: string; posts: { id: string; title: string; slug: string }[] }[]
+  collections?: CollectionInfo[]
 }
 
 const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => {
@@ -71,6 +79,396 @@ const Toc: FC<{ headings: TocHeading[]; lang: Lang }> = ({ headings, lang }) => 
         ))}
       </ul>
     </nav>
+  )
+}
+
+const SeriesCatalogSidebar: FC<{ collections: CollectionInfo[]; currentPostId: string; lang: Lang }> = ({ collections, currentPostId, lang }) => {
+  return (
+    <div class="hidden lg:flex lg:flex-col gap-6 min-h-0">
+      {collections.map((collection) => (
+        <nav key={collection.id} class="bg-white border border-black rounded-none flex flex-col min-h-0">
+          <div class="shrink-0 px-4 pt-3 pb-2 border-b border-gray-200">
+            <p class="text-xs font-bold uppercase tracking-widest opacity-50 mb-1" data-t="post.seriesToc">{t(lang, 'post.seriesToc')}</p>
+            <a href={langPath('/series/' + collection.slug, lang)} class="text-sm font-bold text-black hover:opacity-70 transition-all no-underline break-words">
+              {lang === 'en' && collection.nameEn ? collection.nameEn : collection.name}
+            </a>
+          </div>
+          <div class="series-wheel-wrap flex flex-col min-h-0">
+            <ol tabindex={0} aria-label={t(lang, 'post.seriesToc')} class="series-wheel list-none p-2 m-0 overflow-y-auto min-h-0 focus:outline-none focus-visible:ring-1 focus-visible:ring-black">
+              <div class="series-wheel-inner" role="presentation">
+                {collection.posts.map((cp, index) => (
+                  <li key={cp.id} class="series-wheel-item">
+                    <a
+                      href={langPath('/posts/' + cp.slug, lang)}
+                      aria-current={cp.id === currentPostId ? 'page' : undefined}
+                      class={`flex items-start gap-2 py-1.5 px-2 border-l-2 no-underline transition-colors ${cp.id === currentPostId ? 'border-black font-bold text-black' : 'border-transparent text-gray-500 hover:text-black'}`}
+                    >
+                      <span class="text-xs font-bold opacity-40 shrink-0 tabular-nums leading-snug">{index + 1}</span>
+                      <span class="text-sm leading-snug min-w-0 flex-1">{cp.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </div>
+            </ol>
+            <div class="series-wheel-fade series-wheel-fade-top" aria-hidden="true"></div>
+            <div class="series-wheel-fade series-wheel-fade-bottom" aria-hidden="true"></div>
+          </div>
+        </nav>
+      ))}
+      <script dangerouslySetInnerHTML={{ __html: `
+(function() {
+  var wheels = document.querySelectorAll('.series-wheel');
+  if (!wheels.length) return;
+
+  // Flywheel physics: wheel notches add velocity impulses; a friction glide
+  // (exponential decay) plus a per-notch detent drag make it feel mechanical;
+  // a short settle snaps to the nearest item center when speed drops. Past the
+  // first/last item the scroller rubber-bands: overshoot is absorbed, rendered
+  // as a damped translate on the content wrapper, and spring-pulled home.
+  var IMPULSE_K = 5;       // px of wheel delta -> px/s of velocity
+  var IMPULSE_POS = 0.12;  // immediate position kick per notch (responsiveness)
+  var V_MAX = 5000;        // px/s velocity clamp
+  var TAU = 0.38;          // friction time constant (s), heavier = larger
+  var V_ENGAGE = 180;      // px/s threshold to engage notch settle / rubber return
+  var DETENT_DAMP = 0.965; // velocity multiplier per notch passed
+  var SETTLE_DUR = 260;    // ms, easeOutCubic snap to nearest center
+  var SETTLE_QUIET = 120;  // ms of wheel silence before settle may engage
+  var KEY_DUR = 240;       // ms per keyboard step
+  var KEY_PAGE = 4;        // items per PageUp/PageDown
+  var KEY_END_DUR = 400;   // ms for Home/End
+  var RUBBER_MAX = 48;     // px, hard cap on visible rubber-band travel
+  var K_SPRING = 170;      // rubber-band spring stiffness (1/s^2)
+  var C_GLIDE = 2 * 1.1 * Math.sqrt(K_SPRING);  // stretch damping (zeta = 1.1, overdamped)
+  var C_SPRING = 2 * 0.75 * Math.sqrt(K_SPRING); // return damping (zeta = 0.75)
+
+  function setup(wheel) {
+    var items = wheel.querySelectorAll('.series-wheel-item');
+    if (!items.length) return;
+    var inner = wheel.querySelector('.series-wheel-inner');
+
+    var pos = wheel.scrollTop; // authoritative scrollTop (px), may transiently leave [0, max]
+    var vel = 0;               // px/s
+    var mode = 'idle';         // 'idle' | 'glide' | 'settle' | 'rubber'
+    var raf = null;
+    var lastT = 0;
+    var settleFrom = 0;
+    var settleTo = 0;
+    var settleStart = 0;
+    var settleDur = SETTLE_DUR;
+    var lastDetent = -1;
+    var lastWheelAt = -1e9;
+    var rubberBound = 0;       // boundary (0 or max) the rubber-band is pinned to
+    var rubberOver = 0;        // raw px overshoot past rubberBound
+    var rubberVel = 0;         // px/s velocity of the overshoot
+
+    function physicsActive() { return mode !== 'idle'; }
+
+    function maxScroll() {
+      return Math.max(wheel.scrollHeight - wheel.clientHeight, 0);
+    }
+
+    function clampPos(v) {
+      var mx = maxScroll();
+      if (v < 0) return 0;
+      if (v > mx) return mx;
+      return v;
+    }
+
+    // iOS-style progressive damping: fast flicks converge to RUBBER_MAX.
+    function dampOvershoot(x) {
+      var ax = Math.abs(x);
+      if (ax < 0.01) return 0;
+      var d = ax * 0.55 / (1 + ax / 120);
+      if (d > RUBBER_MAX) d = RUBBER_MAX;
+      return x < 0 ? -d : d;
+    }
+
+    function setTranslate(px) {
+      if (px === 0) {
+        if (inner.style.transform) inner.style.transform = '';
+      } else {
+        inner.style.transform = 'translateY(' + px.toFixed(2) + 'px)';
+      }
+    }
+
+    // scrollTop carries the in-range position; the damped overshoot rides on
+    // the content wrapper.
+    function applyPos() {
+      var c = clampPos(pos);
+      wheel.scrollTop = c;
+      setTranslate(-dampOvershoot(pos - c));
+    }
+
+    function paintRubber() {
+      wheel.scrollTop = rubberBound;
+      setTranslate(-dampOvershoot(rubberOver));
+    }
+
+    // Signed viewport offset from wheel center to the nearest item center.
+    function nearestOffset() {
+      var wr = wheel.getBoundingClientRect();
+      var wc = wr.top + wr.height / 2;
+      var best = 0;
+      var bestAbs = Infinity;
+      for (var i = 0; i < items.length; i++) {
+        var r = items[i].getBoundingClientRect();
+        var d = (r.top + r.height / 2) - wc;
+        var ad = Math.abs(d);
+        if (ad < bestAbs) { bestAbs = ad; best = d; }
+      }
+      return best;
+    }
+
+    function nearestIndex() {
+      var wr = wheel.getBoundingClientRect();
+      var wc = wr.top + wr.height / 2;
+      var best = 0;
+      var bestAbs = Infinity;
+      for (var i = 0; i < items.length; i++) {
+        var r = items[i].getBoundingClientRect();
+        var d = Math.abs((r.top + r.height / 2) - wc);
+        if (d < bestAbs) { bestAbs = d; best = i; }
+      }
+      return best;
+    }
+
+    function targetPosForIndex(i) {
+      var wr = wheel.getBoundingClientRect();
+      var r = items[i].getBoundingClientRect();
+      return clampPos((r.top - wr.top) + pos + r.height / 2 - wheel.clientHeight / 2);
+    }
+
+    function ensureRaf() {
+      if (raf === null) {
+        lastT = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+    }
+
+    function startSettle(dur) {
+      settleFrom = pos;
+      settleTo = clampPos(pos + nearestOffset());
+      settleDur = dur;
+      settleStart = performance.now();
+      vel = 0;
+      if (Math.abs(settleTo - settleFrom) < 0.5) {
+        pos = settleTo;
+        applyPos();
+        mode = 'idle';
+        return;
+      }
+      mode = 'settle';
+      ensureRaf();
+    }
+
+    function animateToIndex(i, dur) {
+      settleFrom = pos;
+      settleTo = targetPosForIndex(i);
+      settleDur = dur;
+      settleStart = performance.now();
+      vel = 0;
+      mode = 'settle';
+      ensureRaf();
+    }
+
+    function stopPhysics() {
+      mode = 'idle';
+      vel = 0;
+      if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+      pos = wheel.scrollTop;
+      setTranslate(0);
+    }
+
+    function startRubber() {
+      var mx = maxScroll();
+      rubberBound = pos > mx ? mx : 0;
+      rubberOver = pos - rubberBound;
+      rubberVel = vel;
+      mode = 'rubber';
+    }
+
+    function tick(now) {
+      if (!wheel.isConnected) { raf = null; mode = 'idle'; return; }
+      var dt = Math.min((now - lastT) / 1000, 0.064);
+      lastT = now;
+
+      if (mode === 'glide') {
+        pos += vel * dt;
+        var mx = maxScroll();
+        var over = pos < 0 ? pos : (pos > mx ? pos - mx : 0);
+        if (over !== 0) {
+          // Beyond an edge: overdamped boundary spring resists the stretch and
+          // burns the flick's energy without swinging back through the edge.
+          vel += (-K_SPRING * over - C_GLIDE * vel) * dt;
+          if (Math.abs(vel) < V_ENGAGE) startRubber();
+        } else {
+          vel *= Math.exp(-dt / TAU);
+          // Detent tick: passing each notch drags the flywheel a little.
+          var idx = nearestIndex();
+          if (idx !== lastDetent) { lastDetent = idx; vel *= DETENT_DAMP; }
+        }
+        if (mode === 'rubber') {
+          paintRubber();
+        } else {
+          // Write pos before measuring centers: nearestOffset must see the
+          // frame it will settle from, or the snap target lags by one frame.
+          applyPos();
+          // Snap only after input goes quiet: mid-spin the detents must not
+          // steal sub-threshold velocity, or fast small deltas never stack.
+          if (over === 0 && Math.abs(vel) < V_ENGAGE && now - lastWheelAt >= SETTLE_QUIET) startSettle(SETTLE_DUR);
+        }
+      } else if (mode === 'settle') {
+        var p = (now - settleStart) / settleDur;
+        if (p >= 1) {
+          pos = settleTo;
+          applyPos();
+          mode = 'idle';
+          raf = null;
+          return;
+        }
+        var e = 1 - Math.pow(1 - p, 3);
+        pos = clampPos(settleFrom + (settleTo - settleFrom) * e);
+        applyPos();
+      } else if (mode === 'rubber') {
+        // Damped spring on the raw overshoot; scrollTop stays pinned at the
+        // boundary so the translate alone carries the bounce.
+        rubberVel += (-K_SPRING * rubberOver - C_SPRING * rubberVel) * dt;
+        rubberOver += rubberVel * dt;
+        if (Math.abs(rubberOver) < 1.5 && Math.abs(rubberVel) < 80) {
+          pos = rubberBound;
+          mode = 'idle';
+          applyPos();
+          raf = null;
+          return;
+        }
+        pos = rubberBound + rubberOver;
+        paintRubber();
+      }
+
+      if (mode !== 'idle') raf = requestAnimationFrame(tick);
+      else raf = null;
+    }
+
+    function onWheel(e) {
+      if (!wheel.classList.contains('is-scrollable')) return;
+      e.preventDefault();
+      var dy = e.deltaY;
+      if (e.deltaMode === 1) dy *= 33;
+      else if (e.deltaMode === 2) dy *= wheel.clientHeight;
+      if (dy > 400) dy = 400;
+      else if (dy < -400) dy = -400;
+      if (dy === 0) return;
+      if (mode === 'idle') pos = wheel.scrollTop;
+      // While rubber-banded, pos already carries the overshoot: re-entering
+      // glide from it continues from the current visual position.
+      lastWheelAt = performance.now();
+      // Impulses stack onto live velocity: spin speed tracks trigger frequency.
+      mode = 'glide';
+      vel += dy * IMPULSE_K;
+      if (vel > V_MAX) vel = V_MAX;
+      else if (vel < -V_MAX) vel = -V_MAX;
+      pos += dy * IMPULSE_POS; // kick may cross an edge; the rubber-band takes it
+      applyPos();
+      ensureRaf();
+    }
+
+    function onKeyDown(e) {
+      if (!wheel.classList.contains('is-scrollable')) return;
+      if (e.target !== wheel) return;
+      if (mode === 'rubber') { pos = clampPos(pos); setTranslate(0); }
+      if (mode === 'idle') pos = wheel.scrollTop;
+      var k = e.key;
+      var target = -1;
+      var dur = KEY_DUR;
+      var cur = nearestIndex();
+      if (k === 'ArrowDown') target = Math.min(cur + 1, items.length - 1);
+      else if (k === 'ArrowUp') target = Math.max(cur - 1, 0);
+      else if (k === 'PageDown') target = Math.min(cur + KEY_PAGE, items.length - 1);
+      else if (k === 'PageUp') target = Math.max(cur - KEY_PAGE, 0);
+      else if (k === 'Home') { target = 0; dur = KEY_END_DUR; }
+      else if (k === 'End') { target = items.length - 1; dur = KEY_END_DUR; }
+      else return;
+      e.preventDefault();
+      animateToIndex(target, dur);
+    }
+
+    // Native touch fallback: resync on scroll, realign on scrollend.
+    // Our own physics writes are ignored via the physicsActive guard; external
+    // scrolls (touch drag, programmatic) resync the authoritative pos.
+    function onScroll() {
+      if (physicsActive()) return;
+      pos = wheel.scrollTop;
+    }
+
+    function onScrollEnd() {
+      if (physicsActive()) return;
+      if (!wheel.classList.contains('is-scrollable')) return;
+      var off = nearestOffset();
+      if (Math.abs(off) > 1) {
+        wheel.scrollTo({ top: wheel.scrollTop + off, behavior: 'smooth' });
+      }
+    }
+
+    function check() {
+      if (!wheel.isConnected) {
+        window.removeEventListener('resize', check);
+        window.removeEventListener('load', onLateCheck);
+        if (raf !== null) { cancelAnimationFrame(raf); raf = null; }
+        mode = 'idle';
+        return;
+      }
+      // Measure scrollability at the natural p-2 state, then apply a fixed
+      // edge inset so the first/last items clear the 28px fade at rest.
+      // No centering padding: at scrollTop 0/max the edge items align to the
+      // inset and the viewport stays full of items.
+      wheel.style.paddingTop = '';
+      wheel.style.paddingBottom = '';
+      var scrollable = wheel.scrollHeight > wheel.clientHeight + 4;
+      if (scrollable) {
+        wheel.style.paddingTop = '32px';
+        wheel.style.paddingBottom = '32px';
+        wheel.classList.add('is-scrollable');
+        wheel.addEventListener('wheel', onWheel, { passive: false });
+        wheel.addEventListener('keydown', onKeyDown);
+        wheel.addEventListener('scroll', onScroll, { passive: true });
+        stopPhysics(); // geometry changed — resync authoritative pos
+        lastDetent = nearestIndex();
+      } else {
+        wheel.classList.remove('is-scrollable');
+        wheel.removeEventListener('wheel', onWheel);
+        wheel.removeEventListener('keydown', onKeyDown);
+        wheel.removeEventListener('scroll', onScroll);
+        stopPhysics();
+      }
+    }
+
+    function centerCurrent() {
+      var cur = wheel.querySelector('[aria-current="page"]');
+      if (!cur || !wheel.isConnected || !wheel.classList.contains('is-scrollable')) return;
+      var cr = cur.getBoundingClientRect();
+      var wr = wheel.getBoundingClientRect();
+      wheel.scrollTop += (cr.top + cr.height / 2) - (wr.top + wr.height / 2);
+      pos = wheel.scrollTop;
+      lastDetent = nearestIndex();
+    }
+
+    function onLateCheck() {
+      check();
+      centerCurrent();
+    }
+
+    if ('onscrollend' in window) wheel.addEventListener('scrollend', onScrollEnd);
+
+    check();
+    centerCurrent();
+    window.addEventListener('resize', check);
+    window.addEventListener('load', onLateCheck);
+  }
+
+  for (var w = 0; w < wheels.length; w++) setup(wheels[w]);
+})();
+      ` }} />
+    </div>
   )
 }
 
@@ -399,6 +797,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
       type="article"
       tags={tagNames}
       authorProfile={authorProfile}
+      sidebarExtra={collections && collections.length > 0 ? <SeriesCatalogSidebar collections={collections} currentPostId={post.id} lang={lang} /> : undefined}
       lang={lang}
       currentPath={`/posts/${post.slug}`}
       publishedTime={publishedTime}
@@ -451,7 +850,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
         <div class="post-body-divider mb-3" />
 
         {collections && collections.length > 0 && (
-          <div class="mb-8 border border-gray-200 rounded p-4">
+          <div class="mb-8 border border-black rounded-none p-4 lg:hidden">
             {collections.map(collection => (
               <div key={collection.id} class="mb-4 last:mb-0">
                 <h3 class="text-sm font-medium uppercase tracking-widest text-gray-500 mb-2">
