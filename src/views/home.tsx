@@ -28,6 +28,17 @@ type Post = {
   likeCount?: number
 }
 
+type SeriesRef = {
+  id: string
+  name: string
+  nameEn: string | null
+  slug: string
+}
+
+export type HomeRenderGroup =
+  | { kind: 'post'; post: Post }
+  | { kind: 'series'; collection: SeriesRef; posts: Post[] }
+
 type PaginationData = {
   page: number
   limit: number
@@ -37,7 +48,7 @@ type PaginationData = {
 
 type HomeProps = {
   lang: Lang
-  posts: Post[]
+  groups: HomeRenderGroup[]
   pagination: PaginationData
   authorProfile?: AuthorProfile
 }
@@ -82,6 +93,36 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   )
 }
 
+const SeriesStack: FC<{ collection: SeriesRef; posts: Post[]; lang: Lang }> = ({ collection, posts, lang }) => {
+  const displayName = lang === 'en' && collection.nameEn ? collection.nameEn : collection.name
+
+  return (
+    <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none mb-4 sm:mb-6">
+      <div class="flex items-center gap-3 min-w-0 flex-wrap">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
+        <a href={langPath(`/series/${collection.slug}`, lang)} class="text-lg sm:text-xl font-bold tracking-tight text-black no-underline hover:opacity-70 transition-all break-words">{displayName}</a>
+        <span class="shrink-0 text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5">{tf(lang, 'home.seriesCount')(posts.length)}</span>
+      </div>
+      <div class="mt-4 flex flex-col gap-2">
+        {posts.map((post, i) => (
+          <div class="border border-black bg-white hover:-translate-y-0.5 transition-all">
+            <a href={langPath(`/posts/${post.slug}`, lang)} class="block px-3 py-2 no-underline text-black">
+              <div class="flex items-baseline gap-2 sm:gap-3 min-w-0 flex-wrap">
+                <span class="text-xs font-bold opacity-30 shrink-0 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
+                <span class="text-sm sm:text-base font-bold tracking-tight break-words min-w-0">{post.title}</span>
+                <time class="ml-auto text-[10px] font-bold uppercase tracking-widest opacity-50 shrink-0" datetime={post.publishedAt ?? post.createdAt}>
+                  {formatDateLang(post.publishedAt ?? post.createdAt, lang)}
+                </time>
+              </div>
+              {post.excerpt && <p class="mt-1.5 text-sm opacity-70 leading-relaxed">{post.excerpt}</p>}
+            </a>
+          </div>
+        ))}
+      </div>
+    </article>
+  )
+}
+
 const Pagination: FC<{ pagination: PaginationData; lang: Lang }> = ({ pagination, lang }) => {
   const { page, totalPages } = pagination
   if (totalPages <= 1) return null
@@ -107,7 +148,7 @@ const Pagination: FC<{ pagination: PaginationData; lang: Lang }> = ({ pagination
   )
 }
 
-const Home: FC<HomeProps> = ({ lang, posts, pagination, authorProfile }) => {
+const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
   return (
     <Layout
       title={t(lang, 'home.pageTitle')}
@@ -132,16 +173,20 @@ const Home: FC<HomeProps> = ({ lang, posts, pagination, authorProfile }) => {
             {t(lang, 'nav.series')}
           </a>
         </div>
-        {posts.length === 0 ? (
+        {groups.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
             <p data-t="home.noPosts">{t(lang, 'home.noPosts')}</p>
           </div>
         ) : (
           <>
             <div>
-              {posts.map((post) => (
-                <PostCard post={post} lang={lang} />
-              ))}
+              {groups.map((group) =>
+                group.kind === 'post' ? (
+                  <PostCard post={group.post} lang={lang} />
+                ) : (
+                  <SeriesStack collection={group.collection} posts={group.posts} lang={lang} />
+                )
+              )}
             </div>
             <Pagination pagination={pagination} lang={lang} />
           </>

@@ -15,6 +15,7 @@ export default {
     noPosts: 'No posts yet',
     description: 'Personal Blog - Tech & Life',
     pageTitle: "mrwuliu's blog",
+    seriesCount: (n: number) => `${n} ${n === 1 ? 'post' : 'posts'}`,
   },
   pagination: {
     prev: '← Previous',

@@ -15,6 +15,7 @@ export default {
     noPosts: '暂无文章',
     description: '个人博客 - 记录技术与生活',
     pageTitle: "mrwuliu's blog",
+    seriesCount: (n: number) => `${n} 篇`,
   },
   pagination: {
     prev: '← 上一页',

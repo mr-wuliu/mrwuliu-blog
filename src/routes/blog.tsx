@@ -3,11 +3,11 @@ import { getCookie } from 'hono/cookie'
 import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes, collections, users } from '../db/schema'
-import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getBatchCollectionsWithPosts, getPublishedFriendLinks, getVisibleTags } from '../db/queries'
+import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getPublishedCollectionsForPosts, getPublishedCollectionMembers, getPublishedPostOrder, getPublishedPostsByIds, getBatchCollectionsWithPosts, getPublishedFriendLinks, getVisibleTags } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
-import Home from '../views/home'
+import Home, { type HomeRenderGroup } from '../views/home'
 import TagPage from '../views/tag'
 import PostPage from '../views/post'
 import NotFoundPage from '../views/404'
@@ -75,34 +75,64 @@ function createBlogRouter(lang: Lang) {
     const page = Math.max(1, Number(c.req.query('page')) || 1)
     const limit = 10
 
-    const result = await getPublishedPosts(db, { page, limit })
     const authorProfile = await getAuthorProfile(db)
 
-    const postIds = result.posts.map(p => p.id)
+    // Pagination unit = rendered block: one standalone post or one whole series
+    // stack. Blocks are ordered by first appearance in the full published post
+    // order (pinned first, newest next), so a stack sits at its newest member's slot.
+    const ordered = await getPublishedPostOrder(db)
+    const collectionRows = await getPublishedCollectionsForPosts(db, ordered.map((p) => p.id))
+    const collectionByPost = new Map<string, (typeof collectionRows)[number]>()
+    for (const row of collectionRows) {
+      if (!collectionByPost.has(row.postId)) collectionByPost.set(row.postId, row)
+    }
 
-    const commentCounts = postIds.length ? Object.fromEntries(
+    const blocks: Array<
+      | { kind: 'post'; postId: string }
+      | { kind: 'series'; collection: { id: string; name: string; nameEn: string | null; slug: string } }
+    > = []
+    const seenKeys = new Set<string>()
+    for (const { id } of ordered) {
+      const col = collectionByPost.get(id)
+      const key = col ? col.collectionId : id
+      if (seenKeys.has(key)) continue
+      seenKeys.add(key)
+      blocks.push(col
+        ? { kind: 'series', collection: { id: col.collectionId, name: col.name, nameEn: col.nameEn, slug: col.slug } }
+        : { kind: 'post', postId: id })
+    }
+
+    const total = blocks.length
+    const totalPages = Math.max(1, Math.ceil(total / limit))
+    const safePage = Math.min(page, totalPages)
+    const pageBlocks = blocks.slice((safePage - 1) * limit, safePage * limit)
+
+    const standaloneIds = pageBlocks.flatMap((b) => (b.kind === 'post' ? [b.postId] : []))
+    const seriesIds = pageBlocks.flatMap((b) => (b.kind === 'series' ? [b.collection.id] : []))
+
+    const commentCounts = standaloneIds.length ? Object.fromEntries(
       (await db
         .select({ postId: comments.postId, count: sql<number>`count(*)` })
         .from(comments)
-        .where(and(inArray(comments.postId, postIds), eq(comments.status, 'approved')))
+        .where(and(inArray(comments.postId, standaloneIds), eq(comments.status, 'approved')))
         .groupBy(comments.postId)
       ).map(r => [r.postId, r.count])
     ) : {}
 
-    const likeCounts = postIds.length ? Object.fromEntries(
+    const likeCounts = standaloneIds.length ? Object.fromEntries(
       (await db
         .select({ postId: postLikes.postId, count: sql<number>`count(*)` })
         .from(postLikes)
-        .where(inArray(postLikes.postId, postIds))
+        .where(inArray(postLikes.postId, standaloneIds))
         .groupBy(postLikes.postId)
       ).map(r => [r.postId, r.count])
     ) : {}
 
-    const tagRows = postIds.length ? await db
+    const tagRows = standaloneIds.length ? await db
       .select({ postId: postTags.postId, tag: tags })
       .from(postTags)
       .innerJoin(tags, eq(postTags.tagId, tags.id))
-      .where(inArray(postTags.postId, postIds)) : []
+      .where(inArray(postTags.postId, standaloneIds)) : []
 
     const tagsByPost: Record<string, (typeof tags.$inferSelect)[]> = {}
     for (const row of tagRows) {
@@ -111,24 +141,55 @@ function createBlogRouter(lang: Lang) {
       else tagsByPost[row.postId] = [row.tag]
     }
 
-    const postsWithTags = result.posts.map((post) => ({
-      ...post,
-      tags: tagsByPost[post.id] ?? [],
-      commentCount: commentCounts[post.id] ?? 0,
-      likeCount: likeCounts[post.id] ?? 0,
-    }))
+    const postsById = new Map((await getPublishedPostsByIds(db, standaloneIds)).map((p) => [p.id, p]))
 
-    const resolvedPosts = postsWithTags.map(p => resolvePostLang(p, lang))
-    const totalPages = Math.ceil(result.total / limit)
+    const allMembers = await getPublishedCollectionMembers(db, seriesIds)
+    const membersByCollection = new Map<string, typeof allMembers>()
+    for (const row of allMembers) {
+      const list = membersByCollection.get(row.collectionId)
+      if (list) list.push(row)
+      else membersByCollection.set(row.collectionId, [row])
+    }
+
+    const resolvedGroups: HomeRenderGroup[] = pageBlocks.flatMap((block): HomeRenderGroup[] => {
+      if (block.kind === 'series') {
+        const full = (membersByCollection.get(block.collection.id) ?? []).map((row) => resolvePostLang({
+          id: row.id,
+          title: row.title,
+          slug: row.slug,
+          content: '',
+          excerpt: row.excerpt,
+          coverImageKey: null,
+          status: 'published' as const,
+          hidden: false,
+          pinned: row.pinned,
+          publishedAt: row.publishedAt,
+          createdAt: row.createdAt,
+          updatedAt: row.updatedAt,
+        }, lang))
+        return [{ kind: 'series', collection: block.collection, posts: full }]
+      }
+      const post = postsById.get(block.postId)
+      if (!post) return []
+      return [{
+        kind: 'post',
+        post: resolvePostLang({
+          ...post,
+          tags: tagsByPost[post.id] ?? [],
+          commentCount: commentCounts[post.id] ?? 0,
+          likeCount: likeCounts[post.id] ?? 0,
+        }, lang),
+      }]
+    })
 
     return c.html(
       <Home
         lang={lang}
-        posts={resolvedPosts}
+        groups={resolvedGroups}
         pagination={{
-          page: result.page,
-          limit: result.limit,
-          total: result.total,
+          page: safePage,
+          limit,
+          total,
           totalPages,
         }}
         authorProfile={authorProfile}
