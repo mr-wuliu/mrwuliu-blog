@@ -53,13 +53,15 @@ export interface AvatarOpts {
   id: string
 }
 
-// Pre-computed URL the client can <img src> directly. Empty for identicon
-// (client renders the SVG itself). md5 stays server-side only.
+// Pre-computed URL the client can <img src> directly; empty when no email is
+// available to probe (client renders the seed SVG itself). md5 stays server-side only.
 export function avatarUrlFor(opts: AvatarOpts, px = 128): string {
   if (opts.avatarType === 'uploaded' && opts.avatarR2Key) {
     return `/images/${opts.avatarR2Key}`
   }
-  if (opts.avatarType === 'gravatar' && opts.email) {
+  // 'identicon' is the account default, not an explicit choice: probe Gravatar
+  // by email (d=404); onerror falls back to the seed identicon client-side.
+  if (opts.email && (opts.avatarType === 'gravatar' || opts.avatarType === 'identicon')) {
     const hash = md5(opts.email.trim().toLowerCase())
     return `https://www.gravatar.com/avatar/${hash}?s=${px}&d=404`
   }

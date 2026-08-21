@@ -218,7 +218,9 @@ describe("Auth API", () => {
       expect(body.user.avatarSeed).toBe("");
       expect(body.user.avatarType).toBe("identicon");
       expect(body.user.avatarR2Key).toBe("");
-      expect(body.user.avatarUrl).toBe("");
+      // Default (identicon) accounts probe Gravatar by email; d=404 + the
+      // client onerror fallback keeps the seed identicon when it misses.
+      expect(body.user.avatarUrl).toContain("gravatar.com/avatar/");
       expect(body.user.notifyOnReply).toBe(true);
     });
   });
