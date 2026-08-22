@@ -169,6 +169,7 @@ const Layout: FC<LayoutProps> = ({
                 <div class="user-auth-mobile">
                   <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="mobile-menu-link user-auth-login">{t(lang, 'nav.login')}</a>
                 </div>
+                <a href={langPath('/search', lang)} data-thref="/search" data-t="nav.search" class="mobile-menu-link">{t(lang, 'nav.search')}</a>
                 <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="mobile-menu-link">{t(lang, 'nav.writings')}</a>
                 <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="mobile-menu-link">{t(lang, 'nav.series')}</a>
                 <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="mobile-menu-link">{t(lang, 'nav.projects')}</a>
@@ -196,6 +197,9 @@ const Layout: FC<LayoutProps> = ({
                     </div>
                   </div>
                   <div class="flex items-center gap-3 shrink-0 ml-auto">
+                    <a href={langPath('/search', lang)} data-thref="/search" aria-label={t(lang, 'nav.search')} title={t(lang, 'nav.search')} class="flex items-center text-black hover:opacity-70 transition-all">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </a>
                     <select class="theme-select" aria-label="Theme">
                       <option value="default">Default</option>
                       <option value="coffee">Coffee</option>
@@ -224,6 +228,9 @@ const Layout: FC<LayoutProps> = ({
                     </div>
                   </div>
                   <div class="flex items-center gap-3 shrink-0 ml-auto">
+                    <a href={langPath('/search', lang)} data-thref="/search" aria-label={t(lang, 'nav.search')} title={t(lang, 'nav.search')} class="flex items-center text-black hover:opacity-70 transition-all">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                    </a>
                     <select class="theme-select" aria-label="Theme">
                       <option value="default">Default</option>
                       <option value="coffee">Coffee</option>
