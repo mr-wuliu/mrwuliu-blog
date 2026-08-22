@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
-import { eq, desc, asc, and, sql, inArray } from 'drizzle-orm'
+import { eq, desc, asc, and, or, sql, inArray, type AnyColumn } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes, collections, users } from '../db/schema'
 import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getPublishedCollectionsForPosts, getPublishedCollectionMembers, getPublishedPostOrder, getPublishedPostsByIds, getBatchCollectionsWithPosts, getPublishedFriendLinks, getVisibleTags } from '../db/queries'
@@ -9,6 +9,7 @@ import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
 import Home, { type HomeRenderGroup } from '../views/home'
 import TagPage from '../views/tag'
+import SearchPage from '../views/search'
 import PostPage from '../views/post'
 import NotFoundPage from '../views/404'
 import AboutPage from '../views/about'
@@ -267,6 +268,82 @@ function createBlogRouter(lang: Lang) {
           total,
           totalPages,
         }}
+        authorProfile={authorProfile}
+      />
+    )
+  })
+
+  router.get('/search', async (c) => {
+    const db = createDb(c.env.DB)
+    const query = (c.req.query('q') ?? '').trim().slice(0, 100)
+    const page = Math.max(1, Number(c.req.query('page')) || 1)
+    const limit = 10
+
+    const authorProfile = await getAuthorProfile(db)
+
+    if (!query) {
+      return c.html(
+        <SearchPage
+          lang={lang}
+          query=""
+          posts={[]}
+          pagination={{ page: 1, limit, total: 0, totalPages: 1 }}
+          authorProfile={authorProfile}
+        />
+      )
+    }
+
+    // Escape LIKE wildcards so user input matches literally
+    const pattern = `%${query.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`
+    const likeClause = (col: AnyColumn) => sql`${col} LIKE ${pattern} ESCAPE '\\'`
+
+    const searchFilter = and(
+      eq(posts.status, 'published'),
+      eq(posts.hidden, false),
+      or(
+        likeClause(posts.title),
+        likeClause(posts.titleEn),
+        likeClause(posts.excerpt),
+        likeClause(posts.excerptEn),
+        likeClause(posts.content),
+        likeClause(posts.contentEn),
+      ),
+    )
+
+    const [countResult, searchRows] = await Promise.all([
+      db.select({ count: sql<number>`count(*)` }).from(posts).where(searchFilter),
+      db.select().from(posts).where(searchFilter)
+        .orderBy(desc(posts.publishedAt))
+        .limit(limit)
+        .offset((page - 1) * limit),
+    ])
+
+    const total = countResult[0]?.count ?? 0
+    const totalPages = Math.ceil(total / limit)
+
+    const postIds = searchRows.map((p) => p.id)
+
+    const tagRows = postIds.length ? await db
+      .select({ postId: postTags.postId, tag: tags })
+      .from(postTags)
+      .innerJoin(tags, eq(postTags.tagId, tags.id))
+      .where(inArray(postTags.postId, postIds)) : []
+
+    const tagsByPost: Record<string, (typeof tags.$inferSelect)[]> = {}
+    for (const row of tagRows) {
+      const existing = tagsByPost[row.postId]
+      if (existing) existing.push(row.tag)
+      else tagsByPost[row.postId] = [row.tag]
+    }
+
+    const resolvedPosts = searchRows.map((p) => resolvePostLang({ ...p, tags: tagsByPost[p.id] ?? [] }, lang))
+
+    return c.html(
+      <SearchPage
+        lang={lang}
+        query={query}
+        posts={resolvedPosts}
+        pagination={{ page, limit, total, totalPages }}
         authorProfile={authorProfile}
       />
     )
