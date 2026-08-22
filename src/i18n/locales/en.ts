@@ -9,6 +9,7 @@ export default {
     login: 'Login',
     logout: 'Logout',
     settings: 'Settings',
+    search: 'Search',
   },
   home: {
     title: 'Latest Posts',
@@ -27,6 +28,17 @@ export default {
     noPosts: 'No posts yet',
     pageTitle: 'Writings - Blog',
     description: 'All blog posts - tech & life writings',
+  },
+  search: {
+    title: 'Search',
+    pageTitle: 'Search - Blog',
+    description: 'Search blog posts',
+    placeholder: 'Search posts by keyword…',
+    button: 'Search',
+    noQuery: 'Type a keyword to search posts',
+    noResults: 'No posts found',
+    resultsTitle: (q: string, n: number) => `Search results for "${q}" (${n})`,
+    resultsDescription: (q: string) => `Search results for "${q}"`,
   },
   projects: {
     title: 'Projects',

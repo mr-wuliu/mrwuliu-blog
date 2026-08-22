@@ -9,6 +9,7 @@ export default {
     login: '登录',
     logout: '退出',
     settings: '个人设置',
+    search: '搜索',
   },
   home: {
     title: '最新文章',
@@ -27,6 +28,17 @@ export default {
     noPosts: '暂无文章',
     pageTitle: '文字 - Blog',
     description: '所有文章列表 - 技术与生活随笔',
+  },
+  search: {
+    title: '搜索',
+    pageTitle: '搜索 - Blog',
+    description: '搜索博客文章',
+    placeholder: '输入关键词搜索文章…',
+    button: '搜索',
+    noQuery: '输入关键词搜索文章',
+    noResults: '没有找到相关文章',
+    resultsTitle: (q: string, n: number) => `"${q}" 的搜索结果（${n} 篇）`,
+    resultsDescription: (q: string) => `搜索"${q}"的文章结果`,
   },
   projects: {
     title: '工程',
