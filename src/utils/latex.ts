@@ -50,7 +50,12 @@ export function renderLatex(html: string): string {
     },
   )
 
-  // Fallback: render raw $$...$$ and $...$ delimiters for legacy content
+  // Fallback: render raw $$...$$ and $...$ delimiters for legacy content.
+  // Skip the whole legacy pipeline when no literal '$' survives — the placeholder
+  // extraction below is quadratic-ish on tag-heavy documents, which once blew the
+  // Workers CPU budget on every cache-miss render of a long post.
+  if (!result.includes('$')) return result
+
   const placeholders: string[] = []
 
   // Protect content inside <code>, <pre> blocks from LaTeX processing
@@ -75,11 +80,9 @@ export function renderLatex(html: string): string {
     return renderKatexToString(tex.trim(), false)
   })
 
-  for (let i = placeholders.length - 1; i >= 0; i--) {
-    result = result.replace(`%%PLACEHOLDER_${i}%%`, placeholders[i])
-  }
-
-  return result
+  // Single-pass restore: replacing each marker one-by-one rescans the full
+  // document per placeholder (O(N*M)); one regex sweep is O(N).
+  return result.replace(/%%PLACEHOLDER_(\d+)%%/g, (marker, idx: string) => placeholders[Number(idx)] ?? marker)
 }
 
 export interface TocHeading {
