@@ -48,6 +48,16 @@ hljs.registerLanguage('markdown', markdown)
 hljs.registerLanguage('diff', diff)
 hljs.registerLanguage('plaintext', plaintext)
 
+// highlightAuto runs every registered grammar; on large blocks that alone can
+// exceed the Workers CPU budget. Restrict to common languages and skip
+// auto-detection entirely for oversized blocks.
+const AUTO_DETECT_LANGUAGES = [
+  'javascript', 'typescript', 'python', 'bash', 'shell', 'json', 'rust',
+  'go', 'sql', 'yaml', 'css', 'xml', 'html', 'java', 'cpp', 'c', 'csharp', 'diff',
+].filter((l) => hljs.getLanguage(l))
+
+const AUTO_DETECT_MAX_LENGTH = 10_000
+
 function decodeHtmlEntities(str: string): string {
   return str
     .replace(/&amp;/g, '&')
@@ -121,9 +131,13 @@ export function highlightCode(html: string): string {
         let finalLang = lang
         if (lang && hljs.getLanguage(lang)) {
           hlResult = hljs.highlight(decodedCode, { language: lang }).value
+        } else if (decodedCode.length > AUTO_DETECT_MAX_LENGTH) {
+          // Auto-detect on huge blocks is a CPU trap — emit plain decoded text.
+          const langClass = lang ? ` class="language-${lang}"` : ''
+          return `<pre data-language="Plain Text"><code${langClass}>${decodedCode}</code></pre>`
         } else {
           // Auto-detect
-          const auto = hljs.highlightAuto(decodedCode)
+          const auto = hljs.highlightAuto(decodedCode, AUTO_DETECT_LANGUAGES)
           hlResult = auto.value
           finalLang = auto.language
         }
