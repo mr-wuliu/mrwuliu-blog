@@ -353,33 +353,42 @@ function createBlogRouter(lang: Lang) {
     const slug = c.req.param('slug')
     const db = createDb(c.env.DB)
 
-    const cache = (caches as unknown as { default: Cache }).default
-    const cacheKey = new Request(c.req.url)
-    const cached = await cache.match(cacheKey)
-    if (cached) {
-      const [post] = await db.select({ id: posts.id }).from(posts).where(eq(posts.slug, slug)).limit(1)
-      if (post) {
-        const ip = getClientIp(c.req.raw.headers)
-        const userAgent = c.req.header('user-agent') || 'unknown'
-        const referrer = c.req.header('referer')
-        let referrerHost: string | undefined
-        if (referrer) {
-          try { referrerHost = new URL(referrer).hostname } catch { referrerHost = undefined }
-        }
-        const cf = c.req.raw as Request & { cf?: { country?: string } }
-        c.executionCtx.waitUntil(
-          trackPostView(db, {
-            postId: post.id, ip, userAgent, country: cf.cf?.country,
-            referrerHost, lang, salt: c.env.JWT_SECRET,
-          })
-        )
-      }
-      return cached
-    }
-
     const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
     if (!post || post.status !== 'published') {
       return c.html(<NotFoundPage lang={lang} />, 404)
+    }
+
+    // Cache key is versioned by content (updatedAt) + approved comment count so
+    // edits and new comments invalidate instantly, while the stored entry keeps
+    // a long TTL — cold renders of math/code-heavy posts dominate Worker CPU.
+    const [approvedCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(comments)
+      .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
+    const canonicalUrl = new URL(c.req.url)
+    canonicalUrl.search = ''
+    const cacheKey = new Request(`${canonicalUrl.origin}${canonicalUrl.pathname}?v=${encodeURIComponent(`${post.updatedAt}-${approvedCount?.count ?? 0}`)}`)
+
+    const cache = (caches as unknown as { default: Cache }).default
+    const cached = await cache.match(cacheKey)
+    if (cached) {
+      const ip = getClientIp(c.req.raw.headers)
+      const userAgent = c.req.header('user-agent') || 'unknown'
+      const referrer = c.req.header('referer')
+      let referrerHost: string | undefined
+      if (referrer) {
+        try { referrerHost = new URL(referrer).hostname } catch { referrerHost = undefined }
+      }
+      const cf = c.req.raw as Request & { cf?: { country?: string } }
+      c.executionCtx.waitUntil(
+        trackPostView(db, {
+          postId: post.id, ip, userAgent, country: cf.cf?.country,
+          referrerHost, lang, salt: c.env.JWT_SECRET,
+        })
+      )
+      const servedHeaders = new Headers(cached.headers)
+      servedHeaders.set('Cache-Control', 'public, max-age=300, s-maxage=300')
+      return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers: servedHeaders })
     }
 
     const postTagsResult = await db
@@ -466,16 +475,24 @@ function createBlogRouter(lang: Lang) {
       />
     )
 
-    const headers = new Headers(response.headers)
-    headers.set('Cache-Control', 'public, max-age=300, s-maxage=300')
-    const cacheableResponse = new Response(response.body, {
+    // Store with a long TTL (entry lifetime), serve visitors a short one so
+    // stale HTML never lingers at the edge for more than 5 minutes.
+    const storedHeaders = new Headers(response.headers)
+    storedHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600')
+    const storedResponse = new Response(response.clone().body, {
       status: response.status,
       statusText: response.statusText,
-      headers,
+      headers: storedHeaders,
     })
-    c.executionCtx.waitUntil(cache.put(cacheKey, cacheableResponse.clone()))
+    c.executionCtx.waitUntil(cache.put(cacheKey, storedResponse))
 
-    return cacheableResponse
+    const servedHeaders = new Headers(response.headers)
+    servedHeaders.set('Cache-Control', 'public, max-age=300, s-maxage=300')
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers: servedHeaders,
+    })
   })
 
   router.post('/posts/:slug/comments', async (c) => {
