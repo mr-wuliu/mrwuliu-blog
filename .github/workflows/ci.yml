@@ -19,11 +19,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install admin dependencies
+        run: npm ci --prefix admin
+
       - name: Typecheck
         run: npm run typecheck
 
-      - name: API Tests
-        run: npm run test:api
+      - name: Tests
+        run: npm test
 
-      - name: UI Render Tests
-        run: npm run test:ui
+      - name: Build public CSS and admin SPA
+        run: npm run build:deploy

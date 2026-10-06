@@ -1,4 +1,4 @@
-import { drizzle } from 'drizzle-orm/d1'
+import { createDb } from '../db'
 import { images } from '../db/schema'
 import { eq, sql } from 'drizzle-orm'
 
@@ -56,14 +56,19 @@ export async function uploadImage(
   })
 
   // Record in database
-  const db = drizzle(env.DB)
-  await db.insert(images).values({
-    id,
-    r2Key,
-    altText: altText || null,
-    mimeType: file.type,
-    sizeBytes: file.size,
-  })
+  const db = createDb(env.DB)
+  try {
+    await db.insert(images).values({
+      id,
+      r2Key,
+      altText: altText || null,
+      mimeType: file.type,
+      sizeBytes: file.size,
+    })
+  } catch (error) {
+    await env.IMAGES.delete(r2Key)
+    throw error
+  }
 
   return {
     id,
@@ -82,7 +87,7 @@ function requestMatchesEtag(ifNoneMatch: string, etag: string): boolean {
     .some((token) => {
       if (token === '*') return true
       const candidate = token.startsWith('W/') ? token.slice(2) : token
-      return candidate.toLowerCase() === etag.toLowerCase()
+      return candidate === etag
     })
 }
 
@@ -127,14 +132,15 @@ export async function serveImage(
 
   const headers = new Headers()
   object.writeHttpMetadata(headers)
-  headers.set('Cache-Control', 'public, max-age=31536000, immutable')
-  headers.set('ETag', object.etag)
+  headers.set('Cache-Control', /^(?:uavatars\/[0-9a-f-]{36}\.(?:png|jpeg|gif|webp)$|avatars\/avatar\.)/i.test(key)
+    ? 'public, max-age=0, must-revalidate' : 'public, max-age=31536000, immutable')
+  headers.set('ETag', object.httpEtag)
   if (object.httpMetadata?.contentType === 'image/svg+xml') {
     headers.set('Content-Security-Policy', "default-src 'none'; sandbox")
   }
 
   const ifNoneMatch = request?.headers.get('if-none-match')
-  if (ifNoneMatch && requestMatchesEtag(ifNoneMatch, object.etag)) {
+  if (ifNoneMatch && requestMatchesEtag(ifNoneMatch, object.httpEtag)) {
     return new Response(null, { status: 304, headers })
   }
 
@@ -147,7 +153,7 @@ export async function deleteImage(
   env: Bindings,
   imageId: string,
 ): Promise<void> {
-  const db = drizzle(env.DB)
+  const db = createDb(env.DB)
 
   // Get the image record to find the R2 key
   const [image] = await db.select().from(images).where(eq(images.id, imageId))
@@ -169,7 +175,7 @@ export async function listImages(
   page: number = 1,
   limit: number = 20,
 ): Promise<{ images: Array<typeof images.$inferSelect>; total: number }> {
-  const db = drizzle(env.DB)
+  const db = createDb(env.DB)
   const offset = (page - 1) * limit
 
   const pageImages = await db.select().from(images).limit(limit).offset(offset)

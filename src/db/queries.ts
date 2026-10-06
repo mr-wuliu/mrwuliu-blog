@@ -1,21 +1,36 @@
+import { batchStatements } from './batch'
+import { chunks } from '../utils/validation'
 import { eq, desc, and, sql, asc, inArray } from 'drizzle-orm'
 import { posts, postTags, tags, siteConfig, projects, postStats, collections, collectionPosts, friendLinks } from './schema'
 import type { Database } from './index'
 
+
+export const postSummaryFields = {
+  id: posts.id, title: posts.title, titleEn: posts.titleEn, slug: posts.slug,
+  excerpt: posts.excerpt, excerptEn: posts.excerptEn, coverImageKey: posts.coverImageKey,
+  status: posts.status, hidden: posts.hidden, pinned: posts.pinned,
+  publishedAt: posts.publishedAt, createdAt: posts.createdAt, updatedAt: posts.updatedAt,
+  content: sql<string>`''`, contentEn: sql<string>`''`,
+}
+
 // Get posts with pagination (admin - all statuses)
 export async function getPostsWithPagination(
   db: Database,
-  options: { page?: number; limit?: number; status?: 'draft' | 'published' }
+  options: { page?: number; limit?: number; status?: 'draft' | 'published'; search?: string }
 ) {
   const page = options.page ?? 1
   const limit = options.limit ?? 20
   const offset = (page - 1) * limit
 
   const conditions = options.status ? [eq(posts.status, options.status)] : []
+  if (options.search) {
+    const query = options.search.trim().slice(0, 200)
+    conditions.push(sql`(instr(lower(${posts.title}), lower(${query})) > 0 OR instr(lower(${posts.titleEn}), lower(${query})) > 0)`)
+  }
 
   const result = await db
     .select({
-      post: posts,
+      post: postSummaryFields,
       viewCount: sql<number>`coalesce(${postStats.viewCount}, 0)`,
       uniqueViewCount: sql<number>`coalesce(${postStats.uniqueViewCount}, 0)`,
     })
@@ -34,9 +49,16 @@ export async function getPostsWithPagination(
 
   const total = countResult[0]?.count ?? 0
 
+  const tagRows = result.length ? await db.select({ postId: postTags.postId, tag: tags })
+    .from(postTags).innerJoin(tags, eq(postTags.tagId, tags.id))
+    .where(inArray(postTags.postId, result.map(row => row.post.id))) : []
+  const tagsByPost = new Map<string, typeof tags.$inferSelect[]>()
+  for (const row of tagRows) tagsByPost.set(row.postId, [...(tagsByPost.get(row.postId) ?? []), row.tag])
+
   return {
     posts: result.map(({ post, viewCount, uniqueViewCount }) => ({
       ...post,
+      tags: tagsByPost.get(post.id) ?? [],
       viewCount,
       uniqueViewCount,
     })),
@@ -76,7 +98,7 @@ export async function getPublishedPosts(
   const offset = (page - 1) * limit
 
   const result = await db
-    .select()
+    .select(postSummaryFields)
     .from(posts)
     .where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
     .orderBy(desc(posts.pinned), desc(posts.createdAt))
@@ -105,14 +127,9 @@ export async function getPublishedPostOrder(db: Database) {
 // Full published rows for a set of ids (order not preserved — map by id)
 export async function getPublishedPostsByIds(db: Database, ids: string[]) {
   if (ids.length === 0) return []
-  return db
-    .select()
-    .from(posts)
-    .where(and(
-      inArray(posts.id, ids),
-      eq(posts.status, 'published'),
-      eq(posts.hidden, false),
-    ))
+  const rows = await Promise.all(chunks(ids).map(part => db.select(postSummaryFields).from(posts)
+    .where(and(inArray(posts.id, part), eq(posts.status, 'published'), eq(posts.hidden, false)))))
+  return rows.flat()
 }
 
 // Get published posts with summary columns only, for list/feed pages that never render post bodies
@@ -340,8 +357,10 @@ export async function getCollectionWithPosts(db: Database, id: string) {
     .select({
       id: posts.id,
       title: posts.title,
+      titleEn: posts.titleEn,
       slug: posts.slug,
       excerpt: posts.excerpt,
+      excerptEn: posts.excerptEn,
       status: posts.status,
       createdAt: posts.createdAt,
       updatedAt: posts.updatedAt,
@@ -362,8 +381,10 @@ export async function getPublishedCollectionWithPosts(db: Database, slug: string
     .select({
       id: posts.id,
       title: posts.title,
+      titleEn: posts.titleEn,
       slug: posts.slug,
       excerpt: posts.excerpt,
+      excerptEn: posts.excerptEn,
       status: posts.status,
       createdAt: posts.createdAt,
       updatedAt: posts.updatedAt,
@@ -380,10 +401,17 @@ export async function getPublishedCollectionWithPosts(db: Database, slug: string
   return { ...collection, posts: result }
 }
 
-export async function createCollection(db: Database, data: { name: string; nameEn?: string; slug: string; description?: string; descriptionEn?: string; coverImageKey?: string; sortOrder?: number; status?: string }) {
+function collectionPostStatements(collectionId: string, postIds: string[]) {
+  return chunks([...new Set(postIds)], 30).map((group, groupIndex) => ({
+    sql: `INSERT INTO collection_posts (collection_id, post_id, sort_order) VALUES ${group.map(() => '(?, ?, ?)').join(', ')}`,
+    params: group.flatMap((postId, index) => [collectionId, postId, groupIndex * 30 + index]),
+  }))
+}
+
+export async function createCollection(db: Database, data: { name: string; nameEn?: string; slug: string; description?: string; descriptionEn?: string; coverImageKey?: string; sortOrder?: number; status?: 'draft' | 'published'; postIds?: string[] }) {
   const id = crypto.randomUUID()
   const now = new Date().toISOString()
-  await db.insert(collections).values({
+  const insert = db.insert(collections).values({
     id,
     name: data.name,
     nameEn: data.nameEn || null,
@@ -392,10 +420,11 @@ export async function createCollection(db: Database, data: { name: string; nameE
     descriptionEn: data.descriptionEn || null,
     coverImageKey: data.coverImageKey || null,
     sortOrder: data.sortOrder ?? 0,
-    status: (data.status as 'draft' | 'published') || 'draft',
+    status: data.status ?? 'draft',
     createdAt: now,
     updatedAt: now,
   })
+  await batchStatements(db, [insert.toSQL(), ...collectionPostStatements(id, data.postIds ?? [])])
   return getCollectionById(db, id)
 }
 
@@ -403,22 +432,12 @@ export async function updateCollection(db: Database, id: string, data: Partial<{
   const { postIds, ...updateData } = data
   const now = new Date().toISOString()
 
-  if (Object.keys(updateData).length > 0) {
-    await db.update(collections).set({ ...updateData, updatedAt: now }).where(eq(collections.id, id))
+  const statements = [db.update(collections).set({ ...updateData, updatedAt: now }).where(eq(collections.id, id)).toSQL()]
+  if (postIds !== undefined) {
+    statements.push({ sql: 'DELETE FROM collection_posts WHERE collection_id = ?', params: [id] })
+    statements.push(...collectionPostStatements(id, postIds))
   }
-
-  if (postIds) {
-    await db.delete(collectionPosts).where(eq(collectionPosts.collectionId, id))
-    if (postIds.length > 0) {
-      await db.insert(collectionPosts).values(
-        postIds.map((postId, index) => ({
-          collectionId: id,
-          postId,
-          sortOrder: index,
-        }))
-      )
-    }
-  }
+  await batchStatements(db, statements)
 
   return getCollectionById(db, id)
 }
@@ -443,7 +462,7 @@ export async function getPostCollections(db: Database, postId: string) {
 // Map posts to their published collections — drives homepage series grouping
 export async function getPublishedCollectionsForPosts(db: Database, postIds: string[]) {
   if (postIds.length === 0) return []
-  return db
+  const rows = await Promise.all(chunks(postIds).map(part => db
     .select({
       postId: collectionPosts.postId,
       collectionId: collections.id,
@@ -455,17 +474,18 @@ export async function getPublishedCollectionsForPosts(db: Database, postIds: str
     .from(collectionPosts)
     .innerJoin(collections, eq(collectionPosts.collectionId, collections.id))
     .where(and(
-      inArray(collectionPosts.postId, postIds),
+      inArray(collectionPosts.postId, part),
       eq(collections.status, 'published'),
     ))
-    .orderBy(asc(collectionPosts.sortOrder))
+    .orderBy(asc(collectionPosts.sortOrder))))
+  return rows.flat()
 }
 
 // All published members of the given collections in reading order — the
 // homepage stack lists the complete series regardless of pagination.
 export async function getPublishedCollectionMembers(db: Database, collectionIds: string[]) {
   if (collectionIds.length === 0) return []
-  return db
+  const rows = await Promise.all(chunks(collectionIds).map(part => db
     .select({
       collectionId: collectionPosts.collectionId,
       id: posts.id,
@@ -483,32 +503,36 @@ export async function getPublishedCollectionMembers(db: Database, collectionIds:
     .from(collectionPosts)
     .innerJoin(posts, eq(collectionPosts.postId, posts.id))
     .where(and(
-      inArray(collectionPosts.collectionId, collectionIds),
+      inArray(collectionPosts.collectionId, part),
       eq(posts.status, 'published'),
       eq(posts.hidden, false),
     ))
-    .orderBy(asc(collectionPosts.sortOrder))
+    .orderBy(asc(collectionPosts.sortOrder))))
+  return rows.flat()
 }
 
 // Batch-fetch collections with their posts — replaces N+1 getCollectionWithPosts calls
 export async function getBatchCollectionsWithPosts(
   db: Database,
   collectionIds: string[],
+  publicOnly = true,
 ): Promise<(NonNullable<Awaited<ReturnType<typeof getCollectionWithPosts>>> & { id: string })[]> {
   if (collectionIds.length === 0) return []
 
-  const collectionRows = await db
+  const collectionRows = (await Promise.all(chunks(collectionIds).map(part => db
     .select()
     .from(collections)
-    .where(inArray(collections.id, collectionIds))
+    .where(inArray(collections.id, part))))) .flat()
 
-  const allPosts = await db
+  const allPosts = (await Promise.all(chunks(collectionIds).map(part => db
     .select({
       collectionId: collectionPosts.collectionId,
       id: posts.id,
       title: posts.title,
+      titleEn: posts.titleEn,
       slug: posts.slug,
       excerpt: posts.excerpt,
+      excerptEn: posts.excerptEn,
       status: posts.status,
       createdAt: posts.createdAt,
       updatedAt: posts.updatedAt,
@@ -516,11 +540,10 @@ export async function getBatchCollectionsWithPosts(
     .from(collectionPosts)
     .innerJoin(posts, eq(collectionPosts.postId, posts.id))
     .where(and(
-      inArray(collectionPosts.collectionId, collectionIds),
-      eq(posts.status, 'published'),
-      eq(posts.hidden, false),
+      inArray(collectionPosts.collectionId, part),
+      ...(publicOnly ? [eq(posts.status, 'published'), eq(posts.hidden, false)] : []),
     ))
-    .orderBy(asc(collectionPosts.sortOrder))
+    .orderBy(asc(collectionPosts.sortOrder))))).flat()
 
   return collectionRows.map((col) => ({
     ...col,

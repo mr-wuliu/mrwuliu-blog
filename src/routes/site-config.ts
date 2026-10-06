@@ -1,3 +1,5 @@
+import { zValidator } from '@hono/zod-validator'
+import { z } from 'zod'
 import { Hono } from 'hono'
 import { createDb } from '../db'
 import { getSiteConfig, upsertSiteConfig } from '../db/queries'
@@ -52,9 +54,9 @@ siteConfigRoutes.get('/:key', async (c) => {
   return c.json(config)
 })
 
-siteConfigRoutes.put('/', async (c) => {
+siteConfigRoutes.put('/', zValidator('json', z.object({ key: z.string().trim().min(1).max(100), value: z.string().max(100000) })), async (c) => {
   const db = createDb(c.env.DB)
-  const { key, value } = await c.req.json<{ key: string; value: string }>()
+  const { key, value } = c.req.valid('json')
   if (!key) return c.json({ error: 'Key is required' }, 400)
   const config = await upsertSiteConfig(db, { key, value })
   return c.json(config)
@@ -82,7 +84,7 @@ siteConfigRoutes.post('/avatar-upload', async (c) => {
     const oldAvatarUrl = oldConfig?.value || ''
 
     const extension = extensionFromMimeType(file.type)
-    const r2Key = `avatars/avatar-${Date.now()}.${extension}`
+    const r2Key = `avatars/avatar-${crypto.randomUUID()}.${extension}`
     const arrayBuffer = await file.arrayBuffer()
     await c.env.IMAGES.put(r2Key, arrayBuffer, {
       httpMetadata: {
@@ -90,15 +92,19 @@ siteConfigRoutes.post('/avatar-upload', async (c) => {
       },
     })
 
+    const avatarUrl = `/images/${r2Key}`
+    try {
+    await upsertSiteConfig(db, { key: 'author_avatar', value: avatarUrl })
+    } catch (error) {
+      await c.env.IMAGES.delete(r2Key)
+      throw error
+    }
     if (oldAvatarUrl.includes('/images/avatars/')) {
       const oldKey = oldAvatarUrl.replace('/images/', '')
       if (oldKey && oldKey !== r2Key) {
-        await c.env.IMAGES.delete(oldKey)
+        c.executionCtx.waitUntil(c.env.IMAGES.delete(oldKey).catch(error => console.error('[avatar] cleanup failed', error)))
       }
     }
-
-    const avatarUrl = `/images/${r2Key}`
-    await upsertSiteConfig(db, { key: 'author_avatar', value: avatarUrl })
 
     return c.json({ url: avatarUrl })
   } catch (e: unknown) {

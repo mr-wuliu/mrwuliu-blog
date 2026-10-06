@@ -71,65 +71,27 @@ export async function trackPostView(db: Database, options: TrackPostViewOptions)
   const now = new Date().toISOString()
   const bot = isBotAgent(userAgent)
 
-  async function incrementStats(uniqueIncrement: 0 | 1) {
-    await db.insert(postStats).values({
-      postId,
-      viewCount: 1,
-      uniqueViewCount: uniqueIncrement,
-      updatedAt: now,
-    }).onConflictDoUpdate({
-      target: postStats.postId,
-      set: {
-        viewCount: sql`${postStats.viewCount} + 1`,
-        uniqueViewCount: uniqueIncrement === 1
-          ? sql`${postStats.uniqueViewCount} + 1`
-          : sql`${postStats.uniqueViewCount}`,
-        updatedAt: now,
-      },
-    })
-  }
-
-  const [existsToday] = await db
-    .select({ id: postViewEvents.id })
-    .from(postViewEvents)
-    .where(and(
-      eq(postViewEvents.postId, postId),
-      eq(postViewEvents.ipHash, ipHash),
-      eq(postViewEvents.userAgentHash, userAgentHash),
-      sql`${postViewEvents.viewDate} = date('now')`,
-    ))
-    .limit(1)
-
-  if (existsToday) {
-    await incrementStats(0)
+  const eventWrite = db.insert(postViewEvents).values({
+    id: crypto.randomUUID(), postId, ipHash, userAgentHash, country, referrerHost, lang: lang || 'zh', isBot: bot, viewCount: 1,
+  }).onConflictDoUpdate({
+    target: [postViewEvents.postId, postViewEvents.ipHash, postViewEvents.userAgentHash, postViewEvents.viewDate, postViewEvents.lang],
+    set: { viewCount: sql`${postViewEvents.viewCount} + 1` },
+  })
+  if (bot) {
+    await eventWrite
     return
   }
-
-  const [seenBeforeByIp] = await db
-    .select({ id: postViewEvents.id })
-    .from(postViewEvents)
-    .where(and(
-      eq(postViewEvents.postId, postId),
-      eq(postViewEvents.ipHash, ipHash),
-    ))
-    .limit(1)
-
-  try {
-    await db.insert(postViewEvents).values({
-      id: crypto.randomUUID(),
-      postId,
-      ipHash,
-      userAgentHash,
-      country,
-      referrerHost,
-      lang,
-      isBot: bot,
-    })
-  } catch {
-    return
-  }
-
-  await incrementStats(seenBeforeByIp ? 0 : 1)
+  // Check first-seen and update counters inside the same transaction as the
+  // event write. Concurrent visits cannot lose PV or double-count a new IP.
+  const uniqueIncrement = sql<number>`CASE WHEN EXISTS (SELECT 1 FROM post_view_events
+    WHERE post_id = ${postId} AND ip_hash = ${ipHash} AND is_bot = 0) THEN 0 ELSE 1 END`
+  await db.batch([
+    db.insert(postStats).values({ postId, viewCount: 1, uniqueViewCount: uniqueIncrement, updatedAt: now })
+      .onConflictDoUpdate({ target: postStats.postId, set: {
+        viewCount: sql`${postStats.viewCount} + 1`, uniqueViewCount: sql`${postStats.uniqueViewCount} + ${uniqueIncrement}`, updatedAt: now,
+      } }),
+    eventWrite,
+  ])
 }
 
 type TrackSiteViewOptions = {
@@ -144,34 +106,14 @@ export async function trackSiteView(db: Database, options: TrackSiteViewOptions)
   const { ipHash } = await getVisitorFingerprint(ip, userAgent, salt)
   const today = new Date().toISOString().split('T')[0]
 
-  // Try to register this visitor as unique
-  let isUnique = false
-  try {
-    await db.insert(siteVisitorEvents).values({
-      date: today,
-      lang,
-      ipHash,
-    })
-    isUnique = true
-  } catch {
-    // duplicate visitor — not unique
-  }
-
-  // Single atomic upsert: always increment PV, conditionally increment UV
-  await db.insert(siteAnalytics).values({
-    date: today,
-    lang,
-    pageViews: 1,
-    uniqueVisitors: isUnique ? 1 : 0,
-    updatedAt: new Date().toISOString(),
-  }).onConflictDoUpdate({
-    target: [siteAnalytics.date, siteAnalytics.lang],
-    set: {
-      pageViews: sql`${siteAnalytics.pageViews} + 1`,
-      uniqueVisitors: isUnique
-        ? sql`${siteAnalytics.uniqueVisitors} + 1`
-        : sql`${siteAnalytics.uniqueVisitors}`,
-      updatedAt: new Date().toISOString(),
-    },
-  })
+  const uniqueIncrement = sql<number>`CASE WHEN EXISTS (SELECT 1 FROM site_visitor_events
+    WHERE date = ${today} AND lang = ${lang} AND ip_hash = ${ipHash}) THEN 0 ELSE 1 END`
+  await db.batch([
+    db.insert(siteAnalytics).values({ date: today, lang, pageViews: 1, uniqueVisitors: uniqueIncrement, updatedAt: new Date().toISOString() })
+      .onConflictDoUpdate({ target: [siteAnalytics.date, siteAnalytics.lang], set: {
+        pageViews: sql`${siteAnalytics.pageViews} + 1`, uniqueVisitors: sql`${siteAnalytics.uniqueVisitors} + ${uniqueIncrement}`,
+        updatedAt: new Date().toISOString(),
+      } }),
+    db.insert(siteVisitorEvents).values({ date: today, lang, ipHash }).onConflictDoNothing(),
+  ])
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
 
@@ -35,25 +35,32 @@ export default function Users() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [searchInput, setSearchInput] = useState('')
+  const [error, setError] = useState('')
+  const requestGeneration = useRef(0)
   const [loading, setLoading] = useState(true)
   const limit = 20
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
   const fetchUsers = useCallback(() => {
+    const generation = ++requestGeneration.current
+    setError('')
     setLoading(true)
     const params = new URLSearchParams({ page: String(page), limit: String(limit) })
     if (search) params.set('search', search)
     api.get<UsersResponse>(`/admin/users?${params}`)
       .then((data) => {
+        if (generation !== requestGeneration.current) return
         setUsers(data.users)
         setTotal(data.total)
       })
       .catch((err) => {
+        if (generation !== requestGeneration.current) return
+        setError(err instanceof Error ? err.message : t('common.loadFailed'))
         // List falls back to the empty state below; logged for diagnosis.
         console.error('Failed to load users', err)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (generation === requestGeneration.current) setLoading(false) })
   }, [page, search])
 
   useEffect(() => {
@@ -74,6 +81,8 @@ export default function Users() {
       alert(t('users.actionFailed'))
     }
   }
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={() => window.location.reload()}>{t('common.retry')}</button></div>
 
   return (
     <div className="overflow-y-auto h-full p-8">

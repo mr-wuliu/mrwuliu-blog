@@ -8,6 +8,7 @@
 import type { Database } from '../db'
 import { comments, posts, users } from '../db/schema'
 import { eq, and } from 'drizzle-orm'
+import { commentText } from '../utils/html'
 import { signToken } from '../utils/token'
 
 interface ReplyNotificationParams {
@@ -44,20 +45,6 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
-}
-
-/**
- * Un-escape HTML entities that were escaped on insert,
- * so we can re-escape cleanly in the email template context.
- */
-function unescapeHtml(str: string): string {
-  return str
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&#0?39;/g, "'")
 }
 
 function buildTemplate(params: {
@@ -177,12 +164,6 @@ export async function sendReplyNotification(params: ReplyNotificationParams): Pr
   // Parent must have an email
   if (!parent.authorEmail) return
 
-  // Must not have already been notified
-  if (parent.replyNotified) return
-
-  // Don't notify if reply author is the same as parent (self-reply heuristic by name)
-  // — skip, since there's no reliable identity; names can collide but that's acceptable
-
   // Fetch the post for title
   const [post] = await db.select().from(posts).where(eq(posts.id, replyComment.postId))
   if (!post) return
@@ -198,40 +179,48 @@ export async function sendReplyNotification(params: ReplyNotificationParams): Pr
   const postUrl = lang === 'en' ? `${origin}/en/posts/${post.slug}` : `${origin}/posts/${post.slug}`
 
   const template = buildTemplate({
-    postTitle: unescapeHtml(post.title),
+    postTitle: lang === 'en' && post.titleEn ? post.titleEn : post.title,
     postUrl,
-    replyAuthor: unescapeHtml(replyComment.authorName),
-    replyContent: unescapeHtml(replyComment.content),
-    parentAuthor: unescapeHtml(parent.authorName),
+    replyAuthor: replyComment.authorName,
+    replyContent: commentText(replyComment.content),
+    parentAuthor: parent.authorName,
     unsubscribeUrls: { zh: zhUnsubUrl, en: enUnsubUrl },
     lang,
   })
 
   const fromAddress = `noreply@${env.MAIL_DOMAIN}`
 
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: fromAddress,
-      to: [parent.authorEmail],
-      subject: template.subject,
-      html: template.html,
-      text: template.text,
-    }),
-  })
+  const claimed = await db.update(comments).set({ replyNotified: true })
+    .where(and(eq(comments.id, replyComment.id), eq(comments.status, 'approved'), eq(comments.replyNotified, false)))
+    .returning({ id: comments.id })
+  if (claimed.length === 0) return
 
-  if (!res.ok) {
-    const errText = await res.text().catch(() => 'unknown error')
-    console.error(`[email] Resend API error ${res.status}: ${errText}`)
-    return
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      signal: AbortSignal.timeout(10000),
+      headers: {
+        'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': `comment-reply-${replyComment.id}`,
+      },
+      body: JSON.stringify({
+        from: fromAddress,
+        to: [parent.authorEmail],
+        subject: template.subject,
+        html: template.html,
+        text: template.text,
+      }),
+    })
+
+    if (!res.ok) {
+      const errText = await res.text().catch(() => 'unknown error')
+      console.error(`[email] Resend API error ${res.status}: ${errText}`)
+      throw new Error(`Resend HTTP ${res.status}`)
+    }
+
+  } catch (error) {
+    await db.update(comments).set({ replyNotified: false }).where(eq(comments.id, replyComment.id))
+    console.error('[email] notification failed', error)
   }
-
-  // Mark parent comment as notified
-  await db.update(comments)
-    .set({ replyNotified: true })
-    .where(eq(comments.id, parent.id))
 }

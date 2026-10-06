@@ -9,6 +9,8 @@ export const posts = sqliteTable('posts', {
   slug: text('slug').notNull().unique(),
   content: text('content').notNull().default(''),
   contentEn: text('content_en').default(''),
+  wordCount: integer('word_count').notNull().default(0),
+  wordCountEn: integer('word_count_en').notNull().default(0),
   excerpt: text('excerpt').notNull().default(''),
   excerptEn: text('excerpt_en').default(''),
   coverImageKey: text('cover_image_key'),
@@ -43,6 +45,7 @@ export const postTags = sqliteTable('post_tags', {
   postId: text('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
   tagId: text('tag_id').notNull().references(() => tags.id, { onDelete: 'cascade' }),
 }, (table) => ({
+  post_tags_unique: uniqueIndex('post_tags_unique').on(table.postId, table.tagId),
   post_tags_post_id_idx: index('post_tags_post_id_idx').on(table.postId),
   post_tags_tag_id_idx: index('post_tags_tag_id_idx').on(table.tagId),
 }))
@@ -134,6 +137,7 @@ export const postViewEvents = sqliteTable('post_view_events', {
   referrerHost: text('referrer_host'),
   lang: text('lang'),
   scrollDepth: integer('scroll_depth'),
+  viewCount: integer('view_count').notNull().default(1),
   isBot: integer('is_bot', { mode: 'boolean' }).notNull().default(false),
   viewDate: text('view_date').notNull().default(sql`(date('now'))`),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
@@ -146,6 +150,7 @@ export const postViewEvents = sqliteTable('post_view_events', {
     table.ipHash,
     table.userAgentHash,
     table.viewDate,
+    table.lang,
   ),
 }))
 

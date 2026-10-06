@@ -50,20 +50,28 @@ export default function PostAnalytics() {
 
   const [data, setData] = useState<PostReport | null>(null)
   const [days, setDays] = useState<DateRange>(30)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (!postId) return
+    const controller = new AbortController()
+    setError('')
     setLoading(true)
     api
-      .get<PostReport>(`/analytics/post/${postId}/report?days=${days}`)
-      .then(setData)
+      .get<PostReport>(`/analytics/post/${postId}/report?days=${days}`, controller.signal)
+      .then(data => { if (!controller.signal.aborted) setData(data) })
       .catch((err) => {
+        if (controller.signal.aborted) return
+        setError(err instanceof Error ? err.message : t('common.loadFailed'))
         console.error('Failed to load post analytics', err)
         setData(null)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
   }, [postId, days])
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={() => window.location.reload()}>{t('common.retry')}</button></div>
 
   if (loading) {
     return (

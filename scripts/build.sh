@@ -1,7 +1,8 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+cd "$(dirname "$0")/.."
 echo "Building Tailwind CSS..."
-npx tailwindcss --input src/tailwind-input.css --output public/css/tailwind.css --minify
+npm run build:css
 echo "Building admin SPA..."
 cd admin && npm run build && cd ..
 echo "Build complete."

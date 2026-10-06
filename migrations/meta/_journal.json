@@ -127,6 +127,20 @@
       "when": 1787038091697,
       "tag": "0017_lucky_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1791236339882,
+      "tag": "0018_cuddly_leopardon",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1791236778759,
+      "tag": "0019_parallel_manta",
+      "breakpoints": true
     }
   ]
 }

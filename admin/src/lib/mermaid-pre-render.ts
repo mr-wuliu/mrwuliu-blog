@@ -1,4 +1,4 @@
-import mermaid from 'mermaid'
+async function loadMermaid() { return (await import('mermaid')).default }
 
 const baseConfig = {
   startOnLoad: false,
@@ -115,6 +115,7 @@ function postProcessSvg(svgHtml: string): string {
 
 async function renderMermaidBlock(code: string): Promise<string | null> {
   try {
+    const mermaid = await loadMermaid()
     mermaid.initialize({ ...baseConfig, themeVariables: themeVars })
 
     const isSequence = /^\s*sequenceDiagram\b/mi.test(code)
@@ -126,7 +127,7 @@ async function renderMermaidBlock(code: string): Promise<string | null> {
         bkgColorArray: nodePalette.map((c) => c.bg + '33'),
         borderColorArray: nodePalette.map((c) => c.border),
       }
-      initDir = `%%{init:${JSON.stringify({ theme: 'redux-color', look: 'handDrawn', themeVariables: { ...themeVars, ...seqColors } })}}}%%\n`
+      initDir = `%%{init:${JSON.stringify({ theme: 'redux-color', look: 'handDrawn', themeVariables: { ...themeVars, ...seqColors } })}}%%\n`
       styledCode = initDir + code
     } else {
       initDir = `%%{init:${JSON.stringify({ theme: 'base', look: 'handDrawn', themeVariables: themeVars })}}%%\n`
@@ -150,17 +151,17 @@ async function renderMermaidBlock(code: string): Promise<string | null> {
 
 function decodeHtmlEntities(str: string): string {
   return str
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x27;/g, "'")
     .replace(/&#x2F;/g, '/')
+    .replace(/&amp;/g, '&')
 }
 
 export async function preRenderMermaidInHtml(html: string): Promise<string> {
-  const mermaidBlockRegex = /<pre><code(?:\s+class="language-mermaid")?>([\s\S]*?)<\/code><\/pre>/g
+  const mermaidBlockRegex = /<pre><code\s+class="language-mermaid">([\s\S]*?)<\/code><\/pre>/g
 
   const matches: { fullMatch: string; code: string; index: number }[] = []
   let m: RegExpExecArray | null
@@ -176,7 +177,7 @@ export async function preRenderMermaidInHtml(html: string): Promise<string> {
     if (!match.code) continue
     const svg = await renderMermaidBlock(match.code)
     if (svg) {
-      const encodedCode = match.code.replace(/"/g, '&quot;')
+      const encodedCode = match.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
       replacements.push({
         fullMatch: match.fullMatch,
         replacement: `<div class="mermaid-pre-rendered" data-mermaid-code="${encodedCode}"><div class="mermaid-diagram">${svg}</div></div>`,
@@ -189,4 +190,17 @@ export async function preRenderMermaidInHtml(html: string): Promise<string> {
     result = result.replace(fullMatch, replacement)
   }
   return result
+}
+
+export function restoreMermaidSources(html: string): string {
+  const document = new DOMParser().parseFromString(html, 'text/html')
+  document.querySelectorAll('[data-mermaid-code]').forEach(block => {
+    const pre = document.createElement('pre')
+    const code = document.createElement('code')
+    code.className = 'language-mermaid'
+    code.textContent = block.getAttribute('data-mermaid-code') || ''
+    pre.appendChild(code)
+    block.replaceWith(pre)
+  })
+  return document.body.innerHTML
 }

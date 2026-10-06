@@ -22,6 +22,10 @@ crons = ["0 3 * * *"]
 # Default (local dev)
 # ============================================================
 
+[vars]
+ENVIRONMENT = "development"
+DISABLE_API_AUTH = "true"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "blog-db"
@@ -43,6 +47,11 @@ run_worker_first = ["/api/*", "/posts/*", "/tags/*", "/feed.xml", "/en/feed.xml"
 
 [env.production]
 name = "blog"
+
+[env.production.vars]
+ENVIRONMENT = "production"
+DISABLE_API_AUTH = "false"
+# Set ACCESS_TEAM_DOMAIN and ACCESS_AUD as production secrets to enable Access JWT authentication.
 
 [env.production.observability]
 enabled = true

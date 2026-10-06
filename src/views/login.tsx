@@ -1,3 +1,4 @@
+import { scriptJson, safeNextPath } from '../utils/html'
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
 import { type Lang, t, langPath } from '../i18n'
@@ -9,7 +10,7 @@ type LoginPageProps = {
 
 const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
   const loginPath = langPath('/login', lang)
-  const next = nextPath || langPath('/', lang)
+  const next = safeNextPath(nextPath, langPath('/', lang))
 
   return (
     <Layout
@@ -187,7 +188,7 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
             var errorDiv = document.getElementById('login-error');
             var successDiv = document.getElementById('login-success');
             var codeHint = document.getElementById('login-code-hint');
-            var nextPath = ${JSON.stringify(next)};
+            var nextPath = ${scriptJson(next)};
             var lang = ${JSON.stringify(lang)};
             var currentEmail = '';
             var resendTimer = null;

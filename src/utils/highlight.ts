@@ -1,3 +1,4 @@
+import { escapeHtml } from './html'
 import hljs from 'highlight.js/lib/core'
 
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -60,13 +61,13 @@ const AUTO_DETECT_MAX_LENGTH = 10_000
 
 function decodeHtmlEntities(str: string): string {
   return str
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x27;/g, "'")
     .replace(/&#x2F;/g, '/')
+    .replace(/&amp;/g, '&')
 }
 
 function displayLanguageLabel(language: string): string {
@@ -122,8 +123,8 @@ export function highlightCode(html: string): string {
       // Skip highlighting for mermaid — render as client-side mermaid diagram
       // (only reached for old posts without pre-rendered SVGs)
       if (lang === 'mermaid') {
-        const escapedCode = decodedCode.replace(/"/g, '&quot;')
-        return `<div class="mermaid-source" data-mermaid="${escapedCode}" data-language="Mermaid"><div class="mermaid-loading"><span class="mermaid-loading-dot"></span><span class="mermaid-loading-dot"></span><span class="mermaid-loading-dot"></span></div><pre style="display:none"><code class="language-mermaid">${decodedCode}</code></pre></div>`
+        const escapedCode = escapeHtml(decodedCode)
+        return `<div class="mermaid-source" data-mermaid="${escapedCode}" data-language="Mermaid"><div class="mermaid-loading"><span class="mermaid-loading-dot"></span><span class="mermaid-loading-dot"></span><span class="mermaid-loading-dot"></span></div><pre style="display:none"><code class="language-mermaid">${escapeHtml(decodedCode)}</code></pre></div>`
       }
 
       try {
@@ -134,7 +135,7 @@ export function highlightCode(html: string): string {
         } else if (decodedCode.length > AUTO_DETECT_MAX_LENGTH) {
           // Auto-detect on huge blocks is a CPU trap — emit plain decoded text.
           const langClass = lang ? ` class="language-${lang}"` : ''
-          return `<pre data-language="Plain Text"><code${langClass}>${decodedCode}</code></pre>`
+          return `<pre data-language="Plain Text"><code${langClass}>${escapeHtml(decodedCode)}</code></pre>`
         } else {
           // Auto-detect
           const auto = hljs.highlightAuto(decodedCode, AUTO_DETECT_LANGUAGES)
@@ -149,7 +150,7 @@ export function highlightCode(html: string): string {
         // If highlighting fails, return original with decoded entities
         const langClass = lang ? ` class="language-${lang}"` : ''
         const langData = lang ? ` data-language="${displayLanguageLabel(lang)}"` : ''
-        return `<pre${langData}><code${langClass}>${decodedCode}</code></pre>`
+        return `<pre${langData}><code${langClass}>${escapeHtml(decodedCode)}</code></pre>`
       }
     }
   )

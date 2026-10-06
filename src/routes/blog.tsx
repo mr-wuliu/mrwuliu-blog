@@ -1,9 +1,12 @@
+import { getHomeBlocks } from '../db/home'
+import { positiveInteger, commentSchema } from '../utils/validation'
+import { sendReplyNotification } from '../services/email'
+import { resolveSession } from '../utils/session'
 import { Hono } from 'hono'
-import { getCookie } from 'hono/cookie'
 import { eq, desc, asc, and, or, sql, inArray, type AnyColumn } from 'drizzle-orm'
 import { createDb } from '../db'
 import { posts, tags, postTags, comments, postLikes, collections, users } from '../db/schema'
-import { getPublishedPosts, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getPublishedCollectionsForPosts, getPublishedCollectionMembers, getPublishedPostOrder, getPublishedPostsByIds, getBatchCollectionsWithPosts, getPublishedFriendLinks, getVisibleTags } from '../db/queries'
+import { getPublishedPosts, postSummaryFields, getPublishedPostSummaries, getSiteConfig, getPublishedProjects, getProjectById, getAuthorProfile, getPublishedCollections, getPublishedCollectionWithPosts, getPostCollections, getPublishedCollectionMembers, getPublishedPostsByIds, getBatchCollectionsWithPosts, getPublishedFriendLinks, getVisibleTags } from '../db/queries'
 import { renderLatex, generateToc } from '../utils/latex'
 import { highlightCode } from '../utils/highlight'
 import { checkRateLimit } from '../utils/rate-limit'
@@ -25,9 +28,8 @@ import LoginPage from '../views/login'
 import SettingsPage from '../views/settings'
 import { generateRSS } from '../utils/rss'
 import { generateSitemap } from '../utils/sitemap'
-import { getClientIp, getVisitorFingerprint, isBotAgent, trackPostView, trackSiteView } from '../utils/analytics'
+import { getClientIp, getVisitorFingerprint, trackPostView } from '../utils/analytics'
 import { verifyToken } from '../utils/token'
-import { getSessionUser } from '../services/auth'
 import { type Lang, langPath, t } from '../i18n'
 
 type Bindings = {
@@ -37,8 +39,6 @@ type Bindings = {
   JWT_SECRET: string
   RESEND_API_KEY: string
   MAIL_DOMAIN: string
-  ADMIN_USERNAME: string
-  ADMIN_PASSWORD: string
 }
 
 const blogRoutes = new Hono<{ Bindings: Bindings }>()
@@ -46,20 +46,6 @@ const blogRoutes = new Hono<{ Bindings: Bindings }>()
 function createBlogRouter(lang: Lang) {
   const router = new Hono<{ Bindings: Bindings }>()
 
-  router.use('*', async (c, next) => {
-    await next()
-    try {
-      const userAgent = c.req.header('user-agent') || 'unknown'
-      if (isBotAgent(userAgent)) return
-      const ip = getClientIp(c.req.raw.headers)
-      const db = createDb(c.env.DB)
-      c.executionCtx.waitUntil(
-        trackSiteView(db, { lang, ip, userAgent, salt: c.env.JWT_SECRET })
-      )
-    } catch {
-      // analytics tracking should never break page rendering
-    }
-  })
 
   function resolvePostLang<T extends Record<string, unknown>>(post: T, lang: Lang): T {
     if (lang !== 'en') return post
@@ -73,40 +59,15 @@ function createBlogRouter(lang: Lang) {
 
   router.get('/', async (c) => {
     const db = createDb(c.env.DB)
-    const page = Math.max(1, Number(c.req.query('page')) || 1)
+    const page = positiveInteger(c.req.query('page'), 1)
     const limit = 10
 
     const authorProfile = await getAuthorProfile(db)
 
-    // Pagination unit = rendered block: one standalone post or one whole series
-    // stack. Blocks are ordered by first appearance in the full published post
-    // order (pinned first, newest next), so a stack sits at its newest member's slot.
-    const ordered = await getPublishedPostOrder(db)
-    const collectionRows = await getPublishedCollectionsForPosts(db, ordered.map((p) => p.id))
-    const collectionByPost = new Map<string, (typeof collectionRows)[number]>()
-    for (const row of collectionRows) {
-      if (!collectionByPost.has(row.postId)) collectionByPost.set(row.postId, row)
-    }
-
-    const blocks: Array<
-      | { kind: 'post'; postId: string }
-      | { kind: 'series'; collection: { id: string; name: string; nameEn: string | null; slug: string } }
-    > = []
-    const seenKeys = new Set<string>()
-    for (const { id } of ordered) {
-      const col = collectionByPost.get(id)
-      const key = col ? col.collectionId : id
-      if (seenKeys.has(key)) continue
-      seenKeys.add(key)
-      blocks.push(col
-        ? { kind: 'series', collection: { id: col.collectionId, name: col.name, nameEn: col.nameEn, slug: col.slug } }
-        : { kind: 'post', postId: id })
-    }
-
-    const total = blocks.length
-    const totalPages = Math.max(1, Math.ceil(total / limit))
-    const safePage = Math.min(page, totalPages)
-    const pageBlocks = blocks.slice((safePage - 1) * limit, safePage * limit)
+    const { rows: blockRows, total, totalPages, page: safePage } = await getHomeBlocks(db, page, limit)
+    const pageBlocks = blockRows.map(row => row.collectionId
+      ? { kind: 'series' as const, collection: { id: row.collectionId, name: row.name!, nameEn: row.nameEn, slug: row.slug! } }
+      : { kind: 'post' as const, postId: row.postId })
 
     const standaloneIds = pageBlocks.flatMap((b) => (b.kind === 'post' ? [b.postId] : []))
     const seriesIds = pageBlocks.flatMap((b) => (b.kind === 'series' ? [b.collection.id] : []))
@@ -157,9 +118,11 @@ function createBlogRouter(lang: Lang) {
         const full = (membersByCollection.get(block.collection.id) ?? []).map((row) => resolvePostLang({
           id: row.id,
           title: row.title,
+          titleEn: row.titleEn,
           slug: row.slug,
           content: '',
           excerpt: row.excerpt,
+          excerptEn: row.excerptEn,
           coverImageKey: null,
           status: 'published' as const,
           hidden: false,
@@ -209,12 +172,12 @@ function createBlogRouter(lang: Lang) {
     const [tag] = await db.select().from(tags).where(eq(tags.slug, slug))
     if (!tag) return c.notFound()
 
-    const page = Math.max(1, Number(c.req.query('page')) || 1)
+    const page = positiveInteger(c.req.query('page'), 1)
     const limit = 10
     const offset = (page - 1) * limit
 
     const tagPosts = await db
-      .select({ post: posts })
+      .select({ post: postSummaryFields })
       .from(postTags)
       .innerJoin(posts, eq(postTags.postId, posts.id))
       .where(and(eq(postTags.tagId, tag.id), eq(posts.status, 'published'), eq(posts.hidden, false)))
@@ -276,7 +239,7 @@ function createBlogRouter(lang: Lang) {
   router.get('/search', async (c) => {
     const db = createDb(c.env.DB)
     const query = (c.req.query('q') ?? '').trim().slice(0, 100)
-    const page = Math.max(1, Number(c.req.query('page')) || 1)
+    const page = positiveInteger(c.req.query('page'), 1)
     const limit = 10
 
     const authorProfile = await getAuthorProfile(db)
@@ -293,26 +256,25 @@ function createBlogRouter(lang: Lang) {
       )
     }
 
-    // Escape LIKE wildcards so user input matches literally
-    const pattern = `%${query.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`
-    const likeClause = (col: AnyColumn) => sql`${col} LIKE ${pattern} ESCAPE '\\'`
+    // Literal substring search avoids D1's 50-byte LIKE pattern limit.
+    const containsText = (col: AnyColumn) => sql`instr(lower(${col}), lower(${query})) > 0`
 
     const searchFilter = and(
       eq(posts.status, 'published'),
       eq(posts.hidden, false),
       or(
-        likeClause(posts.title),
-        likeClause(posts.titleEn),
-        likeClause(posts.excerpt),
-        likeClause(posts.excerptEn),
-        likeClause(posts.content),
-        likeClause(posts.contentEn),
+        containsText(posts.title),
+        containsText(posts.titleEn),
+        containsText(posts.excerpt),
+        containsText(posts.excerptEn),
+        containsText(posts.content),
+        containsText(posts.contentEn),
       ),
     )
 
     const [countResult, searchRows] = await Promise.all([
       db.select({ count: sql<number>`count(*)` }).from(posts).where(searchFilter),
-      db.select().from(posts).where(searchFilter)
+      db.select(postSummaryFields).from(posts).where(searchFilter)
         .orderBy(desc(posts.publishedAt))
         .limit(limit)
         .offset((page - 1) * limit),
@@ -358,39 +320,6 @@ function createBlogRouter(lang: Lang) {
       return c.html(<NotFoundPage lang={lang} />, 404)
     }
 
-    // Cache key is versioned by content (updatedAt) + approved comment count so
-    // edits and new comments invalidate instantly, while the stored entry keeps
-    // a long TTL — cold renders of math/code-heavy posts dominate Worker CPU.
-    const [approvedCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(comments)
-      .where(and(eq(comments.postId, post.id), eq(comments.status, 'approved')))
-    const canonicalUrl = new URL(c.req.url)
-    canonicalUrl.search = ''
-    const cacheKey = new Request(`${canonicalUrl.origin}${canonicalUrl.pathname}?v=${encodeURIComponent(`${post.updatedAt}-${approvedCount?.count ?? 0}`)}`)
-
-    const cache = (caches as unknown as { default: Cache }).default
-    const cached = await cache.match(cacheKey)
-    if (cached) {
-      const ip = getClientIp(c.req.raw.headers)
-      const userAgent = c.req.header('user-agent') || 'unknown'
-      const referrer = c.req.header('referer')
-      let referrerHost: string | undefined
-      if (referrer) {
-        try { referrerHost = new URL(referrer).hostname } catch { referrerHost = undefined }
-      }
-      const cf = c.req.raw as Request & { cf?: { country?: string } }
-      c.executionCtx.waitUntil(
-        trackPostView(db, {
-          postId: post.id, ip, userAgent, country: cf.cf?.country,
-          referrerHost, lang, salt: c.env.JWT_SECRET,
-        })
-      )
-      const servedHeaders = new Headers(cached.headers)
-      servedHeaders.set('Cache-Control', 'public, max-age=300, s-maxage=300')
-      return new Response(cached.body, { status: cached.status, statusText: cached.statusText, headers: servedHeaders })
-    }
-
     const postTagsResult = await db
       .select({ tag: tags })
       .from(postTags)
@@ -410,7 +339,7 @@ function createBlogRouter(lang: Lang) {
       trackPostView(db, {
         postId: post.id, ip, userAgent, country: cf.cf?.country,
         referrerHost, lang, salt: c.env.JWT_SECRET,
-      })
+      }).catch(error => console.error('[analytics] post tracking failed', error))
     )
 
     const resolvedPost = resolvePostLang(postWithTags, lang)
@@ -442,9 +371,21 @@ function createBlogRouter(lang: Lang) {
       getPostCollections(db, post.id),
     ])
 
-    let renderedContent = renderLatex(resolvedPost.content)
-    renderedContent = highlightCode(renderedContent)
-    const { html: tocHtml, headings } = generateToc(renderedContent)
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(resolvedPost.content))
+    const version = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, '0')).join('')
+    const cache = (caches as unknown as { default: Cache }).default
+    const cacheKey = new Request(`${new URL(c.req.url).origin}/__rendered/${post.id}/${lang}/${version}`)
+    const cachedContent = await cache.match(cacheKey)
+    let rendered: ReturnType<typeof generateToc>
+    if (cachedContent) {
+      rendered = await cachedContent.json()
+    } else {
+      rendered = generateToc(highlightCode(renderLatex(resolvedPost.content)))
+      c.executionCtx.waitUntil(cache.put(cacheKey, new Response(JSON.stringify(rendered), {
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=86400' },
+      })).catch(error => console.error('[cache] content store failed', error)))
+    }
+    const { html: tocHtml, headings } = rendered
 
     const resolvedPrev = prevPost ? resolvePostLang(prevPost, lang) : null
     const resolvedNext = nextPost ? resolvePostLang(nextPost, lang) : null
@@ -456,11 +397,12 @@ function createBlogRouter(lang: Lang) {
         .filter(c => c.status === 'published')
         .map(c => ({
           ...c,
-          posts: c.posts.filter(p => p.status === 'published'),
+          posts: c.posts.filter(p => p.status === 'published').map(p => resolvePostLang(p, lang)),
         }))
         .filter(c => c.posts.length > 0)
     }
 
+    c.header('Cache-Control', 'no-cache, must-revalidate')
     const response = await c.html(
       <PostPage
         lang={lang}
@@ -475,24 +417,7 @@ function createBlogRouter(lang: Lang) {
       />
     )
 
-    // Store with a long TTL (entry lifetime), serve visitors a short one so
-    // stale HTML never lingers at the edge for more than 5 minutes.
-    const storedHeaders = new Headers(response.headers)
-    storedHeaders.set('Cache-Control', 'public, max-age=3600, s-maxage=3600')
-    const storedResponse = new Response(response.clone().body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: storedHeaders,
-    })
-    c.executionCtx.waitUntil(cache.put(cacheKey, storedResponse))
-
-    const servedHeaders = new Headers(response.headers)
-    servedHeaders.set('Cache-Control', 'public, max-age=300, s-maxage=300')
-    return new Response(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers: servedHeaders,
-    })
+    return response
   })
 
   router.post('/posts/:slug/comments', async (c) => {
@@ -505,9 +430,7 @@ function createBlogRouter(lang: Lang) {
       return c.json({ error: 'Rate limit exceeded. Try again later.' }, 429)
     }
 
-    const accessCookie = getCookie(c, 'access_token')
-    const refreshCookie = getCookie(c, 'refresh_token')
-    const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
+    const session = await resolveSession(c)
     if (!session?.user) {
       const postUrl = langPath(`/posts/${slug}`, lang)
       return c.redirect(langPath(`/login?next=${encodeURIComponent(postUrl)}`, lang))
@@ -541,7 +464,8 @@ function createBlogRouter(lang: Lang) {
       parentId = formData.parentId ? String(formData.parentId) : undefined
     }
 
-    if (!content || content.length < 1 || content.length > 1000) {
+    const validatedComment = commentSchema.safeParse({ content, parentId, visitorId })
+    if (!validatedComment.success) {
       return c.redirect(langPath(`/posts/${slug}`, lang))
     }
 
@@ -553,7 +477,7 @@ function createBlogRouter(lang: Lang) {
 
     if (parentId) {
       const [parentComment] = await db.select().from(comments).where(eq(comments.id, parentId))
-      if (!parentComment || parentComment.postId !== post.id) {
+      if (!parentComment || parentComment.postId !== post.id || parentComment.status !== 'approved') {
         return c.redirect(langPath(`/posts/${slug}`, lang))
       }
     }
@@ -587,18 +511,16 @@ function createBlogRouter(lang: Lang) {
       ipMasked,
       country: cf.cf?.country,
       userAgent: userAgent.slice(0, 500),
-      content: escapeHtml(content),
+      content: escapeHtml(validatedComment.data.content),
       status: commentStatus,
       notifyOnReply: sessionUser.notifyOnReply,
     })
 
-    if (commentStatus === 'approved') {
-      const cache = (caches as unknown as { default: Cache }).default
-      const origin = new URL(c.req.url).origin
-      c.executionCtx.waitUntil(Promise.all([
-        cache.delete(new Request(`${origin}/posts/${slug}`)),
-        cache.delete(new Request(`${origin}/en/posts/${slug}`)),
-      ]))
+    if (commentStatus === 'approved' && parentId) {
+      c.executionCtx.waitUntil(sendReplyNotification({ db, env: c.env,
+        replyComment: { id, parentId, authorName: sessionUser.name, content: escapeHtml(validatedComment.data.content), postId: post.id },
+        origin: new URL(c.req.url).origin, lang,
+      }).catch(error => console.error('[email] reply notification failed', error)))
     }
 
     return c.redirect(langPath(`/posts/${slug}`, lang))
@@ -669,7 +591,9 @@ function createBlogRouter(lang: Lang) {
     }
     const filteredCollection = {
       ...collection,
-      posts: collection.posts.filter((p: { status: string }) => p.status === 'published'),
+      name: lang === 'en' ? collection.nameEn || collection.name : collection.name,
+      description: lang === 'en' ? collection.descriptionEn || collection.description : collection.description,
+      posts: collection.posts.filter(p => p.status === 'published').map(p => resolvePostLang(p, lang)),
     }
     const authorProfile = await getAuthorProfile(db)
     c.header('Cache-Control', 'public, max-age=300, s-maxage=300')
@@ -691,10 +615,7 @@ function createBlogRouter(lang: Lang) {
   })
 
   router.get('/settings', async (c) => {
-    const accessToken = getCookie(c, 'access_token')
-    const refreshToken = getCookie(c, 'refresh_token')
-    const db = createDb(c.env.DB)
-    const session = await getSessionUser(db, c.env, accessToken, refreshToken)
+    const session = await resolveSession(c)
     if (!session?.user) {
       return c.redirect(langPath('/login?next=' + encodeURIComponent(langPath('/settings', lang)), lang))
     }
@@ -756,7 +677,7 @@ blogRoutes.get('/en/feed.xml', async (c) => {
   const recentPosts = await getPublishedPostSummaries(db, { page: 1, limit: 20, order: 'newestPublished' })
 
   const baseUrl = new URL(c.req.url).origin
-  const rssXml = generateRSS(recentPosts, baseUrl, 'en')
+  const rssXml = generateRSS(recentPosts.map(post => ({ ...post, title: post.titleEn || post.title, excerpt: post.excerptEn || post.excerpt })), baseUrl, 'en')
 
   return c.body(rssXml, 200, {
     'Content-Type': 'application/xml',
@@ -885,25 +806,8 @@ blogRoutes.get('/sitemap.xml', async (c) => {
 async function getAllPublishedPostsForSitemap(
   db: ReturnType<typeof createDb>
 ): Promise<{ slug: string; publishedAt: string | null; updatedAt: string | null }[]> {
-  const pageSize = 200
-  let page = 1
-  const allPosts: { slug: string; publishedAt: string | null; updatedAt: string | null }[] = []
-
-  while (true) {
-    const result = await getPublishedPosts(db, { page, limit: pageSize })
-    allPosts.push(...result.posts.map((post) => ({
-      slug: post.slug,
-      publishedAt: post.publishedAt,
-      updatedAt: post.updatedAt,
-    })))
-
-    if (result.posts.length < pageSize || allPosts.length >= result.total) {
-      break
-    }
-    page += 1
-  }
-
-  return allPosts
+  return db.select({ slug: posts.slug, publishedAt: posts.publishedAt, updatedAt: posts.updatedAt })
+    .from(posts).where(and(eq(posts.status, 'published'), eq(posts.hidden, false)))
 }
 
 async function getAdjacentPost(

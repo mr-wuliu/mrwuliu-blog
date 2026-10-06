@@ -3,13 +3,10 @@ import { createDb } from '../db'
 import { posts, postStats, postViewEvents } from '../db/schema'
 import { eq, sql, gte, desc, and } from 'drizzle-orm'
 import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
-import { countWords } from '../utils/word-count'
+import { z } from 'zod'
+import { zValidator } from '@hono/zod-validator'
+import { positiveInteger } from '../utils/validation'
 
-function wordCount(html: string | null): number {
-  if (!html) return 0
-  const text = html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
-  return countWords(text)
-}
 
 type Bindings = {
   DB: D1Database
@@ -23,13 +20,12 @@ type Bindings = {
 const analyticsRoutes = new Hono<{ Bindings: Bindings }>()
 
 // ── Scroll tracking: client sends scroll depth ──
-analyticsRoutes.post('/scroll', async (c) => {
-  const body = await c.req.json<{ postId?: string; scrollDepth?: number }>().catch(() => ({ postId: undefined, scrollDepth: undefined }))
-  const postId = body.postId
-  const scrollDepth = body.scrollDepth
-  if (!postId || typeof scrollDepth !== 'number' || scrollDepth < 0) {
-    return c.json({ ok: false }, 400)
-  }
+const scrollSchema = z.object({
+  postId: z.string().uuid(), scrollDepth: z.number().finite().min(0).max(100),
+  lang: z.enum(['zh', 'en']).default('zh'),
+})
+analyticsRoutes.post('/scroll', zValidator('json', scrollSchema), async (c) => {
+  const { postId, scrollDepth, lang } = c.req.valid('json')
   const depth = Math.min(Math.round(scrollDepth), 100)
   const ip = getClientIp(c.req.raw.headers)
   const userAgent = c.req.header('user-agent') || 'unknown'
@@ -43,6 +39,7 @@ analyticsRoutes.post('/scroll', async (c) => {
     .where(
       and(
         eq(postViewEvents.postId, postId),
+        eq(postViewEvents.lang, lang),
         eq(postViewEvents.ipHash, ipHash),
         eq(postViewEvents.userAgentHash, userAgentHash),
         sql`${postViewEvents.viewDate} = date('now')`,
@@ -65,13 +62,13 @@ analyticsRoutes.post('/scroll', async (c) => {
 
 // ── Overview: aggregate site trends (kept for compatibility) ──
 analyticsRoutes.get('/trends', async (c) => {
-  const days = Math.min(Math.max(Number(c.req.query('days')) || 30, 1), 365)
+  const days = positiveInteger(c.req.query('days'), 30, 365)
   const db = createDb(c.env.DB)
 
   const rows = await db
     .select({
       date: postViewEvents.viewDate,
-      views: sql<number>`count(*)`,
+      views: sql<number>`sum(${postViewEvents.viewCount})`,
       uniqueVisitors: sql<number>`count(distinct ${postViewEvents.ipHash})`,
     })
     .from(postViewEvents)
@@ -89,7 +86,7 @@ analyticsRoutes.get('/trends', async (c) => {
 
 // ── Overview v2: post table with zh/en split, MoM, scroll metrics ──
 analyticsRoutes.get('/posts-table', async (c) => {
-  const days = Math.min(Math.max(Number(c.req.query('days')) || 30, 1), 365)
+  const days = positiveInteger(c.req.query('days'), 30, 365)
   const db = createDb(c.env.DB)
 
   // All published posts with their stats
@@ -98,8 +95,8 @@ analyticsRoutes.get('/posts-table', async (c) => {
       id: posts.id,
       title: posts.title,
       slug: posts.slug,
-      content: posts.content,
-      contentEn: posts.contentEn,
+      wordCount: posts.wordCount,
+      wordCountEn: posts.wordCountEn,
       publishedAt: posts.publishedAt,
       totalViews: sql<number>`coalesce(${postStats.viewCount}, 0)`,
       totalUniqueViews: sql<number>`coalesce(${postStats.uniqueViewCount}, 0)`,
@@ -114,7 +111,7 @@ analyticsRoutes.get('/posts-table', async (c) => {
     .select({
       postId: postViewEvents.postId,
       lang: postViewEvents.lang,
-      views: sql<number>`count(*)`,
+      views: sql<number>`sum(${postViewEvents.viewCount})`,
     })
     .from(postViewEvents)
     .where(
@@ -129,7 +126,7 @@ analyticsRoutes.get('/posts-table', async (c) => {
   const prevPeriodViews = await db
     .select({
       postId: postViewEvents.postId,
-      views: sql<number>`count(*)`,
+      views: sql<number>`sum(${postViewEvents.viewCount})`,
     })
     .from(postViewEvents)
     .where(
@@ -145,9 +142,9 @@ analyticsRoutes.get('/posts-table', async (c) => {
   const scrollStats = await db
     .select({
       postId: postViewEvents.postId,
-      avgDepth: sql<number>`round(avg(coalesce(${postViewEvents.scrollDepth}, 0)), 1)`,
+      avgDepth: sql<number>`round(avg(${postViewEvents.scrollDepth}), 1)`,
       completedCount: sql<number>`sum(case when coalesce(${postViewEvents.scrollDepth}, 0) >= 90 then 1 else 0 end)`,
-      totalCount: sql<number>`count(*)`,
+      totalCount: sql<number>`count(${postViewEvents.scrollDepth})`,
     })
     .from(postViewEvents)
     .where(
@@ -172,7 +169,7 @@ analyticsRoutes.get('/posts-table', async (c) => {
   const scrollMap = new Map<string, { avgDepth: number; completionRate: number }>()
   for (const r of scrollStats) {
     scrollMap.set(r.postId, {
-      avgDepth: r.avgDepth,
+      avgDepth: r.avgDepth ?? 0,
       completionRate: r.totalCount > 0 ? Math.round((r.completedCount / r.totalCount) * 100) : 0,
     })
   }
@@ -189,14 +186,14 @@ analyticsRoutes.get('/posts-table', async (c) => {
       title: p.title,
       slug: p.slug,
       publishedAt: p.publishedAt,
-      wordCount: wordCount(p.content) + wordCount(p.contentEn),
+      wordCount: p.wordCount + p.wordCountEn,
       totalViews: p.totalViews,
       totalUniqueViews: p.totalUniqueViews,
       zhViews: langSplit['zh'] ?? 0,
       enViews: langSplit['en'] ?? 0,
       periodViews: currentPeriodTotal,
       mom,
-      avgReadPercent: scroll.avgDepth,
+      avgReadPercent: scroll.avgDepth ?? 0,
       completionRate: scroll.completionRate,
     }
   })
@@ -207,7 +204,7 @@ analyticsRoutes.get('/posts-table', async (c) => {
 // ── Post detail report ──
 analyticsRoutes.get('/post/:postId/report', async (c) => {
   const postId = c.req.param('postId')
-  const days = Math.min(Math.max(Number(c.req.query('days')) || 30, 1), 365)
+  const days = positiveInteger(c.req.query('days'), 30, 365)
   const db = createDb(c.env.DB)
 
   // Post info
@@ -216,8 +213,8 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
     title: posts.title,
     titleEn: posts.titleEn,
     slug: posts.slug,
-    content: posts.content,
-    contentEn: posts.contentEn,
+    wordCount: posts.wordCount,
+    wordCountEn: posts.wordCountEn,
     publishedAt: posts.publishedAt,
     totalViews: sql<number>`coalesce(${postStats.viewCount}, 0)`,
     totalUniqueViews: sql<number>`coalesce(${postStats.uniqueViewCount}, 0)`,
@@ -232,7 +229,7 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
   const trends = await db
     .select({
       date: postViewEvents.viewDate,
-      views: sql<number>`count(*)`,
+      views: sql<number>`sum(${postViewEvents.viewCount})`,
       uniqueVisitors: sql<number>`count(distinct ${postViewEvents.ipHash})`,
     })
     .from(postViewEvents)
@@ -250,41 +247,43 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
   const referrers = await db
     .select({
       host: sql<string>`coalesce(${postViewEvents.referrerHost}, 'direct')`,
-      count: sql<number>`count(*)`,
+      count: sql<number>`sum(${postViewEvents.viewCount})`,
     })
     .from(postViewEvents)
     .where(
       and(
         eq(postViewEvents.postId, postId),
         gte(postViewEvents.viewDate, sql`date('now', '-' || ${days} || ' day')`),
+        eq(postViewEvents.isBot, false),
       ),
     )
     .groupBy(postViewEvents.referrerHost)
-    .orderBy(desc(sql`count(*)`))
+    .orderBy(desc(sql`sum(${postViewEvents.viewCount})`))
     .limit(10)
 
   // Geographic distribution
   const geo = await db
     .select({
       country: sql<string>`coalesce(${postViewEvents.country}, 'unknown')`,
-      count: sql<number>`count(*)`,
+      count: sql<number>`sum(${postViewEvents.viewCount})`,
     })
     .from(postViewEvents)
     .where(
       and(
         eq(postViewEvents.postId, postId),
         gte(postViewEvents.viewDate, sql`date('now', '-' || ${days} || ' day')`),
+        eq(postViewEvents.isBot, false),
       ),
     )
     .groupBy(postViewEvents.country)
-    .orderBy(desc(sql`count(*)`))
+    .orderBy(desc(sql`sum(${postViewEvents.viewCount})`))
     .limit(20)
 
   // Bot vs human
   const botStats = await db
     .select({
       isBot: postViewEvents.isBot,
-      count: sql<number>`count(*)`,
+      count: sql<number>`sum(${postViewEvents.viewCount})`,
     })
     .from(postViewEvents)
     .where(
@@ -299,7 +298,7 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
   const langStats = await db
     .select({
       lang: sql<string>`coalesce(${postViewEvents.lang}, 'unknown')`,
-      count: sql<number>`count(*)`,
+      count: sql<number>`sum(${postViewEvents.viewCount})`,
     })
     .from(postViewEvents)
     .where(
@@ -314,10 +313,10 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
   // Scroll stats
   const scrollAgg = await db
     .select({
-      avgDepth: sql<number>`round(avg(coalesce(${postViewEvents.scrollDepth}, 0)), 1)`,
+      avgDepth: sql<number>`round(avg(${postViewEvents.scrollDepth}), 1)`,
       completedCount: sql<number>`sum(case when coalesce(${postViewEvents.scrollDepth}, 0) >= 90 then 1 else 0 end)`,
       hasDataCount: sql<number>`sum(case when ${postViewEvents.scrollDepth} is not null then 1 else 0 end)`,
-      totalCount: sql<number>`count(*)`,
+      totalCount: sql<number>`count(${postViewEvents.scrollDepth})`,
     })
     .from(postViewEvents)
     .where(
@@ -337,7 +336,7 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
       titleEn: post.titleEn,
       slug: post.slug,
       publishedAt: post.publishedAt,
-      wordCount: wordCount(post.content) + wordCount(post.contentEn),
+      wordCount: post.wordCount + post.wordCountEn,
       totalViews: post.totalViews,
       totalUniqueViews: post.totalUniqueViews,
     },
@@ -350,7 +349,7 @@ analyticsRoutes.get('/post/:postId/report', async (c) => {
     },
     langStats,
     scroll: {
-      avgReadPercent: scroll.avgDepth,
+      avgReadPercent: scroll.avgDepth ?? 0,
       completionRate: scroll.hasDataCount > 0
         ? Math.round((scroll.completedCount / scroll.hasDataCount) * 100)
         : 0,

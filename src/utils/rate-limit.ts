@@ -15,20 +15,19 @@ export async function checkRateLimit(
   // Rate-limit rows are never deleted otherwise — prune old ones opportunistically.
   if (Math.random() < 0.1) {
     try {
-      await db.run(sql`DELETE FROM rate_limits WHERE created_at < datetime('now', '-1 hour')`)
+      await db.run(sql`DELETE FROM rate_limits WHERE datetime(created_at) < datetime('now', '-1 hour')`)
     } catch (err) {
       console.error('[rate-limit] prune failed:', err)
     }
   }
 
-  const rows = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(rateLimits)
-    .where(sql`${rateLimits.ip} = ${ip} AND ${rateLimits.action} = ${action} AND ${rateLimits.createdAt} > datetime('now', ${windowStart})`)
-
-  const count = rows[0]?.count ?? 0
-  if (count >= limit) return false
-
-  await db.insert(rateLimits).values({ ip, action })
-  return true
+  // A single SQLite write serializes the decision and insertion across requests.
+  const result = await db.run(sql`
+    INSERT INTO rate_limits (ip, action)
+    SELECT ${ip}, ${action}
+    WHERE (SELECT count(*) FROM rate_limits
+      WHERE ip = ${ip} AND action = ${action}
+      AND datetime(created_at) > datetime('now', ${windowStart})) < ${limit}
+  `)
+  return result.meta.changes === 1
 }

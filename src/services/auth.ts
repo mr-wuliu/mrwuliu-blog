@@ -57,13 +57,11 @@ export async function generateOtp(
   const expiresAt = new Date(Date.now() + OTP_TTL * 1000).toISOString()
   const id = crypto.randomUUID()
 
-  await db.insert(emailOtps).values({
-    id,
-    email: email.toLowerCase(),
-    codeHash,
-    expiresAt,
-    attempts: 0,
-  })
+  await db.batch([
+    db.update(emailOtps).set({ consumedAt: new Date().toISOString() })
+      .where(and(eq(emailOtps.email, email.toLowerCase()), isNull(emailOtps.consumedAt))),
+    db.insert(emailOtps).values({ id, email: email.toLowerCase(), codeHash, expiresAt, attempts: 0, createdAt: new Date().toISOString() }),
+  ])
 
   console.log(`[auth] otp generated email=${email} id=${id} expires=${expiresAt}`)
   return { code, expiresAt }
@@ -106,8 +104,8 @@ export async function verifyOtp(
   if (codeHash !== otp.codeHash) {
     await db
       .update(emailOtps)
-      .set({ attempts: otp.attempts + 1 })
-      .where(eq(emailOtps.id, otp.id))
+      .set({ attempts: sql`${emailOtps.attempts} + 1` })
+      .where(and(eq(emailOtps.id, otp.id), isNull(emailOtps.consumedAt), lt(emailOtps.attempts, OTP_MAX_ATTEMPTS)))
     console.warn(`[auth] otp verify hash-mismatch email=${email} id=${otp.id} input=${codeHash.slice(0, 8)} stored=${otp.codeHash.slice(0, 8)}`)
     return { valid: false }
   }
@@ -115,7 +113,7 @@ export async function verifyOtp(
   const consumed = await db
     .update(emailOtps)
     .set({ consumedAt: now })
-    .where(and(eq(emailOtps.id, otp.id), isNull(emailOtps.consumedAt)))
+    .where(and(eq(emailOtps.id, otp.id), isNull(emailOtps.consumedAt), lt(emailOtps.attempts, OTP_MAX_ATTEMPTS)))
     .returning({ id: emailOtps.id })
 
   if (consumed.length === 0) {
@@ -291,9 +289,7 @@ export async function getSessionUser(
   accessToken: string | undefined,
   refreshToken: string | undefined,
 ): Promise<{ user: SessionUser; newTokens?: AuthTokens } | null> {
-  if (!accessToken) return null
-
-  const claims = await verifyJwt(accessToken, env.JWT_SECRET)
+  const claims = accessToken ? await verifyJwt(accessToken, env.JWT_SECRET) : null
   if (!claims || claims.type !== 'access') {
     if (!refreshToken) return null
     const newTokens = await rotateRefreshToken(db, env, refreshToken, {})

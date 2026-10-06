@@ -1,3 +1,4 @@
+import { restoreMermaidSources } from '../lib/mermaid-pre-render'
 import { useRef, useCallback, useEffect, useState } from 'react'
 import { useEditor, EditorContent, ReactNodeViewRenderer } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -475,7 +476,7 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
       Placeholder.configure({ placeholder: '开始写作...' }),
       CustomMathematics,
     ],
-    content,
+    content: restoreMermaidSources(content),
     onUpdate: ({ editor: e }) => {
       onChange(e.getHTML())
     },

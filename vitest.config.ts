@@ -12,6 +12,8 @@ export default defineConfig({
         wrangler: { configPath: "./wrangler.toml" },
         miniflare: {
           bindings: {
+            ENVIRONMENT: "test",
+            DISABLE_API_AUTH: "false",
             TEST_MIGRATIONS: migrations,
             JWT_SECRET: "test-jwt-secret-for-integration-tests",
             ADMIN_USERNAME: "testadmin",

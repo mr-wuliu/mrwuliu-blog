@@ -1,3 +1,4 @@
+import { commentText } from '../utils/html'
 import type { FC } from 'hono/jsx'
 import type { InferSelectModel } from 'drizzle-orm'
 import Layout from './layout'
@@ -36,7 +37,7 @@ type Comment = {
   avatarSeed: string | null
 }
 
-interface PostWithTags extends Omit<Post, never> {
+interface PostWithTags extends Omit<Post, 'titleEn' | 'contentEn' | 'excerptEn' | 'wordCount' | 'wordCountEn'> {
   tags: Tag[]
 }
 
@@ -489,13 +490,21 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
 
   const loginUrl = langPath(`/login?next=${encodeURIComponent(langPath(`/posts/${postSlug}`, lang))}`, lang)
 
-  const topLevelComments = comments.filter(c => !c.parentId)
-  const repliesByParent: Record<string, Comment[]> = {}
-  for (const c of comments) {
-    if (c.parentId) {
-      if (!repliesByParent[c.parentId]) repliesByParent[c.parentId] = []
-      repliesByParent[c.parentId].push(c)
+  const byId = new Map(comments.map(comment => [comment.id, comment]))
+  function rootId(comment: Comment): string {
+    const seen = new Set<string>()
+    let root = comment
+    while (root.parentId && byId.has(root.parentId) && !seen.has(root.parentId)) {
+      seen.add(root.id)
+      root = byId.get(root.parentId)!
     }
+    return root.id
+  }
+  const topLevelComments = comments.filter(comment => rootId(comment) === comment.id)
+  const repliesByParent: Record<string, Comment[]> = {}
+  for (const comment of comments) {
+    const root = rootId(comment)
+    if (root !== comment.id) (repliesByParent[root] ??= []).push(comment)
   }
 
   return (
@@ -531,7 +540,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
                     <span class="text-sm font-bold text-black">{c.authorName}</span>
                     <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(c.createdAt, lang)}</span>
                   </div>
-                  <div class="text-sm opacity-70 leading-relaxed">{c.content}</div>
+                  <div class="text-sm opacity-70 leading-relaxed">{commentText(c.content)}</div>
                   <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-2" data-reply-to={c.id} data-reply-name={c.authorName}>{replyLabel}</button>
                 </div>
               </div>
@@ -545,8 +554,8 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
                           <span class="text-sm font-bold text-black">{r.authorName}</span>
                           <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(r.createdAt, lang)}</span>
                         </div>
-                        <div class="text-sm opacity-70 leading-relaxed">→ {c.authorName}: {r.content}</div>
-                        <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-1" data-reply-to={c.id} data-reply-name={r.authorName}>{replyLabel}</button>
+                        <div class="text-sm opacity-70 leading-relaxed">→ {byId.get(r.parentId ?? '')?.authorName ?? c.authorName}: {commentText(r.content)}</div>
+                        <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-1" data-reply-to={r.id} data-reply-name={r.authorName}>{replyLabel}</button>
                       </div>
                     </div>
                   ))}
@@ -682,7 +691,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   var isLoggedIn = false;
   var loginPrompt = document.getElementById('comment-login-required');
   var detailsEl = form.closest('details');
-  fetch('/auth/me', { credentials: 'include' }).then(function(r) { return r.json() }).then(function(d) {
+  __getSession().then(function(d) {
     if (d && d.user) {
       isLoggedIn = true;
       if (loginPrompt) loginPrompt.classList.add('hidden');
@@ -1098,7 +1107,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
   }
 
   function send(depth) {
-    var payload = JSON.stringify({ postId: postId, scrollDepth: depth });
+    var payload = JSON.stringify({ postId: postId, scrollDepth: depth, lang: document.documentElement.lang === 'en' ? 'en' : 'zh' });
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/analytics/scroll', new Blob([payload], { type: 'application/json' }));
     } else {

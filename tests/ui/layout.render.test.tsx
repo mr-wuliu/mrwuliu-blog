@@ -96,22 +96,17 @@ describe("Lang toggle button stability", () => {
     expect(html).not.toContain('lang-toggle-thumb lang-toggle-thumb-end">EN');
   });
 
-  it("click handler uses __animateToggle instead of __applyLang to avoid double animation", () => {
+  it("language switching navigates to a complete document with matching SEO metadata", () => {
     const html = renderToString(
-      <Layout title="Test" lang="en" currentPath="/">
+      <Layout title="Test" lang="en" currentPath="/posts/test-post">
         <div>body</div>
       </Layout>
     );
-
-    // The click handler should call __animateToggle for visual feedback
-    expect(html).toContain("__animateToggle");
-    // __applyLangPage should NOT call __applyLang (removed to prevent double animation)
-    // Verify __applyLangPage does not contain the old __applyLang(nl) call
-    const applyLangPageMatch = html.match(/function __applyLangPage[^}]+}/s);
-    // The function should set __cur and lang directly instead of calling __applyLang
-    expect(applyLangPageMatch).toBeTruthy();
-    // __applyLangPage should NOT call __applyLang
-    expect(applyLangPageMatch![0]).not.toMatch(/__applyLang\(nl\)/);
+    expect(html).toContain('href="/posts/test-post" class="lang-toggle"');
+    expect(html).toContain('<html lang="en"');
+    expect(html).toContain('hreflang="en"');
+    expect(html).toContain('hreflang="zh-CN"');
+    expect(html).not.toContain('__applyLangPage');
   });
 
   it("toggle href points to opposite language for zh", () => {

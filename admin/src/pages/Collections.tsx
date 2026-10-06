@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { api } from '../lib/api'
+import { api, allPosts as fetchAllPosts } from '../lib/api'
 
 interface Collection {
   id: string
@@ -33,6 +33,7 @@ export default function Collections() {
   const { t } = useTranslation()
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<Collection | null>(null)
@@ -51,10 +52,13 @@ export default function Collections() {
   const [showPostSelector, setShowPostSelector] = useState(false)
 
   const fetchCollections = async () => {
+    setError('')
+    setLoading(true)
     try {
       const data = await api.get<{ collections: Collection[] }>('/collections')
       setCollections(data.collections)
     } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.loadFailed'))
       console.error(err)
     } finally {
       setLoading(false)
@@ -99,10 +103,10 @@ export default function Collections() {
   const handleSave = async () => {
     const body = {
       name,
-      nameEn: nameEn || undefined,
+      nameEn: nameEn,
       slug: slug || generateSlug(name),
-      description: description || undefined,
-      descriptionEn: descriptionEn || undefined,
+      description: description,
+      descriptionEn: descriptionEn,
       sortOrder,
       status,
     }
@@ -135,10 +139,10 @@ export default function Collections() {
     try {
       const [colData, postsData] = await Promise.all([
         api.get<{ collection: Collection & { posts: PostInCollection[] } }>(`/collections/${collection.id}`),
-        api.get<{ posts: Post[] }>('/posts?limit=100'),
+        fetchAllPosts<Post>(),
       ])
       setCollectionPosts(colData.collection.posts || [])
-      setAllPosts(postsData.posts || [])
+      setAllPosts(postsData)
     } catch (err) {
       console.error(err)
     }
@@ -198,6 +202,8 @@ export default function Collections() {
   const availablePosts = allPosts.filter(
     (p) => !collectionPosts.some((cp) => cp.id === p.id)
   )
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={fetchCollections}>{t('common.retry')}</button></div>
 
   return (
     <div className="overflow-y-auto h-full p-8">

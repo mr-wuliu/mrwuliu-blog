@@ -14,6 +14,7 @@ export default function SiteConfig() {
   const [content, setContent] = useState('')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [error, setError] = useState('')
 
   const [avatar, setAvatar] = useState('')
   const [bio, setBio] = useState('')
@@ -28,44 +29,24 @@ export default function SiteConfig() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    api.get<SiteConfigData>('/site-config/about')
-      .then((data) => {
-        if (data) {
-          setContent(data.value || '')
-        }
-        setLoaded(true)
-      })
-      .catch((err) => {
-        console.error('Failed to load about content', err)
-        setLoaded(true)
-      })
-
-    // Optional keys: unset keys legitimately 404, so failures fall back to defaults.
-    Promise.all([
-      api.get<SiteConfigData>('/site-config/author_avatar').catch(() => null),
-      api.get<SiteConfigData>('/site-config/author_bio').catch(() => null),
-      api.get<SiteConfigData>('/site-config/author_github').catch(() => null),
-      api.get<SiteConfigData>('/site-config/author_email').catch(() => null),
-      api.get<SiteConfigData>('/site-config/comment_anonymous_auto_approve').catch(() => null),
-      api.get<SiteConfigData>('/site-config/comment_registered_auto_approve').catch(() => null),
-      api.get<SiteConfigData>('/site-config/comment_auto_approve').catch(() => null),
-    ]).then(([avatarData, bioData, githubData, emailData, anonData, regData, legacyData]) => {
-      setAvatar(avatarData?.value || '')
-      setBio(bioData?.value || '')
-      setGithub(githubData?.value || '')
-      setEmail(emailData?.value || '')
-      // Migrate from legacy single toggle if new keys don't exist yet
-      if (anonData) {
-        setAnonAutoApprove(anonData.value === 'true')
-      } else if (legacyData && legacyData.value === 'true') {
-        setAnonAutoApprove(true)
-      }
-      if (regData) {
-        setRegAutoApprove(regData.value === 'true')
-      } else if (legacyData && legacyData.value === 'true') {
-        setRegAutoApprove(true)
-      }
+    const controller = new AbortController()
+    api.get<SiteConfigData[]>('/site-config', controller.signal).then(data => {
+      if (controller.signal.aborted) return
+      const values = new Map(data.map(item => [item.key, item.value]))
+      setContent(values.get('about') ?? '')
+      setAvatar(values.get('author_avatar') ?? '')
+      setBio(values.get('author_bio') ?? '')
+      setGithub(values.get('author_github') ?? '')
+      setEmail(values.get('author_email') ?? '')
+      const legacy = values.get('comment_auto_approve') === 'true'
+      setAnonAutoApprove(values.has('comment_anonymous_auto_approve') ? values.get('comment_anonymous_auto_approve') === 'true' : legacy)
+      setRegAutoApprove(values.has('comment_registered_auto_approve') ? values.get('comment_registered_auto_approve') === 'true' : legacy || !values.has('comment_auto_approve'))
+      setLoaded(true)
+    }).catch(err => {
+      if (controller.signal.aborted) return
+      setError(err instanceof Error ? err.message : t('common.loadFailed'))
     })
+    return () => controller.abort()
   }, [])
 
   const handleAvatarUpload = useCallback(async (file: File) => {
@@ -120,6 +101,8 @@ export default function SiteConfig() {
       setSaving(false)
     }
   }
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={() => window.location.reload()}>{t('common.retry')}</button></div>
 
   if (!loaded) {
     return <div className="p-8 text-sm opacity-50">{t('siteConfig.loading')}</div>

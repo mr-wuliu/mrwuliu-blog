@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { api } from '../lib/api'
@@ -57,25 +57,33 @@ export default function Posts() {
   const [search, setSearch] = useState('')
   const [posts, setPosts] = useState<Post[]>([])
   const [total, setTotal] = useState(0)
+  const [error, setError] = useState('')
+  const requestGeneration = useRef(0)
   const [loading, setLoading] = useState(true)
 
   const fetchPosts = useCallback(async () => {
+    const generation = ++requestGeneration.current
+    setError('')
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' })
       if (status) params.set('status', status)
+      if (search) params.set('search', search)
       const data = await api.get<PostsResponse>(`/posts?${params.toString()}`)
+      if (generation !== requestGeneration.current) return
       setPosts(data.posts)
       setTotal(data.total)
     } catch (err) {
+      if (generation !== requestGeneration.current) return
+      setError(err instanceof Error ? err.message : t('common.loadFailed'))
       // List falls back to the empty state below; logged for diagnosis.
       console.error('Failed to load posts', err)
       setPosts([])
       setTotal(0)
     } finally {
-      setLoading(false)
+      if (generation === requestGeneration.current) setLoading(false)
     }
-  }, [page, status])
+  }, [page, status, search])
 
   useEffect(() => {
     sessionStorage.setItem('posts-page', String(page))
@@ -117,9 +125,7 @@ export default function Posts() {
     }
   }
 
-  const filtered = search
-    ? posts.filter((p) => p.title.includes(search))
-    : posts
+  const filtered = posts
 
   const totalPages = Math.max(1, Math.ceil(total / 20))
 
@@ -128,6 +134,8 @@ export default function Posts() {
     { label: t('posts.publishedTab'), value: 'published' },
     { label: t('posts.draftTab'), value: 'draft' },
   ]
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={() => window.location.reload()}>{t('common.retry')}</button></div>
 
   return (
     <div className="overflow-y-auto h-full p-8">
@@ -164,7 +172,7 @@ export default function Posts() {
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           placeholder={t('posts.searchPlaceholder')}
           className="px-4 py-2.5 border border-black text-sm focus:outline-none focus:border-black w-64 placeholder-black placeholder-opacity-30"
         />

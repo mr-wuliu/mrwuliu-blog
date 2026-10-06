@@ -25,7 +25,9 @@
     "confirmDelete": "Confirm delete? This cannot be undone.",
     "previous": "Previous",
     "next": "Next",
-    "pageInfo": "Page {{page}} of {{total}}"
+    "pageInfo": "Page {{page}} of {{total}}",
+    "loadFailed": "Could not load data. Please try again.",
+    "retry": "Retry"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -282,7 +284,6 @@
     "postDetail": "Post Analytics",
     "backToOverview": "← Back to Overview",
     "totalViews": "Total Views",
-    "uniqueVisitors": "Unique Visitors",
     "wordCount": "Word Count",
     "avgRead": "Avg Read",
     "mom": "MoM",

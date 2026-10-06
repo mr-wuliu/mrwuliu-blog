@@ -29,7 +29,7 @@ function refreshSession(): Promise<boolean> {
 function redirectToLogin(): void {
   // Loop guard: never bounce again if we are already on (or headed to) the login page.
   if (window.location.pathname.startsWith('/login')) return
-  window.location.assign(LOGIN_PATH)
+  window.location.assign(LOGIN_PATH + '?next=' + encodeURIComponent(window.location.pathname + window.location.search))
 }
 
 async function readErrorMessage(response: Response, fallback: string): Promise<string> {
@@ -94,7 +94,7 @@ async function uploadFile<T>(path: string, file: File, retried = false): Promise
 }
 
 export const api = {
-  get: <T>(path: string) => request<T>(path),
+  get: <T>(path: string, signal?: AbortSignal) => request<T>(path, { signal }),
   post: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'POST', body: JSON.stringify(body) }),
   put: <T>(path: string, body: unknown) =>
@@ -103,4 +103,13 @@ export const api = {
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   upload: <T>(path: string, file: File) => uploadFile<T>(path, file),
+}
+
+export async function allPosts<T extends { id: string }>(signal?: AbortSignal): Promise<T[]> {
+  const result: T[] = []
+  for (let page = 1; ; page++) {
+    const data = await api.get<{ posts: T[]; total: number }>(`/posts?page=${page}&limit=100`, signal)
+    result.push(...data.posts)
+    if (!data.posts.length || result.length >= data.total) return result
+  }
 }

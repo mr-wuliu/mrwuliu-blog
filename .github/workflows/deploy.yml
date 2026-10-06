@@ -27,14 +27,11 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      - name: API Tests
-        run: npm run test:api
+      - name: Tests
+        run: npm test
 
-      - name: UI Render Tests
-        run: npm run test:ui
-
-      - name: Build admin SPA
-        run: cd admin && npm run build
+      - name: Build public CSS and admin SPA
+        run: npm run build:deploy
 
       - name: Validate Cloudflare auth
         run: npx wrangler whoami
@@ -43,39 +40,31 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Apply D1 migrations (production)
-        run: npx wrangler d1 migrations apply DB --remote --env production
-        continue-on-error: true
+        run: npm run db:migrate:prod
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-      - name: Set API_KEY secret
-        run: echo "${{ secrets.API_KEY }}" | npx wrangler secret put API_KEY --env production
+      - name: Configure Worker secrets
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Set RESEND_API_KEY secret
-        run: echo "${{ secrets.RESEND_API_KEY }}" | npx wrangler secret put RESEND_API_KEY --env production
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Set MAIL_DOMAIN secret
-        run: echo "${{ secrets.MAIL_DOMAIN }}" | npx wrangler secret put MAIL_DOMAIN --env production
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-      - name: Set JWT_SECRET secret
-        env:
+          API_KEY: ${{ secrets.API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAIL_DOMAIN: ${{ secrets.MAIL_DOMAIN }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          ACCESS_TEAM_DOMAIN: ${{ secrets.ACCESS_TEAM_DOMAIN }}
+          ACCESS_AUD: ${{ secrets.ACCESS_AUD }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          if [ -n "$JWT_SECRET" ]; then
-            printf '%s' "$JWT_SECRET" | npx wrangler secret put JWT_SECRET --env production
+          if { [ -n "$ACCESS_TEAM_DOMAIN" ] && [ -z "$ACCESS_AUD" ]; } || { [ -z "$ACCESS_TEAM_DOMAIN" ] && [ -n "$ACCESS_AUD" ]; }; then
+            echo "ACCESS_TEAM_DOMAIN and ACCESS_AUD must be configured together."
+            exit 1
           fi
+          for name in API_KEY RESEND_API_KEY MAIL_DOMAIN JWT_SECRET ACCESS_TEAM_DOMAIN ACCESS_AUD; do
+            if [ -n "${!name}" ]; then
+              printf '%s' "${!name}" | npx wrangler secret put "$name" --env production
+            fi
+          done
 
       - name: Deploy to Cloudflare Workers
         run: npx wrangler deploy --env production

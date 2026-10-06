@@ -1,14 +1,15 @@
 import type { ReactNodeViewProps } from '@tiptap/react'
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react'
 import { CODE_BLOCK_LANGUAGES, normalizeCodeBlockLanguage } from './codeBlockLanguages'
-import MermaidNodeView from './MermaidNodeView'
+import { lazy, Suspense } from 'react'
+const MermaidNodeView = lazy(() => import('./MermaidNodeView'))
 
 export default function CodeBlockNodeView(props: ReactNodeViewProps) {
   const currentLang = normalizeCodeBlockLanguage((props.node.attrs.language as string) || '')
   const { updateAttributes } = props
 
   if (currentLang === 'mermaid') {
-    return <MermaidNodeView {...props} />
+    return <Suspense fallback={<pre>{props.node.textContent}</pre>}><MermaidNodeView {...props} /></Suspense>
   }
 
   return (

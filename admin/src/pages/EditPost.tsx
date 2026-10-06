@@ -92,12 +92,21 @@ export default function EditPost() {
   }, [])
 
   useEffect(() => {
-    if (!id) return
+    if (!id) {
+      setTitle(''); setSlug(''); setSlugManuallyEdited(false); setExcerpt(''); setTagsInput('')
+      setContent(''); setContentEn(''); setTitleEn(''); setExcerptEn('')
+      setHidden(false); setPinned(false); setPostCollections([]); setLoadedPostId(undefined)
+      setLoadError(null); setLoading(false); setEditorDirty(false)
+      return
+    }
+    let cancelled = false
     setLoading(true)
     setLoadError(null)
     api.get<PostData>(`/posts/${id}`).then((post) => {
+      if (cancelled) return
       setTitle(post.title)
       setSlug(post.slug)
+      setSlugManuallyEdited(true)
       setExcerpt(post.excerpt ?? '')
       setTagsInput(post.tags.map((tag) => tag.name).join(', '))
       setContent(post.content)
@@ -111,17 +120,19 @@ export default function EditPost() {
       originalRef.current = { title: post.title, content: post.content, slug: post.slug, excerpt: post.excerpt ?? '', tagsInput: post.tags.map((tag) => tag.name).join(', '), hidden: post.hidden ?? false, pinned: post.pinned ?? false, titleEn: post.titleEn ?? '', excerptEn: post.excerptEn ?? '', contentEn: post.contentEn ?? '' }
       setLoading(false)
     }).catch((err) => {
+      if (cancelled) return
       console.error('Failed to load post', err)
       setLoadError(err instanceof Error && err.message ? err.message : 'unknown error')
       setLoading(false)
     })
     api.get<{ collections: { id: string; name: string; nameEn: string | null; slug: string; posts: { id: string; title: string; slug: string }[] }[] }>(`/collections/by-post/${id}`).then((res) => {
-      setPostCollections(res.collections)
+      if (!cancelled) setPostCollections(res.collections)
     }).catch((err) => {
       // Collections sidebar is optional enrichment — the editor works without it.
       console.error('Failed to load post collections', err)
-      setPostCollections([])
+      if (!cancelled) setPostCollections([])
     })
+    return () => { cancelled = true }
   }, [id])
 
   useEffect(() => {
@@ -149,6 +160,7 @@ export default function EditPost() {
   }, [])
 
   const handleSave = useCallback(async (status: 'draft' | 'published') => {
+    if (loading || (isEdit && loadedPostId !== id)) return
     setSaving(true)
     setSaveError(null)
     const tags = tagsInput
@@ -165,12 +177,12 @@ export default function EditPost() {
         status,
         tags,
         slug: slug || undefined,
-        excerpt: excerpt || undefined,
+        excerpt: excerpt,
         hidden,
         pinned,
-        titleEn: titleEn || undefined,
-        contentEn: renderedContentEn || undefined,
-        excerptEn: excerptEn || undefined,
+        titleEn: titleEn,
+        contentEn: renderedContentEn ?? '',
+        excerptEn: excerptEn,
       }
 
       if (isEdit && id) {
@@ -188,9 +200,9 @@ export default function EditPost() {
     } finally {
       setSaving(false)
     }
-  }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn, t])
+  }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn, t, loading, loadedPostId])
 
-  if (loading && !title) {
+  if (loading || (!loadError && isEdit && loadedPostId !== id)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-sm opacity-50">{t('editPost.loading')}</p>

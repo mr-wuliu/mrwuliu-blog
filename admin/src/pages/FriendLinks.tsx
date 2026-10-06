@@ -20,6 +20,7 @@ export default function FriendLinks() {
   const { t } = useTranslation()
   const [links, setLinks] = useState<FriendLink[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [editing, setEditing] = useState<FriendLink | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -33,10 +34,13 @@ export default function FriendLinks() {
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
 
   const fetchLinks = async () => {
+    setError('')
+    setLoading(true)
     try {
       const data = await api.get<FriendLink[]>('/friend-links')
       setLinks(data)
     } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.loadFailed'))
       console.error(err)
     } finally {
       setLoading(false)
@@ -76,11 +80,11 @@ export default function FriendLinks() {
   const handleSave = async () => {
     const body = {
       name,
-      nameEn: nameEn || undefined,
+      nameEn: nameEn,
       url,
-      avatar: avatar || undefined,
+      avatar: avatar,
       description,
-      descriptionEn: descriptionEn || undefined,
+      descriptionEn: descriptionEn,
       sortOrder,
       status,
     }
@@ -106,6 +110,8 @@ export default function FriendLinks() {
       alert(t('common.deleteFailed'))
     }
   }
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={fetchLinks}>{t('common.retry')}</button></div>
 
   return (
     <div className="overflow-y-auto h-full p-8">

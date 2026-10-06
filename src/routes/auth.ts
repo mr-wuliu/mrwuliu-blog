@@ -1,9 +1,10 @@
+import { resolveSession, setSessionCookies } from '../utils/session'
 import { Hono } from 'hono'
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
+import { getCookie, deleteCookie } from 'hono/cookie'
 import { eq } from 'drizzle-orm'
 import { createDb } from '../db'
 import { users } from '../db/schema'
-import { generateOtp, verifyOtp, issueTokens, rotateRefreshToken, revokeRefreshTokenByHash, getSessionUser } from '../services/auth'
+import { generateOtp, verifyOtp, issueTokens, rotateRefreshToken, revokeRefreshTokenByHash } from '../services/auth'
 import { sendOtpEmail } from '../services/otp-email'
 import { checkRateLimit } from '../utils/rate-limit'
 import { getClientIp } from '../utils/analytics'
@@ -19,20 +20,13 @@ type Bindings = {
 
 const authRoutes = new Hono<{ Bindings: Bindings }>()
 
-const COOKIE_OPTS = {
-  httpOnly: true,
-  secure: true,
-  sameSite: 'Lax' as const,
-  path: '/',
-}
-
 function isValidEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
 authRoutes.post('/auth/otp/send', async (c) => {
   const body = await c.req.json().catch(() => ({} as Record<string, unknown>))
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
 
   console.log(`[auth] /otp/send email=${email || '(invalid)'}`)
 
@@ -48,7 +42,7 @@ authRoutes.post('/auth/otp/send', async (c) => {
     return c.json({ error: 'rate_limited' }, 429)
   }
 
-  const lang = typeof body.lang === 'string' && body.lang === 'en' ? 'en' : 'zh'
+  const lang = typeof body?.lang === 'string' && body.lang === 'en' ? 'en' : 'zh'
   const env = {
     JWT_SECRET: c.env.JWT_SECRET,
     RESEND_API_KEY: c.env.RESEND_API_KEY,
@@ -78,8 +72,8 @@ authRoutes.post('/auth/otp/send', async (c) => {
 
 authRoutes.post('/auth/otp/verify', async (c) => {
   const body = await c.req.json().catch(() => ({} as Record<string, unknown>))
-  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-  const code = typeof body.code === 'string' ? body.code.trim() : ''
+  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
+  const code = typeof body?.code === 'string' ? body.code.trim() : ''
 
   console.log(`[auth] /otp/verify email=${email || '(invalid)'} codeLen=${code.length}`)
 
@@ -132,14 +126,7 @@ authRoutes.post('/auth/otp/verify', async (c) => {
     ipHash: ip,
   })
 
-  setCookie(c, 'access_token', tokens.accessToken, {
-    ...COOKIE_OPTS,
-    maxAge: tokens.expiresIn,
-  })
-  setCookie(c, 'refresh_token', tokens.refreshToken, {
-    ...COOKIE_OPTS,
-    maxAge: 30 * 24 * 60 * 60,
-  })
+  setSessionCookies(c, tokens)
 
   console.log(`[auth] /otp/verify success email=${email} userId=${user.id} isNewUser=${!!result.isNewUser}`)
   return c.json({
@@ -177,14 +164,7 @@ authRoutes.post('/auth/refresh', async (c) => {
     return c.json({ error: 'invalid_refresh_token' }, 401)
   }
 
-  setCookie(c, 'access_token', tokens.accessToken, {
-    ...COOKIE_OPTS,
-    maxAge: tokens.expiresIn,
-  })
-  setCookie(c, 'refresh_token', tokens.refreshToken, {
-    ...COOKIE_OPTS,
-    maxAge: 30 * 24 * 60 * 60,
-  })
+  setSessionCookies(c, tokens)
 
   return c.json({ ok: true })
 })
@@ -203,31 +183,10 @@ authRoutes.post('/auth/logout', async (c) => {
 })
 
 authRoutes.get('/auth/me', async (c) => {
-  const accessToken = getCookie(c, 'access_token')
-  const refreshToken = getCookie(c, 'refresh_token')
-
-  const db = createDb(c.env.DB)
-  const env = {
-    JWT_SECRET: c.env.JWT_SECRET,
-    RESEND_API_KEY: c.env.RESEND_API_KEY,
-    MAIL_DOMAIN: c.env.MAIL_DOMAIN,
-  }
-
-  const session = await getSessionUser(db, env, accessToken, refreshToken)
+  const session = await resolveSession(c)
 
   if (!session) {
     return c.json({ user: null })
-  }
-
-  if (session.newTokens) {
-    setCookie(c, 'access_token', session.newTokens.accessToken, {
-      ...COOKIE_OPTS,
-      maxAge: session.newTokens.expiresIn,
-    })
-    setCookie(c, 'refresh_token', session.newTokens.refreshToken, {
-      ...COOKIE_OPTS,
-      maxAge: 30 * 24 * 60 * 60,
-    })
   }
 
   return c.json({
@@ -276,17 +235,10 @@ const AVATAR_ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/gif', 'i
 const AVATAR_MAX_SIZE = 2 * 1024 * 1024 // 2MB
 
 authRoutes.put('/auth/settings', async (c) => {
-  const accessToken = getCookie(c, 'access_token')
-  const refreshToken = getCookie(c, 'refresh_token')
 
   const db = createDb(c.env.DB)
-  const env = {
-    JWT_SECRET: c.env.JWT_SECRET,
-    RESEND_API_KEY: c.env.RESEND_API_KEY,
-    MAIL_DOMAIN: c.env.MAIL_DOMAIN,
-  }
 
-  const session = await getSessionUser(db, env, accessToken, refreshToken)
+  const session = await resolveSession(c)
   if (!session) return c.json({ error: 'unauthorized' }, 401)
 
   const body = await c.req.json().catch(() => ({})) as {
@@ -303,6 +255,8 @@ authRoutes.put('/auth/settings', async (c) => {
     notifyOnReply?: boolean
     updatedAt: string
   } = { updatedAt: new Date().toISOString() }
+
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return c.json({ error: 'invalid_body' }, 400)
 
   if (body.name !== undefined) {
     if (typeof body.name !== 'string') return c.json({ error: 'invalid_name' }, 400)
@@ -339,17 +293,10 @@ authRoutes.put('/auth/settings', async (c) => {
 })
 
 authRoutes.post('/auth/avatar', async (c) => {
-  const accessToken = getCookie(c, 'access_token')
-  const refreshToken = getCookie(c, 'refresh_token')
 
   const db = createDb(c.env.DB)
-  const env = {
-    JWT_SECRET: c.env.JWT_SECRET,
-    RESEND_API_KEY: c.env.RESEND_API_KEY,
-    MAIL_DOMAIN: c.env.MAIL_DOMAIN,
-  }
 
-  const session = await getSessionUser(db, env, accessToken, refreshToken)
+  const session = await resolveSession(c)
   if (!session) return c.json({ error: 'unauthorized' }, 401)
 
   const body = await c.req.parseBody()
@@ -366,22 +313,26 @@ authRoutes.post('/auth/avatar', async (c) => {
 
   const ext = file.type.split('/')[1] || 'png'
   const userId = session.user.id
-  const r2Key = `uavatars/${userId}.${ext}`
-
-  if (session.user.avatarR2Key && session.user.avatarR2Key !== r2Key) {
-    await c.env.IMAGES.delete(session.user.avatarR2Key)
-  }
+  const r2Key = `uavatars/${userId}-${crypto.randomUUID()}.${ext}`
 
   const arrayBuffer = await file.arrayBuffer()
   await c.env.IMAGES.put(r2Key, arrayBuffer, {
     httpMetadata: { contentType: file.type },
   })
 
-  await db.update(users).set({
-    avatarType: 'uploaded',
-    avatarR2Key: r2Key,
-    updatedAt: new Date().toISOString(),
-  }).where(eq(users.id, userId))
+  try {
+    await db.update(users).set({
+      avatarType: 'uploaded',
+      avatarR2Key: r2Key,
+      updatedAt: new Date().toISOString(),
+    }).where(eq(users.id, userId))
+  } catch (error) {
+    await c.env.IMAGES.delete(r2Key)
+    throw error
+  }
+  if (session.user.avatarR2Key) {
+    c.executionCtx.waitUntil(c.env.IMAGES.delete(session.user.avatarR2Key).catch(error => console.error('[avatar] cleanup failed', error)))
+  }
 
   const [updated] = await db.select().from(users).where(eq(users.id, userId))
   return c.json({ user: publicUser(updated) })

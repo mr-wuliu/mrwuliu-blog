@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import type { ReactNodeViewProps } from '@tiptap/react'
 import { NodeViewWrapper, NodeViewContent } from '@tiptap/react'
-import mermaid from 'mermaid'
+async function loadMermaid() { return (await import('mermaid')).default }
 import { CODE_BLOCK_LANGUAGES, normalizeCodeBlockLanguage } from './codeBlockLanguages'
 
 let instanceCounter = 0
@@ -76,7 +76,7 @@ function buildStyledCode(rawCode: string): string {
       bkgColorArray: nodePalette.map((c) => c.bg + '33'),
       borderColorArray: nodePalette.map((c) => c.border),
     }
-    const initDir = `%%{init:${JSON.stringify({ theme: 'redux-color', look: 'handDrawn', themeVariables: { ...themeVars, ...seqColors } })}}}%%\n`
+    const initDir = `%%{init:${JSON.stringify({ theme: 'redux-color', look: 'handDrawn', themeVariables: { ...themeVars, ...seqColors } })}}%%\n`
     return initDir + rawCode
   }
 
@@ -128,9 +128,6 @@ export default function MermaidNodeView({ node, updateAttributes }: ReactNodeVie
     return text
   }, [node])
 
-  useEffect(() => {
-    mermaid.initialize({ ...baseConfig, themeVariables: themeVars })
-  }, [])
 
   // Post-process SVG after render
   useEffect(() => {
@@ -153,6 +150,7 @@ export default function MermaidNodeView({ node, updateAttributes }: ReactNodeVie
 
     timerRef.current = setTimeout(async () => {
       try {
+        const mermaid = await loadMermaid()
         const styledCode = buildStyledCode(code)
         // Reset mermaid instance to pick up new theme
         mermaid.initialize({ ...baseConfig, themeVariables: themeVars })

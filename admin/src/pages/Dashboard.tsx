@@ -56,6 +56,7 @@ export default function Dashboard() {
   const [recentPosts, setRecentPosts] = useState<Post[]>([])
   const [recentComments, setRecentComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   const statCards: { key: keyof Stats; label: string; color: string }[] = [
     { key: 'totalPosts', label: t('dashboard.totalPosts'), color: 'bg-black' },
@@ -67,34 +68,35 @@ export default function Dashboard() {
   ]
 
   useEffect(() => {
-    const postsPromise = api.get<PostsResponse>('/posts?limit=1000')
-      .then((data) => {
-        const posts = data.posts
-        const published = posts.filter((p) => p.status === 'published').length
-        setStats((prev) => ({
-          ...prev,
-          totalPosts: posts.length,
-          published,
-          drafts: posts.length - published,
-          totalViews: posts.reduce((sum, p) => sum + (p.viewCount ?? 0), 0),
-          totalUniqueViews: posts.reduce((sum, p) => sum + (p.uniqueViewCount ?? 0), 0),
-        }))
-        setRecentPosts(posts.slice(0, 5))
-      })
+    const controller = new AbortController()
+    const postsPromise = Promise.all([
+      api.get<Omit<Stats, 'pendingComments'>>('/posts/summary', controller.signal),
+      api.get<PostsResponse>('/posts?limit=5', controller.signal),
+    ]).then(([summary, data]) => {
+      if (controller.signal.aborted) return
+      setStats(prev => ({ ...prev, ...summary }))
+      setRecentPosts(data.posts)
+    })
 
-    const commentsPromise = api.get<CommentsResponse>('/admin/comments?status=pending&limit=5')
+    const commentsPromise = api.get<CommentsResponse>('/admin/comments?status=pending&limit=5', controller.signal)
       .then((data) => {
+        if (controller.signal.aborted) return
         setStats((prev) => ({ ...prev, pendingComments: data.total }))
         setRecentComments(data.comments)
       })
 
     Promise.all([postsPromise, commentsPromise])
       .catch((err) => {
+        if (controller.signal.aborted) return
+        setError(err instanceof Error ? err.message : t('common.loadFailed'))
         // Cards/lists fall back to zeros and empty states; logged for diagnosis.
         console.error('Failed to load dashboard data', err)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
   }, [])
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={() => window.location.reload()}>{t('common.retry')}</button></div>
 
   if (loading) {
     return (

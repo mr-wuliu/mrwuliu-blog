@@ -1,19 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
-import Dashboard from './pages/Dashboard'
-import Posts from './pages/Posts'
-import EditPost from './pages/EditPost'
-import Comments from './pages/Comments'
-import SiteConfig from './pages/SiteConfig'
-import Projects from './pages/Projects'
-import Collections from './pages/Collections'
-import FriendLinks from './pages/FriendLinks'
-import Analytics from './pages/Analytics'
-import PostAnalytics from './pages/PostAnalytics'
-import Users from './pages/Users'
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const Posts = lazy(() => import('./pages/Posts'))
+const EditPost = lazy(() => import('./pages/EditPost'))
+const Comments = lazy(() => import('./pages/Comments'))
+const SiteConfig = lazy(() => import('./pages/SiteConfig'))
+const Projects = lazy(() => import('./pages/Projects'))
+const Collections = lazy(() => import('./pages/Collections'))
+const FriendLinks = lazy(() => import('./pages/FriendLinks'))
+const Analytics = lazy(() => import('./pages/Analytics'))
+const PostAnalytics = lazy(() => import('./pages/PostAnalytics'))
+const Users = lazy(() => import('./pages/Users'))
 import Layout from './components/Layout'
 
 function App() {
   return (
+    <Suspense fallback={<div role="status" className="p-8 text-sm opacity-50">Loading…</div>}>
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Dashboard />} />
@@ -31,6 +33,7 @@ function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }
 

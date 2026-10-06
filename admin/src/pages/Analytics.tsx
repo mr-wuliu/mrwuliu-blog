@@ -79,6 +79,7 @@ export default function Analytics() {
   const navigate = useNavigate()
 
   const [days, setDays] = useState<DateRange>(30)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
   // Data
@@ -93,24 +94,31 @@ export default function Analytics() {
   // ── Data fetching ──────────────────────────────────
 
   useEffect(() => {
+    const controller = new AbortController()
+    setError('')
     setLoading(true)
     const trendsPromise = api
-      .get<TrendsResponse>(`/analytics/trends?days=${days}`)
-      .then((data) => setTrendData(data.trends ?? []))
+      .get<TrendsResponse>(`/analytics/trends?days=${days}`, controller.signal)
+      .then((data) => { if (!controller.signal.aborted) setTrendData(data.trends ?? []) })
       .catch((err) => {
+        if (controller.signal.aborted) return
+        setError(err instanceof Error ? err.message : t('common.loadFailed'))
         console.error('Failed to load analytics trends', err)
         setTrendData([])
       })
 
     const postsPromise = api
-      .get<PostsTableResponse>(`/analytics/posts-table?days=${days}`)
-      .then((data) => setPosts(data.posts ?? []))
+      .get<PostsTableResponse>(`/analytics/posts-table?days=${days}`, controller.signal)
+      .then((data) => { if (!controller.signal.aborted) setPosts(data.posts ?? []) })
       .catch((err) => {
+        if (controller.signal.aborted) return
+        setError(err instanceof Error ? err.message : t('common.loadFailed'))
         console.error('Failed to load analytics posts table', err)
         setPosts([])
       })
 
-    Promise.all([trendsPromise, postsPromise]).finally(() => setLoading(false))
+    Promise.all([trendsPromise, postsPromise]).finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    return () => controller.abort()
   }, [days])
 
   // ── Sort & filter ──────────────────────────────────
@@ -152,6 +160,8 @@ export default function Analytics() {
   )
 
   // ── Loading ────────────────────────────────────────
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={() => window.location.reload()}>{t('common.retry')}</button></div>
 
   if (loading) {
     return (

@@ -1,3 +1,6 @@
+import { verifyAccessToken } from './utils/access'
+import { resolveSession } from './utils/session'
+import { getClientIp, isBotAgent, trackSiteView } from './utils/analytics'
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { sql } from 'drizzle-orm'
@@ -20,6 +23,9 @@ type Bindings = {
   ASSETS: Fetcher
   API_KEY: string
   DISABLE_API_AUTH?: string
+  ENVIRONMENT?: string
+  ACCESS_TEAM_DOMAIN?: string
+  ACCESS_AUD?: string
   JWT_SECRET: string
   RESEND_API_KEY: string
   MAIL_DOMAIN: string
@@ -68,54 +74,46 @@ app.use('*', async (c, next) => {
 })
 
 app.use('/api/*', async (c, next) => {
+  const origin = c.req.header('Origin')
+  c.header('Vary', 'Origin')
+  if (origin === 'https://mrwuliu.top' || origin === 'https://www.mrwuliu.top') {
+    c.header('Access-Control-Allow-Origin', origin)
+    c.header('Access-Control-Allow-Credentials', 'true')
+  }
   if (c.req.method === 'OPTIONS') {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': 'https://mrwuliu.top',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, X-API-Key',
-        'Access-Control-Max-Age': '86400',
-      },
-    })
+    c.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    c.header('Access-Control-Allow-Headers', 'Content-Type, X-API-Key')
+    c.header('Access-Control-Max-Age', '86400')
+    return c.body(null, 204)
   }
-
-  const host = c.req.header('host') || ''
-  const isPrivateNetwork = /^(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
-  if (c.env.DISABLE_API_AUTH === 'true' || isPrivateNetwork) {
-    await next()
-    return
-  }
-
-  // Public analytics beacon — no auth required (called from blog pages)
-  if (c.req.path === '/api/analytics/scroll') {
-    await next()
-    return
-  }
-
-  // Public like toggle — no auth required (called from blog pages)
-  if (c.req.method === 'POST' && /^\/api\/posts\/[^/]+\/like$/.test(c.req.path)) {
-    await next()
-    return
-  }
-
-  // Allow: valid API Key (machine access) OR Cloudflare Zero Trust identity (browser access)
+  const publicRoute = (c.req.method === 'GET' && c.req.path === '/api/health')
+    || (c.req.method === 'POST' && (c.req.path === '/api/analytics/scroll'
+      || /^\/api\/posts\/[^/]+\/like$/.test(c.req.path)))
+  const development = c.env.ENVIRONMENT === 'development' && c.env.DISABLE_API_AUTH === 'true'
+  if (publicRoute || development) return next()
   const apiKey = c.req.header('X-API-Key')
-  const hasApiKey = apiKey !== undefined && c.env.API_KEY !== undefined
-    ? await timingSafeEqual(apiKey, c.env.API_KEY)
-    : false
-  const hasZeroTrustIdentity = !!c.req.header('Cf-Access-Jwt-Assertion') || !!c.req.header('Cf-Authorization')
-
-  if (!hasApiKey && !hasZeroTrustIdentity) {
-    return c.json({ error: 'Unauthorized' }, 401)
+  const hasApiKey = !!apiKey && !!c.env.API_KEY && await timingSafeEqual(apiKey, c.env.API_KEY)
+  const hasAccess = !hasApiKey && await verifyAccessToken(c.req.header('Cf-Access-Jwt-Assertion'), c.env)
+  if (!hasApiKey && !hasAccess) {
+    // The SPA refreshes once and retries concurrent 401s. Rotating here would
+    // race several private API requests against the same refresh cookie.
+    const session = await resolveSession(c, false)
+    if (session?.user.role !== 'admin') return c.json({ error: 'Unauthorized' }, 401)
   }
+  return next()
+})
 
+app.use('*', async (c, next) => {
   await next()
-  const res = c.res
-  const headers = new Headers(res.headers)
-  headers.set('Access-Control-Allow-Origin', 'https://mrwuliu.top')
-  headers.set('Access-Control-Allow-Credentials', 'true')
-  c.res = new Response(res.body, { status: res.status, statusText: res.statusText, headers })
+  const path = c.req.path.replace(/^\/en(?=\/|$)/, '') || '/'
+  const publicPage = /^\/(?:$|about$|writings$|search$|tags-cloud$|friends$|series(?:\/[^/]+)?$|projects(?:\/[^/]+)?$|posts\/[^/]+$|tags\/[^/]+$)/.test(path)
+  const userAgent = c.req.header('user-agent') || 'unknown'
+  if (publicPage && c.req.method === 'GET' && c.res.status === 200 && !isBotAgent(userAgent)) {
+    c.executionCtx.waitUntil(trackSiteView(createDb(c.env.DB), {
+      lang: /^\/en(?:\/|$)/.test(c.req.path) ? 'en' : 'zh',
+      ip: getClientIp(c.req.raw.headers), userAgent, salt: c.env.JWT_SECRET,
+    }).catch(error => console.error('[analytics] site tracking failed', error)))
+  }
 })
 
 app.get('/api/health', (c) => {

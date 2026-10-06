@@ -64,6 +64,7 @@ export async function verifyJwt(
   const signingInput = `${headerB64}.${payloadB64}`
 
   try {
+    if (!secret || headerB64 !== HEADER) return null
     const key = await getKey(secret)
     const sigBytes = base64UrlDecode(sigB64)
     const valid = await crypto.subtle.verify(
@@ -79,7 +80,10 @@ export async function verifyJwt(
     ) as JwtClaims
 
     const now = Math.floor(Date.now() / 1000)
-    if (claims.exp < now) return null
+    if (!Number.isFinite(claims.exp) || claims.exp <= now || !Number.isFinite(claims.iat)
+      || typeof claims.sub !== 'string' || !claims.sub
+      || typeof claims.email !== 'string' || typeof claims.name !== 'string'
+      || !['access', 'refresh'].includes(claims.type) || !['user', 'admin'].includes(claims.role)) return null
 
     return claims
   } catch {

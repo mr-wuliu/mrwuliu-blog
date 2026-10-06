@@ -84,19 +84,7 @@ const Layout: FC<LayoutProps> = ({
         <script dangerouslySetInnerHTML={{ __html:
           'var __zh=' + zhFlat + ';var __en=' + enFlat + ';var __cur="' + lang + '";' +
           'function __t(k){var d=__cur==="zh"?__zh:__en;var v=d[k];if(!v)return "";if(v.startsWith("FN:"))try{return new Function("return "+v.slice(3))()}catch(e){return""}return v}' +
-          'function __applyLang(l){__cur=l;' +
-          'document.querySelectorAll("[data-t]").forEach(function(e){var v=__t(e.getAttribute("data-t"));if(v)e.textContent=v});' +
-          'document.querySelectorAll("[data-placeholder]").forEach(function(e){var v=__t(e.getAttribute("data-placeholder"));if(v)e.setAttribute("placeholder",v)});' +
-          'document.querySelectorAll("[data-thref]").forEach(function(e){var k=e.getAttribute("data-thref");var b=l==="en"?"/en":"";e.setAttribute("href",b+k)});' +
-          'document.querySelectorAll("[data-comment-msg]").forEach(function(e){var o=l==="en"?"en":"zh";e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+l));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+l));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+l))});' +
-          'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+l);if(v)e.textContent=v});' +
-          'document.querySelectorAll(".lang-toggle").forEach(function(tg){' +
-          'var tb=tg.querySelector(".lang-toggle-thumb");if(tb){tb.className="lang-toggle-thumb"+(l==="zh"?" lang-toggle-thumb-end":"");tb.textContent=l==="zh"? "\\u4e2d\\u6587":"EN"}' +
-          'tg.querySelectorAll(".lang-toggle-option").forEach(function(op){op.classList.remove("lang-toggle-option-active")});' +
-          'var ao=tg.querySelector(".lang-toggle-option[data-lang=\\"" + l + "\\"]");if(ao)ao.classList.add("lang-toggle-option-active");' +
-          '});' +
-          'document.documentElement.lang=l==="zh"?"zh-CN":"en";' +
-          '}'
+          'var __sessionPromise;function __getSession(){if(!__sessionPromise)__sessionPromise=fetch("/auth/me",{credentials:"include"}).then(function(r){if(!r.ok)throw new Error("Session request failed");return r.json()}).catch(function(e){__sessionPromise=null;throw e});return __sessionPromise}'
         }} />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed (中文)" href="/feed.xml" />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed (English)" href="/en/feed.xml" />
@@ -307,61 +295,7 @@ const Layout: FC<LayoutProps> = ({
           'var u=new URL(location.href);' +
           'if(th==="default")u.searchParams.delete("theme");else u.searchParams.set("theme",th);' +
           'history.replaceState(null,"",u.pathname+(u.search?u.search:"")+u.hash);' +
-          '})});' +
-          'var __langPages={},__langPromises={};' +
-          'function __fetchLang(url){' +
-          'if(__langPages[url])return Promise.resolve(__langPages[url]);' +
-          'if(__langPromises[url])return __langPromises[url];' +
-          'var p=fetch(url).then(function(r){return r.text()}).then(function(h){__langPages[url]=h;delete __langPromises[url];return h}).catch(function(){delete __langPromises[url]});' +
-          '__langPromises[url]=p;return p' +
-          '}' +
-          'function __prefetchLang(url){__fetchLang(url)}' +
-          'document.addEventListener("pointerover",function(e){' +
-          'var tg=e.target.closest(".lang-toggle");' +
-          'if(tg&&tg.href)__prefetchLang(tg.href);' +
-          '},true);' +
-          'document.addEventListener("mousedown",function(e){' +
-          'var tg=e.target.closest(".lang-toggle");' +
-          'if(tg&&tg.href)__prefetchLang(tg.href);' +
-          '},true);' +
-          'function __applyLangPage(html,href,nl){' +
-          'var doc=new DOMParser().parseFromString(html,"text/html");' +
-          'var cm=document.querySelector("main");' +
-          'if(cm){var nm=doc.querySelector("main");if(nm){cm.innerHTML=nm.innerHTML;' +
-          'cm.querySelectorAll("script").forEach(function(s){var ns=document.createElement("script");ns.textContent=s.textContent;if(s.parentNode)s.parentNode.replaceChild(ns,s)})}}' +
-          '__cur=nl;' +
-          'document.documentElement.lang=nl==="zh"?"zh-CN":"en";' +
-          'var fb=document.querySelector("[data-t=\\"footer.copyright\\"]");' +
-          'if(fb)fb.textContent=fb.getAttribute("data-t-"+nl);' +
-          'if(doc.title)document.title=doc.title;' +
-          'var tgl=document.querySelector(".lang-toggle");' +
-          'var nt=doc.querySelector(".lang-toggle");if(nt&&tgl)tgl.href=nt.href;' +
-          'history.pushState(null,"",href);window.scrollTo(0,0);' +
-          'if(!window.__langPopState){window.__langPopState=true;window.addEventListener("popstate",function(){location.reload()})}' +
-          '}' +
-          'function __animateToggle(l){' +
-          'document.querySelectorAll(".lang-toggle").forEach(function(tg){' +
-          'var tb=tg.querySelector(".lang-toggle-thumb");if(tb){tb.className="lang-toggle-thumb"+(l==="zh"?" lang-toggle-thumb-end":"");tb.textContent=l==="zh"? "\\u4e2d\\u6587":"EN"}' +
-          'tg.querySelectorAll(".lang-toggle-option").forEach(function(op){op.classList.remove("lang-toggle-option-active")});' +
-          'var ao=tg.querySelector(".lang-toggle-option[data-lang=\\"" + l + "\\"]");if(ao)ao.classList.add("lang-toggle-option-active");' +
-          '});' +
-          '}' +
-          'document.addEventListener("click",function(e){' +
-          'var tg=e.target.closest(".lang-toggle");' +
-          'if(!tg)return;e.preventDefault();' +
-          'var href=tg.href,nl=__cur==="zh"?"en":"zh";' +
-          '__langPages[location.pathname+location.search]=document.documentElement.outerHTML;' +
-          '__cur=nl;' +
-          '__animateToggle(nl);' +
-          '__fetchLang(href).then(function(html){' +
-          'if(html){__applyLangPage(html,href,nl);' +
-          'document.querySelectorAll("[data-t]").forEach(function(e){var v=__t(e.getAttribute("data-t"));if(v)e.textContent=v});' +
-          'document.querySelectorAll("[data-placeholder]").forEach(function(e){var v=__t(e.getAttribute("data-placeholder"));if(v)e.setAttribute("placeholder",v)});' +
-          'document.querySelectorAll("[data-thref]").forEach(function(e){var k=e.getAttribute("data-thref");var b=nl==="en"?"/en":"";e.setAttribute("href",b+k)});' +
-          'document.querySelectorAll("[data-comment-msg]").forEach(function(e){e.setAttribute("data-comment-msg",e.getAttribute("data-comment-msg-"+nl));e.setAttribute("data-comment-err",e.getAttribute("data-comment-err-"+nl));e.setAttribute("data-comment-url",e.getAttribute("data-comment-url-"+nl))});' +
-'document.querySelectorAll("[data-comment-count]").forEach(function(e){var v=e.getAttribute("data-comment-count-"+nl);if(v)e.textContent=v})}' +
-          '});' +
-          '});'
+          '})});'
         }} />
         <script dangerouslySetInnerHTML={{ __html:
           '(function(){' +
@@ -376,7 +310,7 @@ const Layout: FC<LayoutProps> = ({
           'function avatarImg(u,size){var seed=u.avatarSeed||u.id;var img=document.createElement("img");img.style.cssText="width:100%;height:100%;object-fit:cover;display:block";img.setAttribute("alt","");var ic="data:image/svg+xml,"+encodeURIComponent(identicon(seed,size));if(u.avatarUrl){img.src=u.avatarUrl;img.onerror=function(){img.onerror=null;img.src=ic}}else{img.src=ic}return img}' +
           'function avatarBox(u,size){var d=document.createElement("div");d.style.cssText="width:"+size+"px;height:"+size+"px;overflow:hidden;line-height:0;font-size:0";d.appendChild(avatarImg(u,size));return d}' +
           'var b=__cur==="en"?"/en":"";' +
-          'fetch("/auth/me",{credentials:"include"}).then(function(r){return r.json()}).then(function(d){' +
+          '__getSession().then(function(d){' +
           'var u=d&&d.user;if(!u)return;' +
           'document.querySelectorAll(".user-auth-zone").forEach(function(zone){' +
           'var link=zone.querySelector(".user-auth-link");if(link)link.classList.add("hidden");' +

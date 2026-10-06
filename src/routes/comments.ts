@@ -1,13 +1,14 @@
+import { commentSchema, pagination } from '../utils/validation'
+import { resolveSession } from '../utils/session'
 import { Hono } from 'hono'
 import { eq, and, desc, sql, isNull } from 'drizzle-orm'
-import { getCookie } from 'hono/cookie'
 import { createDb } from '../db'
 import { comments, posts, users } from '../db/schema'
 import { getSiteConfig } from '../db/queries'
 import { checkRateLimit } from '../utils/rate-limit'
 import { getClientIp, getVisitorFingerprint } from '../utils/analytics'
 import { sendReplyNotification } from '../services/email'
-import { getSessionUser, revokeAllUserTokens } from '../services/auth'
+import { revokeAllUserTokens } from '../services/auth'
 
 type Bindings = {
   DB: D1Database
@@ -35,7 +36,8 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     return c.json({ error: 'Invalid JSON body' }, 400)
   }
 
-  if (!body.content || body.content.length < 1 || body.content.length > 1000) {
+  const validation = commentSchema.safeParse(body)
+  if (!validation.success) {
     return c.json({ error: 'Content must be 1-1000 characters' }, 400)
   }
 
@@ -46,7 +48,7 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
 
   if (body.parentId) {
     const [parentComment] = await db.select().from(comments).where(eq(comments.id, body.parentId))
-    if (!parentComment || parentComment.postId !== postId) {
+    if (!parentComment || parentComment.postId !== postId || parentComment.status !== 'approved') {
       return c.json({ error: 'Parent comment not found or does not belong to this post' }, 400)
     }
   }
@@ -61,16 +63,14 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
   }
 
   const id = crypto.randomUUID()
-  const escapedContent = escapeHtml(body.content)
+  const escapedContent = escapeHtml(validation.data.content)
   const escapedVisitorId = body.visitorId ? escapeHtml(body.visitorId) : null
   const escapedParentId = body.parentId ? escapeHtml(body.parentId) : null
   const userAgent = c.req.header('user-agent') || 'unknown'
   const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
   const cf = c.req.raw as Request & { cf?: { country?: string } }
 
-  const accessCookie = getCookie(c, 'access_token')
-  const refreshCookie = getCookie(c, 'refresh_token')
-  const session = await getSessionUser(db, c.env, accessCookie, refreshCookie)
+  const session = await resolveSession(c)
   if (!session?.user) {
     return c.json({ error: 'login_required' }, 401)
   }
@@ -95,6 +95,13 @@ commentRoutes.post('/posts/:postId/comments', async (c) => {
     status: commentStatus,
     notifyOnReply: sessionUser.notifyOnReply,
   })
+
+  if (commentStatus === 'approved' && body.parentId) {
+    c.executionCtx.waitUntil(sendReplyNotification({ db, env: c.env,
+      replyComment: { id, parentId: body.parentId, authorName: sessionUser.name, content: escapedContent, postId },
+      origin: new URL(c.req.url).origin, lang: 'zh',
+    }).catch(error => console.error('[email] reply notification failed', error)))
+  }
 
   return c.json({ id, status: commentStatus, authorName: sessionUser.name, content: escapedContent }, 201)
 })
@@ -125,10 +132,7 @@ commentRoutes.get('/posts/:postId/comments', async (c) => {
 commentRoutes.get('/admin/comments', async (c) => {
   const db = createDb(c.env.DB)
   const status = c.req.query('status') as 'pending' | 'approved' | 'rejected' | undefined
-  const rawPage = Number(c.req.query('page'))
-  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
-  const rawLimit = Number(c.req.query('limit'))
-  const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 20
+  const { page, limit } = pagination(c.req.query('page'), c.req.query('limit'))
   const offset = (page - 1) * limit
 
   const conditions = status ? [eq(comments.status, status)] : []
@@ -182,17 +186,6 @@ commentRoutes.put('/admin/comments/:id', async (c) => {
 
   await db.update(comments).set({ status }).where(eq(comments.id, id))
 
-  // Purge article page cache so new comment appears immediately
-  const [post] = await db.select({ slug: posts.slug }).from(posts).where(eq(posts.id, existing.postId))
-  if (post) {
-    const origin = new URL(c.req.url).origin
-    const cache = (caches as unknown as { default: Cache }).default
-    await Promise.all([
-      cache.delete(new Request(`${origin}/posts/${post.slug}`)),
-      cache.delete(new Request(`${origin}/en/posts/${post.slug}`)),
-    ])
-  }
-
   // If a reply was approved, notify the parent comment author (if they opted in)
   if (status === 'approved' && existing.parentId) {
     const origin = new URL(c.req.url).origin
@@ -228,19 +221,11 @@ commentRoutes.delete('/admin/comments/:id', async (c) => {
   const [existing] = await db.select().from(comments).where(eq(comments.id, id))
   if (!existing) return c.json({ error: 'Comment not found' }, 404)
 
-  const [post] = await db.select({ slug: posts.slug }).from(posts).where(eq(posts.id, existing.postId))
 
-  await db.delete(comments).where(eq(comments.id, id))
-
-  // Purge article page cache (comment removed from rendered page)
-  if (post) {
-    const origin = new URL(c.req.url).origin
-    const cache = (caches as unknown as { default: Cache }).default
-    await Promise.all([
-      cache.delete(new Request(`${origin}/posts/${post.slug}`)),
-      cache.delete(new Request(`${origin}/en/posts/${post.slug}`)),
-    ])
-  }
+  await db.batch([
+    db.update(comments).set({ parentId: existing.parentId }).where(eq(comments.parentId, id)),
+    db.delete(comments).where(eq(comments.id, id)),
+  ])
 
   return c.json({ success: true })
 })
@@ -249,17 +234,15 @@ commentRoutes.delete('/admin/comments/:id', async (c) => {
 
 commentRoutes.get('/admin/users', async (c) => {
   const db = createDb(c.env.DB)
-  const rawPage = Number(c.req.query('page'))
-  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
-  const rawLimit = Number(c.req.query('limit'))
-  const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 20
+  const { page, limit } = pagination(c.req.query('page'), c.req.query('limit'))
   const offset = (page - 1) * limit
   const search = c.req.query('search')?.trim()
   const statusFilter = c.req.query('status')
 
   const conditions: ReturnType<typeof eq>[] = []
   if (search) {
-    conditions.push(sql`${users.email} LIKE ${'%' + search + '%'} OR ${users.name} LIKE ${'%' + search + '%'}`)
+    const query = search.trim().slice(0, 200)
+    conditions.push(sql`(instr(lower(${users.email}), lower(${query})) > 0 OR instr(lower(${users.name}), lower(${query})) > 0)`)
   }
   if (statusFilter && ['active', 'banned'].includes(statusFilter)) {
     conditions.push(eq(users.status, statusFilter as 'active' | 'banned'))
@@ -305,6 +288,7 @@ commentRoutes.patch('/admin/users/:id', async (c) => {
   if (!existing) return c.json({ error: 'User not found' }, 404)
 
   await db.update(users).set({ status: body.status, updatedAt: new Date().toISOString() }).where(eq(users.id, id))
+  if (body.status === 'banned') await revokeAllUserTokens(db, id)
 
   const [updated] = await db.select().from(users).where(eq(users.id, id))
   return c.json(updated)

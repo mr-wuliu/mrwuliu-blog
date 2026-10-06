@@ -65,6 +65,6 @@ describe("highlightCode — mermaid blocks", () => {
 
     expect(result).toContain('class="mermaid-source"');
     // The decoded code should be in the pre/code
-    expect(result).toContain("A[Hello & World]");
+    expect(result).toContain("A[Hello &amp; World]");
   });
 });

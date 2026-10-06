@@ -1,3 +1,4 @@
+import { pagination } from '../utils/validation'
 import { Hono } from 'hono'
 import { uploadImage, serveImage, deleteImage, listImages } from '../services/image'
 
@@ -29,8 +30,7 @@ imageRoutes.post('/images', async (c) => {
 })
 
 imageRoutes.get('/images', async (c) => {
-  const page = Number(c.req.query('page') ?? 1)
-  const limit = Number(c.req.query('limit') ?? 20)
+  const { page, limit } = pagination(c.req.query('page'), c.req.query('limit'))
 
   const result = await listImages(c.env, page, limit)
   return c.json(result)

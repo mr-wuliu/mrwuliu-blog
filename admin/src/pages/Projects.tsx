@@ -19,6 +19,7 @@ export default function Projects() {
   const { t } = useTranslation()
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [editing, setEditing] = useState<Project | null>(null)
   const [showForm, setShowForm] = useState(false)
 
@@ -30,10 +31,13 @@ export default function Projects() {
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
 
   const fetchProjects = async () => {
+    setError('')
+    setLoading(true)
     try {
       const data = await api.get<Project[]>('/projects')
       setProjects(data)
     } catch (err) {
+      setError(err instanceof Error ? err.message : t('common.loadFailed'))
       console.error(err)
     } finally {
       setLoading(false)
@@ -70,8 +74,8 @@ export default function Projects() {
     const body = {
       title,
       description,
-      url: url || undefined,
-      techStack: techStack || undefined,
+      url: url,
+      techStack: techStack,
       sortOrder,
       status,
     }
@@ -97,6 +101,8 @@ export default function Projects() {
       alert(t('common.deleteFailed'))
     }
   }
+
+  if (error) return <div role="alert" className="p-8 text-red-600">{error}<button className="block mt-4 underline" onClick={fetchProjects}>{t('common.retry')}</button></div>
 
   return (
     <div className="overflow-y-auto h-full p-8">
