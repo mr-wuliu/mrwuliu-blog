@@ -126,7 +126,7 @@ export default function FriendLinks() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white border-2 border-black p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h2 className="text-lg font-bold uppercase tracking-widest mb-6 border-b-2 border-black pb-2">
               {editing ? t('friendLinks.editLink') : t('friendLinks.newLinkTitle')}

@@ -629,11 +629,11 @@ export default function Editor({ content, onChange, onEditorReady }: EditorProps
       <div className="overflow-x-hidden">
       <EditorContent
         editor={editor}
-        className="prose max-w-none min-h-[400px] px-4 py-3 bg-white text-black focus:outline-none [&_.tiptap]:min-h-[400px] [&_.tiptap]:outline-none [&_.tiptap_p.is-editor-empty:first-child::before]:text-black [&_.tiptap_p.is-editor-empty:first-child::before]:opacity-30 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
+        className="prose max-w-none min-h-[400px] px-4 py-3 bg-white text-black focus:outline-hidden [&_.tiptap]:min-h-[400px] [&_.tiptap]:outline-hidden [&_.tiptap_p.is-editor-empty:first-child::before]:text-black [&_.tiptap_p.is-editor-empty:first-child::before]:opacity-30 [&_.tiptap_p.is-editor-empty:first-child::before]:float-left [&_.tiptap_p.is-editor-empty:first-child::before]:h-0 [&_.tiptap_p.is-editor-empty:first-child::before]:pointer-events-none [&_.tiptap_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]"
       />
       </div>
       {showTableTools && (
-        <div className="fixed right-4 bottom-4 z-40 bg-white border border-black shadow-sm p-2 w-[220px]">
+        <div className="fixed right-4 bottom-4 z-40 bg-white border border-black shadow-xs p-2 w-[220px]">
           <div className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-2">Table Tools</div>
           <div className="grid grid-cols-3 gap-1">
             {tableButtons.map((btn) => (

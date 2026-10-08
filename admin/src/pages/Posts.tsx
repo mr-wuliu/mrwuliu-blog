@@ -160,8 +160,8 @@ export default function Posts() {
               onClick={() => { setStatus(tab.value); setPage(1) }}
               className={
                 status === tab.value
-                  ? 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black text-black bg-black bg-opacity-5 transition-all'
-                  : 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black border-opacity-30 text-black opacity-70 hover:opacity-100 hover:border-opacity-100 transition-all'
+                  ? 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black text-black bg-black/5 transition-all'
+                  : 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black/30 text-black opacity-70 hover:opacity-100 hover:border-black transition-all'
               }
             >
               {tab.label}
@@ -174,7 +174,7 @@ export default function Posts() {
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           placeholder={t('posts.searchPlaceholder')}
-          className="px-4 py-2.5 border border-black text-sm focus:outline-none focus:border-black w-64 placeholder-black placeholder-opacity-30"
+          className="px-4 py-2.5 border border-black text-sm focus:outline-hidden focus:border-black w-64 placeholder:text-black/30"
         />
       </div>
 
@@ -195,7 +195,7 @@ export default function Posts() {
           <div className="border border-black overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-black bg-black bg-opacity-5">
+                <tr className="border-b border-black bg-black/5">
                   <th className="px-5 py-3 text-xs font-bold uppercase tracking-widest opacity-50 text-left">
                     {t('posts.tableTitle')}
                   </th>
@@ -220,7 +220,7 @@ export default function Posts() {
                 {filtered.map((post) => (
                   <tr
                     key={post.id}
-                    className="border-b border-black border-opacity-20 hover:bg-black hover:bg-opacity-5 transition-all"
+                    className="border-b border-black/20 hover:bg-black/5 transition-all"
                   >
                     <td className="px-5 py-3">
                       <button
@@ -256,7 +256,7 @@ export default function Posts() {
                             EN ✓
                           </span>
                         ) : (
-                          <span className="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-20 px-2 py-0.5 text-black opacity-30">
+                          <span className="text-[10px] font-black uppercase tracking-widest border border-black/20 px-2 py-0.5 text-black opacity-30">
                             EN —
                           </span>
                         )}
@@ -268,7 +268,7 @@ export default function Posts() {
                           ? post.tags.map((tag) => (
                               <span
                                 key={tag.id}
-                                className="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-30 px-2 py-0.5 text-black opacity-70"
+                                className="text-[10px] font-black uppercase tracking-widest border border-black/30 px-2 py-0.5 text-black opacity-70"
                               >
                                 {tag.name}
                               </span>

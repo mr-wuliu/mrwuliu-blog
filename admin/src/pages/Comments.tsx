@@ -140,8 +140,8 @@ export default function Comments() {
             onClick={() => handleFilterChange(tab.key)}
             className={
               filter === tab.key
-                ? 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black text-black bg-black bg-opacity-5 transition-all'
-                : 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black border-opacity-30 text-black opacity-70 hover:opacity-100 hover:border-opacity-100 transition-all'
+                ? 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black text-black bg-black/5 transition-all'
+                : 'px-4 py-2 text-sm font-bold uppercase tracking-widest border border-black/30 text-black opacity-70 hover:opacity-100 hover:border-black transition-all'
             }
           >
             {tab.label}

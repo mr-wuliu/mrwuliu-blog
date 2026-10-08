@@ -23,24 +23,27 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.7.6",
-    "drizzle-orm": "^0.36.4",
+    "drizzle-orm": "^0.45.4",
     "highlight.js": "^11.11.1",
-    "hono": "^4.12.9",
-    "katex": "^0.16.44",
+    "hono": "^4.13.13",
+    "katex": "^0.18.10",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.13.5",
-    "@cloudflare/workers-types": "^4.20260329.1",
+    "@cloudflare/workers-types": "^5.20261008.1",
     "@emnapi/core": "1.9.1",
     "@emnapi/runtime": "1.9.1",
     "@tailwindcss/cli": "^4.3.0",
     "@types/katex": "^0.16.8",
-    "drizzle-kit": "^0.30.6",
-    "esbuild": "^0.27.5",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.2",
-    "wrangler": "^4.78.0"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.149.0",
+    "@cloudflare/vitest-plugin": "^1.4.0"
+  },
+  "overrides": {
+    "esbuild": "$esbuild"
   }
 }

@@ -95,7 +95,7 @@ export default function Users() {
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder={t('users.searchPlaceholder')}
-            className="px-3 py-2 border-2 border-black text-sm focus:outline-none"
+            className="px-3 py-2 border-2 border-black text-sm focus:outline-hidden"
           />
           <button
             onClick={handleSearch}

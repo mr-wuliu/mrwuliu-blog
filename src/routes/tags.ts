@@ -71,16 +71,8 @@ tagRoutes.post('/', zValidator('json', z.object({ name: z.string().trim().min(1)
   const slug = tagSlug(name)
   const id = crypto.randomUUID()
 
-  try {
-    await db.insert(tags).values({ id, name, slug })
-  } catch (e: unknown) {
-    if (String(e).includes('UNIQUE')) {
-      return c.json({ error: 'Tag already exists' }, 409)
-    }
-    throw e
-  }
-
-  const [tag] = await db.select().from(tags).where(eq(tags.id, id))
+  const [tag] = await db.insert(tags).values({ id, name, slug }).onConflictDoNothing().returning()
+  if (!tag) return c.json({ error: 'Tag already exists' }, 409)
   return c.json(tag, 201)
 })
 

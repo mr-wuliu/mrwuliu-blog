@@ -317,7 +317,7 @@ export default function Analytics() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t('analytics.searchPost')}
-            className="w-full max-w-[220px] px-3 py-1.5 text-xs border border-black outline-none focus:ring-1 focus:ring-black"
+            className="w-full max-w-[220px] px-3 py-1.5 text-xs border border-black outline-hidden focus:ring-1 focus:ring-black"
           />
         </div>
 

@@ -3,6 +3,7 @@ import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { transform } from 'esbuild'
+import { parseWranglerJson } from './wrangler-json.mjs'
 
 const production = process.argv.includes('--production')
 const target = production ? ['--remote', '--env', 'production'] : ['--local']
@@ -14,7 +15,7 @@ function run(args, json = false) {
   })
   if (result.error) throw result.error
   if (result.status !== 0) throw new Error(`D1 command failed (${result.status})`)
-  return json ? JSON.parse(result.stdout) : undefined
+  return json ? parseWranglerJson(result.stdout) : undefined
 }
 function query(command) {
   const response = run(['d1', 'execute', 'DB', ...target, '--command', command, '--json'], true)

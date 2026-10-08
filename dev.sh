@@ -25,17 +25,47 @@ process_stamp() {
   awk '{print $22}' "/proc/$1/stat"
 }
 
+is_owned_server() {
+  local pid=$1 pgid
+  local -a args
+  [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 1 ] || return 1
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  mapfile -d '' -t args < "/proc/$pid/cmdline" || return 1
+  [ "${args[1]:-}" = "$PROJECT_DIR/node_modules/wrangler/bin/wrangler.js" ] || return 1
+  [ "${args[2]:-}" = dev ] || return 1
+  [ "$(readlink "/proc/$pid/cwd")" = "$PROJECT_DIR" ] || return 1
+  pgid=$(ps -o pgid= -p "$pid" | tr -d ' ') || return 1
+  [ "$pgid" = "$pid" ]
+}
+
 is_running() {
   [ -f "$PID_FILE" ] || return 1
-  local pid saved_stamp current_stamp command
+  local pid saved_stamp current_stamp
   read -r pid saved_stamp < "$PID_FILE" || return 1
   [[ "$pid" =~ ^[0-9]+$ ]] && [ "$pid" -gt 1 ] || return 1
   kill -0 "$pid" 2>/dev/null || return 1
   current_stamp=$(process_stamp "$pid") || return 1
   [ -z "${saved_stamp:-}" ] || [ "$saved_stamp" = "$current_stamp" ] || return 1
-  command=$(tr '\0' ' ' < "/proc/$pid/cmdline") || return 1
-  [[ "$command" == *"$PROJECT_DIR/node_modules/wrangler/bin/wrangler.js dev"* ]] || return 1
-  [ "$(readlink "/proc/$pid/cwd")" = "$PROJECT_DIR" ]
+  is_owned_server "$pid"
+}
+
+recover_server() {
+  is_running && return 0
+  local command_file pid found='' stamp
+  for command_file in /proc/[0-9]*/cmdline; do
+    pid=${command_file#/proc/}
+    pid=${pid%/cmdline}
+    if is_owned_server "$pid"; then
+      [ -z "$found" ] || return 1
+      found=$pid
+    fi
+  done
+  [ -n "$found" ] || return 1
+  stamp=$(process_stamp "$found") || return 1
+  is_owned_server "$found" || return 1
+  mkdir -p "$PID_DIR"
+  printf '%s %s\n' "$found" "$stamp" > "$PID_FILE"
+  info "Recovered this project's dev server (PID $found)."
 }
 
 port_bound() {
@@ -62,6 +92,7 @@ ensure_log_dir() {
 
 cmd_start() {
   ensure_log_dir
+  recover_server || true
 
   # --- Ensure git hooks are installed ---
   if [ -d "$PROJECT_DIR/hooks" ]; then
@@ -111,6 +142,7 @@ cmd_start() {
 }
 
 cmd_stop() {
+  recover_server || true
   if is_running; then
     local pid stamp i
     read -r pid stamp < "$PID_FILE"
@@ -145,6 +177,7 @@ cmd_migrate() {
 }
 
 cmd_status() {
+  recover_server || true
   echo ""
   info "Dev environment status:"
   echo ""

@@ -131,7 +131,7 @@ export default function SiteConfig() {
         <div className="space-y-4">
           <div className="flex items-end gap-4">
             <div
-              className="group relative w-28 h-28 border-2 border-black flex-shrink-0 cursor-pointer overflow-hidden bg-gray-50"
+              className="group relative w-28 h-28 border-2 border-black shrink-0 cursor-pointer overflow-hidden bg-gray-50"
               onClick={() => !uploading && fileInputRef.current?.click()}
               onMouseEnter={() => setHoverAvatar(true)}
               onMouseLeave={() => { setHoverAvatar(false); setDragOver(false) }}
@@ -170,7 +170,7 @@ export default function SiteConfig() {
                   value={github}
                   onChange={(e) => setGithub(e.target.value)}
                   placeholder={t('siteConfig.githubPlaceholder')}
-                  className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:border-black"
+                  className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-hidden focus:border-black"
                 />
               </div>
               <div className="w-64">
@@ -182,7 +182,7 @@ export default function SiteConfig() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('siteConfig.emailPlaceholder')}
-                  className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:border-black"
+                  className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-hidden focus:border-black"
                 />
               </div>
             </div>
@@ -197,7 +197,7 @@ export default function SiteConfig() {
               onChange={(e) => setBio(e.target.value)}
               placeholder={t('siteConfig.bioPlaceholder')}
               rows={2}
-              className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-none focus:border-black resize-y"
+              className="w-full px-3 py-2 border-2 border-black text-sm focus:outline-hidden focus:border-black resize-y"
             />
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function SiteConfig() {
               role="switch"
               aria-checked={regAutoApprove}
               onClick={() => setRegAutoApprove(!regAutoApprove)}
-              className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors flex-shrink-0 ${regAutoApprove ? 'bg-black' : 'bg-white'}`}
+              className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors shrink-0 ${regAutoApprove ? 'bg-black' : 'bg-white'}`}
             >
               <span
                 className={`inline-block h-4 w-4 transition-transform ${regAutoApprove ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-black'}`}
@@ -240,7 +240,7 @@ export default function SiteConfig() {
               role="switch"
               aria-checked={anonAutoApprove}
               onClick={() => setAnonAutoApprove(!anonAutoApprove)}
-              className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors flex-shrink-0 ${anonAutoApprove ? 'bg-black' : 'bg-white'}`}
+              className={`relative inline-flex h-7 w-12 items-center border-2 border-black cursor-pointer transition-colors shrink-0 ${anonAutoApprove ? 'bg-black' : 'bg-white'}`}
             >
               <span
                 className={`inline-block h-4 w-4 transition-transform ${anonAutoApprove ? 'translate-x-5 bg-white' : 'translate-x-0.5 bg-black'}`}

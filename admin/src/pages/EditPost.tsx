@@ -54,8 +54,8 @@ export default function EditPost() {
   const [contentEn, setContentEn] = useState('')
   const [activeLang, setActiveLang] = useState<'zh' | 'en'>('zh')
   const [activeEditor, setActiveEditor] = useState<TipTapEditor | null>(null)
-  const [tocExpanded, setTocExpanded] = useState(true)
-  const [infoExpanded, setInfoExpanded] = useState(true)
+  const [tocExpanded, setTocExpanded] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
+  const [infoExpanded, setInfoExpanded] = useState(() => window.matchMedia('(min-width: 1024px)').matches)
   const [collectionsExpanded, setCollectionsExpanded] = useState(true)
   const [loadedPostId, setLoadedPostId] = useState<string | undefined>(id)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -229,7 +229,7 @@ export default function EditPost() {
 
   return (
     <div className="h-full text-black flex flex-col overflow-hidden">
-      <nav className="h-9 border-b border-black bg-white flex items-center flex-shrink-0 px-2 gap-1">
+      <nav className="h-9 border-b border-black bg-white flex items-center shrink-0 px-2 gap-1">
         <button
           type="button"
           onClick={() => guardedNavigate('/posts')}
@@ -280,7 +280,7 @@ export default function EditPost() {
           onClick={() => handleSave('draft')}
           disabled={saving || !title}
           title={t('editPost.saveDraft')}
-          className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider border border-black border-opacity-40 opacity-60 disabled:opacity-30 hover:opacity-100 hover:bg-black hover:text-white disabled:hover:bg-transparent disabled:hover:text-black transition-all cursor-pointer"
+          className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider border border-black/40 opacity-60 disabled:opacity-30 hover:opacity-100 hover:bg-black hover:text-white disabled:hover:bg-transparent disabled:hover:text-black transition-all cursor-pointer"
         >
           {t('editPost.saveDraft')}
         </button>
@@ -305,7 +305,7 @@ export default function EditPost() {
             className={`h-7 px-2 flex items-center justify-center text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
               collectionsExpanded
                 ? 'border-black bg-black text-white'
-                : 'border-black border-opacity-30 opacity-50 hover:opacity-100'
+                : 'border-black/30 opacity-50 hover:opacity-100'
             }`}
           >
             {t('editPost.collections')}
@@ -318,7 +318,7 @@ export default function EditPost() {
           className={`h-7 px-2 flex items-center justify-center text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
             tocExpanded
               ? 'border-black bg-black text-white'
-              : 'border-black border-opacity-30 opacity-50 hover:opacity-100'
+              : 'border-black/30 opacity-50 hover:opacity-100'
           }`}
         >
           ☰ {t('editPost.toc')}
@@ -330,23 +330,23 @@ export default function EditPost() {
           className={`h-7 px-2 flex items-center justify-center text-[10px] font-bold uppercase tracking-wider border transition-all cursor-pointer ${
             infoExpanded
               ? 'border-black bg-black text-white'
-              : 'border-black border-opacity-30 opacity-50 hover:opacity-100'
+              : 'border-black/30 opacity-50 hover:opacity-100'
           }`}
         >
           {t('editPost.metadata')}
         </button>
       </nav>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="relative flex-1 flex min-h-0">
         <div
-          className={`border-r border-black border-opacity-20 bg-white flex-shrink-0 overflow-hidden transition-all duration-200 ${
+          className={`absolute inset-y-0 left-0 z-20 lg:static border-r border-black/20 bg-white shrink-0 overflow-hidden transition-all duration-200 ${
             tocExpanded ? 'w-48' : 'w-0'
           }`}
         >
           <div className="w-48 h-full overflow-y-auto">
             {collectionsExpanded && postCollections.length > 0 && (
-              <div className="border-b border-black border-opacity-20">
-                <div className="px-3 py-2 border-b border-black border-opacity-10">
+              <div className="border-b border-black/20">
+                <div className="px-3 py-2 border-b border-black/10">
                   <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">
                     {t('editPost.collections')}
                   </span>
@@ -364,8 +364,8 @@ export default function EditPost() {
                             onClick={() => cp.id !== id && guardedNavigate(`/posts/${cp.id}/edit`)}
                             className={`w-full text-left text-[11px] leading-tight px-1 py-0.5 rounded transition-colors ${
                               cp.id === id
-                                ? 'font-bold text-black bg-black bg-opacity-5'
-                                : 'text-black text-opacity-50 hover:text-opacity-100 hover:bg-black hover:bg-opacity-5 cursor-pointer'
+                                ? 'font-bold text-black bg-black/5'
+                                : 'text-black/50 hover:text-black hover:bg-black/5 cursor-pointer'
                             }`}
                           >
                             {idx + 1}. {cp.title}
@@ -381,8 +381,8 @@ export default function EditPost() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <div className="max-w-4xl mx-auto px-8 py-6">
+        <div className="flex-1 overflow-y-auto min-h-0 min-w-0">
+          <div className="max-w-4xl mx-auto px-2 py-3 sm:px-8 sm:py-6">
             <Editor
               key={`${activeLang}-${loadedPostId}`}
               content={activeLang === 'zh' ? content : contentEn}
@@ -393,12 +393,12 @@ export default function EditPost() {
         </div>
 
         <div
-          className={`border-l border-black border-opacity-20 bg-white flex-shrink-0 overflow-hidden transition-all duration-200 ${
+          className={`absolute inset-y-0 right-0 z-20 lg:static border-l border-black/20 bg-white shrink-0 overflow-hidden transition-all duration-200 ${
             infoExpanded ? 'w-72' : 'w-0'
           }`}
         >
           <div className="w-72 h-full overflow-y-auto">
-            <div className="px-4 py-3 border-b border-black border-opacity-20">
+            <div className="px-4 py-3 border-b border-black/20">
               <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">
                 {t('editPost.metadata')}
               </span>
@@ -415,7 +415,7 @@ export default function EditPost() {
                       onChange={(v) => handleTitleChange(v.replace(/\n/g, ' '))}
                       onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={t('editPost.titlePlaceholder')}
-                      className="w-full text-sm font-bold bg-transparent border border-black border-opacity-30 px-3 py-2 outline-none placeholder-black placeholder-opacity-30 text-black focus:border-black transition-colors"
+                      className="w-full text-sm font-bold bg-transparent border border-black/30 px-3 py-2 outline-hidden placeholder:text-black/30 text-black focus:border-black transition-colors"
                     />
                   </div>
                   <div>
@@ -427,7 +427,7 @@ export default function EditPost() {
                       value={slug}
                       onChange={(e) => handleSlugChange(e.target.value)}
                       placeholder="url-slug"
-                      className="w-full text-sm bg-transparent border border-black border-opacity-30 px-3 py-2 outline-none text-black opacity-50 placeholder-black placeholder-opacity-20 focus:border-black transition-colors"
+                      className="w-full text-sm bg-transparent border border-black/30 px-3 py-2 outline-hidden text-black opacity-50 placeholder:text-black/20 focus:border-black transition-colors"
                     />
                   </div>
                   <div>
@@ -439,7 +439,7 @@ export default function EditPost() {
                       value={tagsInput}
                       onChange={(e) => { markDirty(); setTagsInput(e.target.value) }}
                       placeholder={t('editPost.tagsPlaceholder')}
-                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black transition-colors"
+                      className="w-full text-sm border border-black/30 px-3 py-2 outline-hidden text-black placeholder:text-black/30 focus:border-black transition-colors"
                     />
                   </div>
                   <div>
@@ -451,7 +451,7 @@ export default function EditPost() {
                       onChange={(v) => { markDirty(); setExcerpt(v) }}
                       placeholder={t('editPost.excerptPlaceholder')}
                       minRows={3}
-                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black transition-colors"
+                      className="w-full text-sm border border-black/30 px-3 py-2 outline-hidden text-black placeholder:text-black/30 focus:border-black transition-colors"
                     />
                   </div>
                   <div className="flex items-center gap-6">
@@ -476,7 +476,7 @@ export default function EditPost() {
                       onChange={(v) => { markDirty(); setTitleEn(v.replace(/\n/g, ' ')) }}
                       onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault() }}
                       placeholder={t('editPost.titleEnPlaceholder')}
-                      className="w-full text-sm font-bold bg-transparent border border-black border-opacity-30 px-3 py-2 outline-none placeholder-black placeholder-opacity-30 text-black focus:border-black transition-colors"
+                      className="w-full text-sm font-bold bg-transparent border border-black/30 px-3 py-2 outline-hidden placeholder:text-black/30 text-black focus:border-black transition-colors"
                     />
                   </div>
                   <div>
@@ -488,7 +488,7 @@ export default function EditPost() {
                       onChange={(v) => { markDirty(); setExcerptEn(v) }}
                       placeholder={t('editPost.excerptEnPlaceholder')}
                       minRows={3}
-                      className="w-full text-sm border border-black border-opacity-30 px-3 py-2 outline-none text-black placeholder-black placeholder-opacity-30 focus:border-black transition-colors"
+                      className="w-full text-sm border border-black/30 px-3 py-2 outline-hidden text-black placeholder:text-black/30 focus:border-black transition-colors"
                     />
                   </div>
                 </>

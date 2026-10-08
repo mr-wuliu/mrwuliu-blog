@@ -15,7 +15,7 @@ Live site: [https://mrwuliu.top/](https://mrwuliu.top/)
 | Admin Panel | Vite + React SPA (in `/admin`), built to `/public/admin` |
 | Styling | Tailwind CSS |
 | i18n | Custom implementation with `zh` / `en` locales |
-| Testing | [Vitest](https://vitest.dev/) with `@cloudflare/vitest-pool-workers` |
+| Testing | [Vitest](https://vitest.dev/) with `@cloudflare/vitest-plugin` |
 | CI/CD | GitHub Actions (typecheck → test → build → deploy) |
 
 ## Prerequisites
@@ -120,6 +120,8 @@ npm run deploy
 `npm run deploy` runs the same typecheck, complete test suite, build, and migration steps before deploying. It accepts `CLOUDFLARE_API_TOKEN` or the existing `CF_API_TOKEN` from `.env`.
 
 API authentication accepts an API key, a verified Cloudflare Access JWT, or an admin session. Hostnames and the presence of Access headers do not grant access. To use Cloudflare Access, configure both `ACCESS_TEAM_DOMAIN` (your `*.cloudflareaccess.com` team domain) and `ACCESS_AUD` (the application's audience tag) as production Worker secrets. The deployment workflow also accepts these two GitHub secrets. Local API bypass requires both `ENVIRONMENT=development` and `DISABLE_API_AUTH=true`; production disables it.
+
+Run the `Release preflight` workflow manually to inspect production Access binding names and, when the Cloudflare token has Access read permission, the blog application's team domain and audience. It only reads configuration and never logs secret values.
 
 ## Available Scripts
 
