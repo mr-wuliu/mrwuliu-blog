@@ -38,6 +38,7 @@ type LayoutProps = PropsWithChildren<{
   modifiedTime?: string
   authorName?: string
   extraHead?: unknown
+  homeLayout?: boolean
   sidebarExtra?: unknown
 }>
 
@@ -56,9 +57,10 @@ const Layout: FC<LayoutProps> = ({
   authorName,
   extraHead,
   sidebarExtra,
+  homeLayout = false,
   children,
 }) => {
-  const hasSidebar = !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
+  const hasSidebar = !homeLayout && !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
   const toggleHref = langPath(currentPath, otherLang(lang))
   const year = new Date().getFullYear()
 
@@ -70,14 +72,24 @@ const Layout: FC<LayoutProps> = ({
         <link rel="icon" href="/favicon.svg" sizes="any" type="image/svg+xml" />
         <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9567625576719604" crossorigin="anonymous"></script>
         <script dangerouslySetInnerHTML={{ __html:
-          '(function(){' +
-          'var ts=["default","coffee"];' +
-          'function ok(t){return ts.indexOf(t)!==-1}' +
-          'var p=new URLSearchParams(location.search).get("theme");' +
-          'var s="default";' +
-          'if(ok(p))s=p;else{try{var v=localStorage.getItem("theme");if(ok(v))s=v}catch(e){}}' +
-          'document.documentElement.setAttribute("data-theme",s);' +
-          '})();'
+          `(function(){
+            var modes=['light','dark','system'];
+            function valid(v){return modes.indexOf(v)!==-1}
+            function normalize(v){return v==='default'?'light':v==='coffee'?'system':v}
+            var mode=normalize(new URLSearchParams(location.search).get('theme'));
+            if(!valid(mode)){try{mode=normalize(localStorage.getItem('theme'))}catch(e){}}
+            window.__themeMode=valid(mode)?mode:'system';
+            window.__themeMedia=window.matchMedia('(prefers-color-scheme: dark)');
+            window.__applyTheme=function(mode){
+              window.__themeMode=valid(mode)?mode:'system';
+              var resolved=window.__themeMode==='system'?(window.__themeMedia.matches?'dark':'light'):window.__themeMode;
+              document.documentElement.dataset.theme=resolved;
+              document.documentElement.style.colorScheme=resolved;
+              document.querySelectorAll('.theme-select').forEach(function(s){s.value=window.__themeMode});
+            };
+            window.__applyTheme(window.__themeMode);
+            window.__themeMedia.addEventListener('change',function(){window.__applyTheme(window.__themeMode)});
+          })();`
         }} />
         <link rel="stylesheet" href="/css/tailwind.css" />
         <link rel="stylesheet" href="/css/style.css" />
@@ -130,8 +142,8 @@ const Layout: FC<LayoutProps> = ({
         {extraHead}
       </head>
       <body class="font-sans text-base leading-relaxed text-black bg-white antialiased min-h-screen flex flex-col">
-        <header class="border-b border-black bg-white">
-          <nav class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-4">
+        <header class="site-header">
+          <nav class="site-nav max-w-6xl mx-auto px-4 md:px-8 lg:px-12 py-4">
             {/* Mobile: Logo + Hamburger */}
             <div class="flex items-center justify-between gap-4 lg:hidden">
               <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
@@ -145,8 +157,9 @@ const Layout: FC<LayoutProps> = ({
               <div class="pt-4 border-t border-black mt-4">
                 <div class="mobile-menu-controls">
                   <select class="theme-select" aria-label="Theme">
-                    <option value="default">Default</option>
-                    <option value="coffee">Coffee</option>
+                    <option value="system">{t(lang, 'theme.system')}</option>
+                    <option value="light">{t(lang, 'theme.light')}</option>
+                    <option value="dark">{t(lang, 'theme.dark')}</option>
                   </select>
                   <a href={toggleHref} class="lang-toggle">
                     <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
@@ -189,8 +202,9 @@ const Layout: FC<LayoutProps> = ({
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     </a>
                     <select class="theme-select" aria-label="Theme">
-                      <option value="default">Default</option>
-                      <option value="coffee">Coffee</option>
+                      <option value="system">{t(lang, 'theme.system')}</option>
+                      <option value="light">{t(lang, 'theme.light')}</option>
+                      <option value="dark">{t(lang, 'theme.dark')}</option>
                     </select>
                     <a href={toggleHref} class="lang-toggle">
                       <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
@@ -220,8 +234,9 @@ const Layout: FC<LayoutProps> = ({
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     </a>
                     <select class="theme-select" aria-label="Theme">
-                      <option value="default">Default</option>
-                      <option value="coffee">Coffee</option>
+                      <option value="system">{t(lang, 'theme.system')}</option>
+                      <option value="light">{t(lang, 'theme.light')}</option>
+                      <option value="dark">{t(lang, 'theme.dark')}</option>
                     </select>
                     <a href={toggleHref} class="lang-toggle">
                       <span class={`lang-toggle-option${lang === 'en' ? ' lang-toggle-option-active' : ''}`} data-lang="en">EN</span>
@@ -237,7 +252,7 @@ const Layout: FC<LayoutProps> = ({
             </div>
           </nav>
         </header>
-        <main class="max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-10 md:pt-12 pb-8 md:pb-12 flex-1 w-full">
+        <main class={`${homeLayout ? 'home-main ' : ''}max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-10 md:pt-12 pb-8 md:pb-12 flex-1 w-full`}>
           {hasSidebar ? (
             <div class="lg:flex lg:gap-16">
               <div class="flex-1 min-w-0">
@@ -274,28 +289,15 @@ const Layout: FC<LayoutProps> = ({
           '(function(){var btn=document.getElementById("mobile-menu-btn");var menu=document.getElementById("mobile-menu");if(!btn||!menu)return;function close(){menu.style.maxHeight="0";btn.classList.remove("mobile-menu-btn-active");btn.setAttribute("aria-expanded","false")}function open(){menu.style.maxHeight=menu.scrollHeight+"px";btn.classList.add("mobile-menu-btn-active");btn.setAttribute("aria-expanded","true")}close();menu.style.overflow="hidden";menu.style.transition="max-height 0.3s ease";btn.addEventListener("click",function(){var isOpen=btn.getAttribute("aria-expanded")==="true";if(isOpen)close();else open()});menu.querySelectorAll("a").forEach(function(a){a.addEventListener("click",close)});window.addEventListener("resize",function(){if(btn.getAttribute("aria-expanded")==="true")menu.style.maxHeight=menu.scrollHeight+"px"})})();'
         }} />
         <script dangerouslySetInnerHTML={{ __html:
-          'var __themes=["default","coffee"];' +
-          'function __okTheme(t){return __themes.indexOf(t)!==-1}' +
-          'function __getTheme(){' +
-          'var p=new URLSearchParams(location.search).get("theme");if(__okTheme(p))return p;' +
-          'try{var s=localStorage.getItem("theme");if(__okTheme(s))return s}catch(e){}' +
-          'return "default";' +
-          '}' +
-          'function __applyTheme(t){' +
-          'var th=__okTheme(t)?t:"default";' +
-          'document.documentElement.setAttribute("data-theme",th);' +
-          'document.body.setAttribute("data-theme",th);' +
-          'document.querySelectorAll(".theme-select").forEach(function(s){s.value=th});' +
-          '}' +
-          '__applyTheme(__getTheme());' +
-          'document.querySelectorAll(".theme-select").forEach(function(s){s.addEventListener("change",function(){' +
-          'var th=__okTheme(this.value)?this.value:"default";' +
-          '__applyTheme(th);' +
-          'try{localStorage.setItem("theme",th)}catch(e){}' +
-          'var u=new URL(location.href);' +
-          'if(th==="default")u.searchParams.delete("theme");else u.searchParams.set("theme",th);' +
-          'history.replaceState(null,"",u.pathname+(u.search?u.search:"")+u.hash);' +
-          '})});'
+          `window.__applyTheme(window.__themeMode);
+          document.querySelectorAll('.theme-select').forEach(function(select){
+            select.addEventListener('change',function(){
+              window.__applyTheme(this.value);
+              try{localStorage.setItem('theme',window.__themeMode)}catch(e){}
+              var url=new URL(location.href);url.searchParams.delete('theme');
+              history.replaceState(null,'',url.pathname+url.search+url.hash);
+            });
+          });`
         }} />
         <script dangerouslySetInnerHTML={{ __html:
           '(function(){' +

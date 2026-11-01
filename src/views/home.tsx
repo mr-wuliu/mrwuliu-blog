@@ -1,6 +1,6 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
-import type { AuthorProfile } from './components/author-sidebar'
+import AuthorSidebar, { type AuthorProfile } from './components/author-sidebar'
 import { OrganizationSchema, WebSiteSchema } from './components/structured-data'
 import { type Lang, t, tf, langPath, formatDateLang } from '../i18n'
 
@@ -55,9 +55,15 @@ type HomeProps = {
 
 const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
   return (
-    <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-4 sm:mb-6">
+    <article class={`journal-card${post.coverImageKey ? ' journal-card-image' : ' journal-card-text'}`}>
+      {post.coverImageKey && (
+        <a href={langPath(`/posts/${post.slug}`, lang)} class="journal-cover" tabindex={-1} aria-hidden="true">
+          <img src={`/images/${post.coverImageKey}`} alt="" loading="lazy" decoding="async" />
+        </a>
+      )}
+      <div class="journal-card-body">
       <a href={langPath(`/posts/${post.slug}`, lang)} class="no-underline text-black block">
-        <h2 class="text-lg sm:text-xl font-bold tracking-tight mb-2 break-words">
+        <h2 class="journal-title">
           {post.pinned && <span class="text-red-500 mr-1">📌</span>}
           {post.title}
         </h2>
@@ -66,20 +72,22 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
             {formatDateLang(post.publishedAt, lang)}
           </time>
         )}
-        {post.excerpt && <p class="mt-3 opacity-70 text-base sm:text-lg leading-relaxed">{post.excerpt}</p>}
+        {post.excerpt && <p class="journal-excerpt">{post.excerpt}</p>}
       </a>
-      <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+      <div class="journal-card-footer">
         <div class="flex flex-wrap gap-2">
           {post.tags && post.tags.map((tag) => (
             <a href={langPath(`/tags/${tag.slug}`, lang)} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
           ))}
         </div>
         <div class="flex items-center gap-4 shrink-0">
-          <a href={langPath(`/posts/${post.slug}`, lang)} class="flex items-center gap-1 text-xs font-bold uppercase tracking-widest opacity-50 no-underline text-black hover:opacity-100 transition-all">
+          <a href={langPath(`/posts/${post.slug}`, lang)} aria-label={t(lang, 'home.comments')} class="flex items-center gap-1 text-xs font-bold uppercase tracking-widest opacity-50 no-underline text-black hover:opacity-100 transition-all">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/></svg>
             <span>{post.commentCount ?? 0}</span>
           </a>
           <button
+            type="button"
+            aria-label={t(lang, 'home.like')}
             class="like-btn flex items-center gap-1 text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all"
             data-post-id={post.id}
             data-like-count={post.likeCount ?? 0}
@@ -89,6 +97,7 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
           </button>
         </div>
       </div>
+      </div>
     </article>
   )
 }
@@ -97,15 +106,15 @@ const SeriesStack: FC<{ collection: SeriesRef; posts: Post[]; lang: Lang }> = ({
   const displayName = lang === 'en' && collection.nameEn ? collection.nameEn : collection.name
 
   return (
-    <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none mb-4 sm:mb-6">
+    <article class="journal-card journal-series journal-card-body">
       <div class="flex items-center gap-3 min-w-0 flex-wrap">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
         <a href={langPath(`/series/${collection.slug}`, lang)} class="text-lg sm:text-xl font-bold tracking-tight text-black no-underline hover:opacity-70 transition-all break-words">{displayName}</a>
         <span class="shrink-0 text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5">{tf(lang, 'home.seriesCount')(posts.length)}</span>
       </div>
       <div class="mt-4 flex flex-col gap-2">
-        {posts.map((post, i) => (
-          <div class="border border-black bg-white hover:-translate-y-0.5 transition-all">
+        {posts.slice(0, 3).map((post, i) => (
+          <div class="journal-series-entry">
             <a href={langPath(`/posts/${post.slug}`, lang)} class="block px-3 py-2 no-underline text-black">
               <div class="flex items-baseline gap-2 sm:gap-3 min-w-0 flex-wrap">
                 <span class="text-xs font-bold opacity-30 shrink-0 tabular-nums">{String(i + 1).padStart(2, '0')}</span>
@@ -119,6 +128,7 @@ const SeriesStack: FC<{ collection: SeriesRef; posts: Post[]; lang: Lang }> = ({
           </div>
         ))}
       </div>
+      <a class="journal-series-more" href={langPath(`/series/${collection.slug}`, lang)}>{t(lang, 'nav.series')} <span aria-hidden="true">↗</span></a>
     </article>
   )
 }
@@ -155,6 +165,7 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
       description={t(lang, 'home.description')}
       url={langPath('/', lang)}
       type="website"
+      homeLayout
       authorProfile={authorProfile}
       lang={lang}
       currentPath="/"
@@ -165,13 +176,18 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
         </>
       }
     >
-      <div>
-        <div class="flex items-center gap-4 mb-6 sm:mb-10 flex-wrap">
-          <h1 class="text-2xl sm:text-4xl font-bold tracking-tight" data-t="home.title">{t(lang, 'home.title')}</h1>
-          <a href={langPath('/series', lang)} data-thref="/series" class="inline-flex items-center gap-2 px-4 py-2 border border-black text-sm font-medium uppercase tracking-widest hover:bg-black hover:text-white transition-colors no-underline text-black">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-            {t(lang, 'nav.series')}
-          </a>
+      <section class="home-journal">
+        <div class="journal-intro">
+          <div>
+            <p class="journal-eyebrow">MRWULIU / <span data-t="home.journal">{t(lang, 'home.journal')}</span></p>
+            <h1 data-t="home.intro">{t(lang, 'home.intro')}</h1>
+            <p class="journal-subtitle" data-t="home.subtitle">{t(lang, 'home.subtitle')}</p>
+          </div>
+          {authorProfile && <div class="journal-author"><AuthorSidebar profile={authorProfile} /></div>}
+        </div>
+        <div class="journal-section-heading">
+          <h2 data-t="home.title">{t(lang, 'home.title')}</h2>
+          <a href={langPath('/writings', lang)} data-thref="/writings"><span data-t="nav.writings">{t(lang, 'nav.writings')}</span> <span aria-hidden="true">↗</span></a>
         </div>
         {groups.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
@@ -179,7 +195,7 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
           </div>
         ) : (
           <>
-            <div>
+            <div class="journal-grid">
               {groups.map((group) =>
                 group.kind === 'post' ? (
                   <PostCard post={group.post} lang={lang} />
@@ -191,9 +207,34 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
             <Pagination pagination={pagination} lang={lang} />
           </>
         )}
-      </div>
+      </section>
       <script dangerouslySetInnerHTML={{ __html: `
 (function() {
+  var grid = document.querySelector('.journal-grid');
+  if (grid) {
+    var frame;
+    function layout() {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(function() {
+        var columns = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+        grid.classList.toggle('is-masonry', columns > 1);
+        grid.querySelectorAll(':scope > article').forEach(function(card) {
+          card.style.gridRowEnd = columns > 1 ? 'span ' + Math.ceil((card.getBoundingClientRect().height + 24) / 8) : '';
+        });
+      });
+    }
+    var observer = new ResizeObserver(layout);
+    observer.observe(grid);
+    grid.querySelectorAll(':scope > article').forEach(function(card) { observer.observe(card); });
+    grid.querySelectorAll('img').forEach(function(img) {
+      img.addEventListener('load', layout);
+      function fallback() { img.closest('.journal-cover').hidden = true; layout(); }
+      img.addEventListener('error', fallback);
+      if (img.complete && !img.naturalWidth) fallback();
+    });
+    document.fonts.ready.then(layout);
+    layout();
+  }
   function getFingerprint() {
     var k = 'blog_fp';
     var fp = localStorage.getItem(k);

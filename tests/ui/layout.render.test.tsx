@@ -12,7 +12,9 @@ describe("Layout render", () => {
 
     expect(html).toContain('<html lang="en"');
     expect(html).toContain('class="theme-select"');
-    expect(html).toContain('<option value="coffee">Coffee</option>');
+    expect(html).toContain('<option value="system">System</option>');
+    expect(html).toContain('<option value="light">Light</option>');
+    expect(html).toContain('<option value="dark">Dark</option>');
     expect(html).toContain('href="/en/writings"');
     expect(html).toContain('lang-toggle-option-active');
   });

@@ -1,4 +1,5 @@
 export default {
+  theme: { system: 'System', light: 'Light', dark: 'Dark' },
   nav: {
     writings: 'Writings',
     series: 'Series',
@@ -12,6 +13,12 @@ export default {
     search: 'Search',
   },
   home: {
+    intro: 'Ideas, stories & discoveries.',
+    subtitle: 'Notes on technology, life, and everything in between.',
+    journal: 'Writing & notes',
+    read: 'Read article',
+    comments: 'Comments',
+    like: 'Like',
     title: 'Latest Posts',
     noPosts: 'No posts yet',
     description: 'Personal Blog - Tech & Life',

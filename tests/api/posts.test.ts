@@ -21,6 +21,28 @@ describe("Posts API", () => {
     expect(body.tags).toHaveLength(2);
   });
 
+  it("persists covers, preserves them on unrelated edits, and supports replacement and removal", async () => {
+    const createdRes = await appFetch('/api/posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Cover round trip', content: '', coverImageKey: 'images/portrait.webp' }),
+    });
+    expect(createdRes.status).toBe(201);
+    const created = await createdRes.json();
+    expect(created.coverImageKey).toBe('images/portrait.webp');
+    for (const [patch, expected] of [
+      [{ title: 'Updated title' }, 'images/portrait.webp'],
+      [{ coverImageKey: 'images/landscape.webp' }, 'images/landscape.webp'],
+      [{ coverImageKey: null }, null],
+    ] as const) {
+      const res = await appFetch(`/api/posts/${created.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch),
+      });
+      expect(res.status).toBe(200);
+      expect((await res.json()).coverImageKey).toBe(expected);
+      expect((await (await appFetch(`/api/posts/${created.id}`)).json()).coverImageKey).toBe(expected);
+    }
+  });
+
   it("should list posts with pagination", async () => {
     const res = await appFetch("/api/posts");
     expect(res.status).toBe(200);

@@ -1,4 +1,5 @@
 export default {
+  theme: { system: '跟随系统', light: '浅色', dark: '深色' },
   nav: {
     writings: '文字',
     series: '系列',
@@ -12,6 +13,12 @@ export default {
     search: '搜索',
   },
   home: {
+    intro: '技术、生活与沿途的灵感。',
+    subtitle: '记录探索，分享所见与所想。',
+    journal: '文章与手记',
+    read: '阅读文章',
+    comments: '评论',
+    like: '点赞',
     title: '最新文章',
     noPosts: '暂无文章',
     description: '个人博客 - 记录技术与生活',

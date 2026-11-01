@@ -16,6 +16,7 @@ interface PostData {
   content: string
   status: string
   excerpt: string
+  coverImageKey: string | null
   hidden: boolean
   pinned: boolean
   tags: { id: string; name: string; slug: string }[]
@@ -43,6 +44,9 @@ export default function EditPost() {
   const [slug, setSlug] = useState('')
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
   const [excerpt, setExcerpt] = useState('')
+  const [coverImageKey, setCoverImageKey] = useState<string | null>(null)
+  const [coverUploading, setCoverUploading] = useState(false)
+  const [coverError, setCoverError] = useState<string | null>(null)
   const [tagsInput, setTagsInput] = useState('')
   const [content, setContent] = useState('')
   const [hidden, setHidden] = useState(false)
@@ -61,6 +65,8 @@ export default function EditPost() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveError, setSaveError] = useState<string | null>(null)
   const originalRef = useRef<{ title: string; content: string; slug: string; excerpt: string; tagsInput: string; hidden: boolean; pinned: boolean; titleEn: string; excerptEn: string; contentEn: string } | null>(null)
+
+  const coverRequestRef = useRef(0)
 
   const markDirty = useCallback(() => { setEditorDirty(true) }, [])
 
@@ -92,8 +98,12 @@ export default function EditPost() {
   }, [])
 
   useEffect(() => {
+    coverRequestRef.current++
+    setCoverUploading(false)
+    setCoverError(null)
     if (!id) {
       setTitle(''); setSlug(''); setSlugManuallyEdited(false); setExcerpt(''); setTagsInput('')
+      setCoverImageKey(null); setCoverError(null)
       setContent(''); setContentEn(''); setTitleEn(''); setExcerptEn('')
       setHidden(false); setPinned(false); setPostCollections([]); setLoadedPostId(undefined)
       setLoadError(null); setLoading(false); setEditorDirty(false)
@@ -107,6 +117,7 @@ export default function EditPost() {
       setTitle(post.title)
       setSlug(post.slug)
       setSlugManuallyEdited(true)
+      setCoverImageKey(post.coverImageKey ?? null)
       setExcerpt(post.excerpt ?? '')
       setTagsInput(post.tags.map((tag) => tag.name).join(', '))
       setContent(post.content)
@@ -132,7 +143,7 @@ export default function EditPost() {
       console.error('Failed to load post collections', err)
       if (!cancelled) setPostCollections([])
     })
-    return () => { cancelled = true }
+    return () => { cancelled = true; coverRequestRef.current++ }
   }, [id])
 
   useEffect(() => {
@@ -159,8 +170,26 @@ export default function EditPost() {
     setSlugManuallyEdited(true)
   }, [])
 
+  const handleCoverUpload = async (file: File) => {
+    const request = ++coverRequestRef.current
+    markDirty()
+    setCoverUploading(true)
+    setCoverError(null)
+    try {
+      const image = await api.upload<{ r2Key: string }>('/images', file)
+      if (request !== coverRequestRef.current) return
+      setCoverImageKey(image.r2Key)
+      markDirty()
+    } catch (error) {
+      if (request !== coverRequestRef.current) return
+      setCoverError(error instanceof Error ? error.message : t('editPost.coverUploadFailed'))
+    } finally {
+      if (request === coverRequestRef.current) setCoverUploading(false)
+    }
+  }
+
   const handleSave = useCallback(async (status: 'draft' | 'published') => {
-    if (loading || (isEdit && loadedPostId !== id)) return
+    if (coverUploading || loading || (isEdit && loadedPostId !== id)) return
     setSaving(true)
     setSaveError(null)
     const tags = tagsInput
@@ -178,6 +207,7 @@ export default function EditPost() {
         tags,
         slug: slug || undefined,
         excerpt: excerpt,
+        coverImageKey,
         hidden,
         pinned,
         titleEn: titleEn,
@@ -200,7 +230,7 @@ export default function EditPost() {
     } finally {
       setSaving(false)
     }
-  }, [title, content, tagsInput, slug, excerpt, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn, t, loading, loadedPostId])
+  }, [title, content, tagsInput, slug, excerpt, coverImageKey, coverUploading, hidden, pinned, isEdit, id, navigate, titleEn, contentEn, excerptEn, t, loading, loadedPostId])
 
   if (loading || (!loadError && isEdit && loadedPostId !== id)) {
     return (
@@ -269,7 +299,7 @@ export default function EditPost() {
         <button
           type="button"
           onClick={() => handleSave('published')}
-          disabled={saving || !title}
+          disabled={saving || coverUploading || !title}
           title={isEdit ? t('editPost.update') : t('editPost.publish')}
           className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider border border-black disabled:opacity-30 hover:bg-black hover:text-white disabled:hover:bg-transparent disabled:hover:text-black transition-all cursor-pointer"
         >
@@ -278,7 +308,7 @@ export default function EditPost() {
         <button
           type="button"
           onClick={() => handleSave('draft')}
-          disabled={saving || !title}
+          disabled={saving || coverUploading || !title}
           title={t('editPost.saveDraft')}
           className="h-7 px-3 text-[10px] font-bold uppercase tracking-wider border border-black/40 opacity-60 disabled:opacity-30 hover:opacity-100 hover:bg-black hover:text-white disabled:hover:bg-transparent disabled:hover:text-black transition-all cursor-pointer"
         >
@@ -404,6 +434,16 @@ export default function EditPost() {
               </span>
             </div>
             <div className="px-4 py-4 flex flex-col gap-3">
+              <div>
+                <label htmlFor="post-cover" className="block text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">{t('editPost.coverImage')}</label>
+                {coverImageKey && <img src={`/images/${coverImageKey}`} alt={t('editPost.coverImage')} className="w-full h-auto mb-2 border border-black/20" />}
+                <input id="post-cover" type="file" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml" disabled={coverUploading || saving} className="w-full text-xs"
+                  onChange={(event) => { const file = event.target.files?.[0]; if (file) void handleCoverUpload(file); event.target.value = '' }} />
+                <p className="text-xs opacity-50 mt-2">{t('editPost.coverHint')}</p>
+                {coverUploading && <p role="status" className="text-xs mt-2">{t('editPost.coverUploading')}</p>}
+                {coverError && <p role="alert" className="text-xs text-red-600 mt-2">{coverError}</p>}
+                {coverImageKey && <button type="button" disabled={coverUploading || saving} className="text-xs underline mt-2" onClick={() => { setCoverImageKey(null); markDirty() }}>{t('editPost.removeCover')}</button>}
+              </div>
               {activeLang === 'zh' ? (
                 <>
                   <div>

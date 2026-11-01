@@ -231,6 +231,11 @@
     "managePosts": "Manage Posts"
   },
   "editPost": {
+    "coverImage": "Cover image",
+    "coverHint": "Landscape, portrait, or square. Original proportions, up to 10MB.",
+    "coverUploading": "Uploading cover…",
+    "removeCover": "Remove cover",
+    "coverUploadFailed": "Cover upload failed",
     "titlePlaceholder": "Post title",
     "tagsPlaceholder": "Tags (comma separated)",
     "excerptPlaceholder": "Excerpt (optional)",

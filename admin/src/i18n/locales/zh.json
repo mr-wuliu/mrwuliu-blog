@@ -231,6 +231,11 @@
     "managePosts": "管理文章"
   },
   "editPost": {
+    "coverImage": "封面图片",
+    "coverHint": "支持横图、竖图和方图，保留原始比例。最大 10MB。",
+    "coverUploading": "正在上传封面…",
+    "removeCover": "移除封面",
+    "coverUploadFailed": "封面上传失败",
     "titlePlaceholder": "文章标题",
     "tagsPlaceholder": "标签（逗号分隔）",
     "excerptPlaceholder": "摘要（可选）",
