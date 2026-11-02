@@ -58,7 +58,7 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
     <article class={`journal-card${post.coverImageKey ? ' journal-card-image' : ' journal-card-text'}`}>
       {post.coverImageKey && (
         <a href={langPath(`/posts/${post.slug}`, lang)} class="journal-cover" tabindex={-1} aria-hidden="true">
-          <img src={`/images/${post.coverImageKey}`} alt="" loading="lazy" decoding="async" />
+          <img src={`/images/${post.coverImageKey}`} alt="" loading="eager" decoding="async" />
         </a>
       )}
       <div class="journal-card-body">
@@ -104,9 +104,14 @@ const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
 
 const SeriesStack: FC<{ collection: SeriesRef; posts: Post[]; lang: Lang }> = ({ collection, posts, lang }) => {
   const displayName = lang === 'en' && collection.nameEn ? collection.nameEn : collection.name
+  const coverPost = posts.find(post => post.coverImageKey)
 
   return (
-    <article class="journal-card journal-series journal-card-body">
+    <article class={`journal-card journal-series${coverPost ? ' journal-card-image' : ''}`}>
+      {coverPost && <a href={langPath(`/posts/${coverPost.slug}`, lang)} class="journal-cover" tabindex={-1} aria-hidden="true">
+        <img src={`/images/${coverPost.coverImageKey}`} alt="" loading="eager" decoding="async" />
+      </a>}
+      <div class="journal-card-body">
       <div class="flex items-center gap-3 min-w-0 flex-wrap">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>
         <a href={langPath(`/series/${collection.slug}`, lang)} class="text-lg sm:text-xl font-bold tracking-tight text-black no-underline hover:opacity-70 transition-all break-words">{displayName}</a>
@@ -129,6 +134,7 @@ const SeriesStack: FC<{ collection: SeriesRef; posts: Post[]; lang: Lang }> = ({
         ))}
       </div>
       <a class="journal-series-more" href={langPath(`/series/${collection.slug}`, lang)}>{t(lang, 'nav.series')} <span aria-hidden="true">↗</span></a>
+      </div>
     </article>
   )
 }
@@ -213,22 +219,61 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
   var grid = document.querySelector('.journal-grid');
   if (grid) {
     var frame;
+    var cards = Array.from(grid.children);
+    function columnSpan(card, columns) {
+      var cover = card.querySelector('.journal-cover');
+      var image = cover && !cover.hidden ? cover.querySelector('img') : null;
+      if (image) {
+        var ratio = image.naturalWidth && image.naturalHeight ? image.naturalWidth / image.naturalHeight : 1.5;
+        card.dataset.coverShape = ratio >= 2.2 ? 'panorama' : ratio >= 1.2 ? 'landscape' : ratio >= 0.9 ? 'square' : 'portrait';
+        if (columns === 1) return 1;
+        if (columns >= 12) return ratio >= 2.2 ? 12 : ratio >= 1.2 ? 8 : ratio >= 0.9 ? 6 : 4;
+        if (columns >= 8) return ratio >= 1.2 ? 8 : ratio >= 0.9 ? 5 : 3;
+        return ratio >= 1.2 ? 6 : ratio >= 0.9 ? 4 : 3;
+      }
+      delete card.dataset.coverShape;
+      if (columns === 1) return 1;
+      if (columns < 12) return columns === 8 ? 4 : 3;
+      var title = card.querySelector('.journal-title');
+      var length = title ? Array.from(title.textContent).reduce(function(total, character) {
+        return total + (character.codePointAt(0) > 255 ? 2 : 1);
+      }, 0) : 0;
+      return card.classList.contains('journal-series') || length > 42 ? 4 : 3;
+    }
     function layout() {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(function() {
-        var columns = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+        var styles = getComputedStyle(grid);
+        var columns = parseInt(styles.getPropertyValue('--journal-columns'), 10) || 1;
+        var gap = parseFloat(styles.columnGap) || 24;
         grid.classList.toggle('is-masonry', columns > 1);
-        grid.querySelectorAll(':scope > article').forEach(function(card) {
-          card.style.gridRowEnd = columns > 1 ? 'span ' + Math.ceil((card.getBoundingClientRect().height + 24) / 8) : '';
+        // Set every width before measuring: wrapping and image height both change with the span.
+        cards.forEach(function(card) {
+          var span = columnSpan(card, columns);
+          card.style.gridColumn = 'span ' + span;
+          card.dataset.gridSpan = String(span);
+        });
+        cards.forEach(function(card) {
+          card.style.gridRowEnd = columns > 1 ? 'span ' + Math.ceil((card.getBoundingClientRect().height + gap) / 4) : '';
         });
       });
     }
-    var observer = new ResizeObserver(layout);
-    observer.observe(grid);
-    grid.querySelectorAll(':scope > article').forEach(function(card) { observer.observe(card); });
+    if (window.ResizeObserver) {
+      var observer = new ResizeObserver(layout);
+      observer.observe(grid);
+      cards.forEach(function(card) { observer.observe(card); });
+    } else {
+      window.addEventListener('resize', layout);
+    }
     grid.querySelectorAll('img').forEach(function(img) {
       img.addEventListener('load', layout);
-      function fallback() { img.closest('.journal-cover').hidden = true; layout(); }
+      function fallback() {
+        var card = img.closest('.journal-card');
+        img.closest('.journal-cover').hidden = true;
+        card.classList.remove('journal-card-image');
+        if (!card.classList.contains('journal-series')) card.classList.add('journal-card-text');
+        layout();
+      }
       img.addEventListener('error', fallback);
       if (img.complete && !img.naturalWidth) fallback();
     });
