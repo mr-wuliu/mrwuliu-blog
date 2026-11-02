@@ -71,7 +71,7 @@ export async function verifyOtp(
   db: Database,
   email: string,
   code: string,
-): Promise<{ valid: boolean; userId?: string; isNewUser?: boolean }> {
+): Promise<{ valid: boolean; userId?: string; isNewUser?: boolean; error?: 'banned_user' }> {
   email = email.toLowerCase()
   const now = new Date().toISOString()
 
@@ -134,7 +134,7 @@ export async function verifyOtp(
   if (existingUser) {
     if (existingUser.status === 'banned') {
       console.warn(`[auth] user banned email=${email} id=${existingUser.id}`)
-      return { valid: false }
+      return { valid: false, error: 'banned_user' }
     }
     userId = existingUser.id
     await db

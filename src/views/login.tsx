@@ -9,14 +9,14 @@ type LoginPageProps = {
 }
 
 const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
-  const loginPath = langPath('/login', lang)
   const next = safeNextPath(nextPath, langPath('/', lang))
 
   return (
     <Layout
       title={t(lang, 'login.title')}
       lang={lang}
-      currentPath={loginPath}
+      currentPath="/login"
+      languageSwitchPath={`/login?next=${encodeURIComponent(next)}`}
       extraHead={<meta name="robots" content="noindex, nofollow" />}
     >
       <div class="login-panel grid grid-cols-1 lg:grid-cols-2">
@@ -110,12 +110,14 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
             <h1 class="text-xl font-bold text-black mb-1 tracking-tight">{t(lang, 'login.title')}</h1>
             <p class="text-sm text-gray-500 mb-8">{t(lang, 'login.subtitle')}</p>
 
-            <div id="login-step-email" class="space-y-4">
+            <form id="login-step-email" class="space-y-4">
               <div>
                 <label for="login-email" class="block text-xs font-bold uppercase tracking-widest text-black mb-2">{t(lang, 'login.emailLabel')}</label>
                 <input
                   type="email"
                   id="login-email"
+                  required
+                  maxlength={254}
                   autocomplete="email"
                   class="w-full px-3 py-2.5 border border-black text-sm bg-white text-black transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-1 focus:border-black"
                   placeholder={t(lang, 'login.emailPlaceholder')}
@@ -124,20 +126,21 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
                 />
               </div>
               <button
-                type="button"
+                type="submit"
                 id="login-send-btn"
                 class="w-full py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest hover:opacity-70 transition-all duration-200"
               >
                 {t(lang, 'login.sendCode')}
               </button>
-            </div>
+            </form>
 
-            <div id="login-step-code" class="space-y-4 hidden">
+            <form id="login-step-code" class="space-y-4 hidden">
               <div>
                 <label for="login-code" class="block text-xs font-bold uppercase tracking-widest text-black mb-2">{t(lang, 'login.codeLabel')}</label>
                 <input
                   type="text"
                   id="login-code"
+                  required
                   inputmode="numeric"
                   pattern="\d{6}"
                   maxlength={6}
@@ -149,13 +152,17 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
                   data-placeholder="login.codePlaceholder"
                 />
                 <p id="login-code-hint" class="text-xs text-gray-500 mt-2"></p>
+                <p class="text-xs text-gray-500 mt-2">{t(lang, 'login.codeSentDesc')}</p>
               </div>
               <button
-                type="button"
+                type="submit"
                 id="login-verify-btn"
                 class="w-full py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest hover:opacity-70 transition-all duration-200"
               >
                 {t(lang, 'login.verify')}
+              </button>
+              <button type="button" id="login-resend-btn" class="w-full text-xs font-bold text-black hover:opacity-70 transition-all duration-200">
+                {t(lang, 'login.resend')}
               </button>
               <button
                 type="button"
@@ -164,10 +171,10 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
               >
                 {t(lang, 'login.changeEmail')}
               </button>
-            </div>
+            </form>
 
-            <div id="login-error" class="mt-4 text-sm text-red-600 hidden"></div>
-            <div id="login-success" class="mt-4 text-sm text-green-600 hidden"></div>
+            <div id="login-error" role="alert" class="mt-4 text-sm text-red-600 hidden"></div>
+            <div id="login-success" role="status" class="mt-4 text-sm text-green-600 hidden"></div>
 
             <div class="mt-8">
               <a href={langPath('/', lang)} data-thref="/" class="text-xs text-gray-500 hover:text-black transition-all">{t(lang, 'login.backHome')}</a>
@@ -189,9 +196,17 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
             var successDiv = document.getElementById('login-success');
             var codeHint = document.getElementById('login-code-hint');
             var nextPath = ${scriptJson(next)};
-            var lang = ${JSON.stringify(lang)};
             var currentEmail = '';
+            var resendBtn = document.getElementById('login-resend-btn');
             var resendTimer = null;
+            var sending = false;
+            var verifying = false;
+            var loggedIn = false;
+            var resendAt = 0;
+            var pendingEmail = '';
+            var cooldowns = {};
+            try { cooldowns = JSON.parse(sessionStorage.getItem('login-cooldowns') || '{}') || {}; } catch (e) {}
+            try { pendingEmail = sessionStorage.getItem('login-pending-email') || ''; } catch (e) {}
 
             function showError(msg) {
               errorDiv.textContent = msg;
@@ -207,124 +222,142 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
               errorDiv.classList.add('hidden');
               successDiv.classList.add('hidden');
             }
-            function getMsg(key) {
-              var d = lang === 'zh' ? __zh : __en;
-              return d[key] || '';
+            function getMsg(key) { return __t(key); }
+            function updateButtons() {
+              var remaining = Math.max(0, Math.ceil((resendAt - Date.now()) / 1000));
+              var canContinue = emailInput.value.trim().toLowerCase() === pendingEmail && remaining > 0;
+              sendBtn.disabled = sending || verifying || loggedIn || (remaining > 0 && !canContinue);
+              resendBtn.disabled = sending || verifying || loggedIn || remaining > 0;
+              verifyBtn.disabled = sending || verifying || loggedIn;
+              backBtn.disabled = sending || verifying || loggedIn;
+              sendBtn.style.opacity = sendBtn.disabled ? '0.5' : '';
+              resendBtn.style.opacity = resendBtn.disabled ? '0.5' : '';
+              sendBtn.textContent = sending ? getMsg('login.sending') : canContinue ? getMsg('login.continueCode') : remaining ? getMsg('login.resend') + ' (' + remaining + 's)' : getMsg('login.sendCode');
+              resendBtn.textContent = sending ? getMsg('login.sending') : remaining ? getMsg('login.resend') + ' (' + remaining + 's)' : getMsg('login.resend');
+              verifyBtn.textContent = loggedIn ? getMsg('login.redirecting') : verifying ? getMsg('login.verifying') : getMsg('login.verify');
             }
-
-            function startResendCountdown(seconds) {
-              var remaining = seconds;
-              sendBtn.disabled = true;
-              sendBtn.style.opacity = '0.5';
-              function update() {
-                if (remaining <= 0) {
-                  sendBtn.disabled = false;
-                  sendBtn.style.opacity = '';
-                  sendBtn.textContent = getMsg('login.resend');
-                  clearInterval(resendTimer);
-                  return;
-                }
-                sendBtn.textContent = getMsg('login.resend') + ' (' + remaining + 's)';
-                remaining--;
-              }
-              update();
-              resendTimer = setInterval(update, 1000);
+            function rememberCooldown(email, seconds) {
+              cooldowns[email] = Date.now() + seconds * 1000;
+              resendAt = cooldowns[email];
+              try { sessionStorage.setItem('login-cooldowns', JSON.stringify(cooldowns)); } catch (e) {}
+              updateButtons();
             }
-
-            function sendCode() {
+            async function sendCode() {
+              if (sending || verifying || loggedIn) return;
               var email = emailInput.value.trim().toLowerCase();
-              if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
-                showError(getMsg('login.invalidEmail'));
+              if (!emailInput.checkValidity() || !email) {
+                emailInput.reportValidity();
                 return;
               }
+              resendAt = Number(cooldowns[email]) || 0;
+              if (emailStep.classList.contains('hidden') === false && email === pendingEmail && resendAt > Date.now()) {
+                currentEmail = email;
+                showCodeStep();
+                return;
+              }
+              if (resendAt > Date.now()) { updateButtons(); return; }
               hideMsg();
-              sendBtn.disabled = true;
-              sendBtn.textContent = getMsg('login.sending');
-
-              fetch('/auth/otp/send', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: email, lang: lang })
-              }).then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d } }) })
-                .then(function(result) {
-                  sendBtn.disabled = false;
-                  sendBtn.textContent = getMsg('login.sendCode');
-                  if (result.ok) {
-                    currentEmail = email;
-                    emailStep.classList.add('hidden');
-                    codeStep.classList.remove('hidden');
-                    codeHint.textContent = getMsg('login.codeSent') + ' ' + email;
-                    codeInput.focus();
-                    startResendCountdown(60);
-                  } else if (result.data.error === 'rate_limited') {
-                    showError(getMsg('login.rateLimited'));
-                  } else {
-                    showError(getMsg('login.sendFailed'));
-                  }
-                })
-                .catch(function() {
-                  sendBtn.disabled = false;
-                  sendBtn.textContent = getMsg('login.sendCode');
+              sending = true;
+              updateButtons();
+              try {
+                var response = await fetch('/auth/otp/send', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: email, lang: __cur }),
+                  signal: AbortSignal.timeout(20000)
+                });
+                var data = await response.json();
+                if (response.ok) {
+                  currentEmail = email;
+                  pendingEmail = email;
+                  try { sessionStorage.setItem('login-pending-email', email); } catch (e) {}
+                  codeInput.value = '';
+                  rememberCooldown(email, 60);
+                  showCodeStep();
+                } else if (data.error === 'rate_limited') {
+                  rememberCooldown(email, Number(response.headers.get('Retry-After')) || 300);
+                  showError(getMsg('login.rateLimited'));
+                } else {
                   showError(getMsg('login.sendFailed'));
-                });
+                }
+              } catch (e) {
+                showError(getMsg('login.sendFailed'));
+              } finally {
+                sending = false;
+                updateButtons();
+              }
             }
-
-            function verifyCode() {
+            async function verifyCode() {
+              if (sending || verifying || loggedIn) return;
               var code = codeInput.value.trim();
-              if (!/^\\d{6}$/.test(code)) {
+              if (!/^[0-9]{6}$/.test(code)) {
                 showError(getMsg('login.invalidCode'));
+                codeInput.focus();
                 return;
               }
               hideMsg();
-              verifyBtn.disabled = true;
-              verifyBtn.textContent = getMsg('login.verifying');
-
-              fetch('/auth/otp/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: currentEmail, code: code })
-              }).then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d } }) })
-                .then(function(result) {
-                  verifyBtn.disabled = false;
-                  verifyBtn.textContent = getMsg('login.verify');
-                  if (result.ok) {
-                    showSuccess(getMsg('login.loginSuccess'));
-                    setTimeout(function() {
-                      window.location.href = nextPath;
-                    }, 500);
-                  } else if (result.data.error === 'rate_limited') {
-                    showError(getMsg('login.rateLimited'));
-                  } else {
-                    showError(getMsg('login.invalidCode'));
-                    codeInput.value = '';
-                    codeInput.focus();
-                  }
-                })
-                .catch(function() {
-                  verifyBtn.disabled = false;
-                  verifyBtn.textContent = getMsg('login.verify');
-                  showError(getMsg('login.invalidCode'));
+              verifying = true;
+              updateButtons();
+              try {
+                var response = await fetch('/auth/otp/verify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: currentEmail, code: code }),
+                  signal: AbortSignal.timeout(20000)
                 });
+                var data = await response.json();
+                if (response.ok) {
+                  loggedIn = true;
+                  try { sessionStorage.removeItem('login-pending-email'); } catch (e) {}
+                  showSuccess(getMsg('login.loginSuccess'));
+                  window.location.replace(nextPath);
+                } else {
+                  var key = data.error === 'rate_limited' ? 'login.rateLimited' : data.error === 'banned_user' ? 'login.bannedUser' : response.status >= 500 ? 'login.verifyFailed' : 'login.invalidCode';
+                  showError(getMsg(key));
+                  codeInput.focus();
+                  codeInput.select();
+                }
+              } catch (e) {
+                showError(getMsg('login.verifyFailed'));
+              } finally {
+                verifying = false;
+                updateButtons();
+              }
             }
-
             function backToEmail() {
+              if (sending || verifying || loggedIn) return;
               codeStep.classList.add('hidden');
               emailStep.classList.remove('hidden');
               codeInput.value = '';
               hideMsg();
-              if (resendTimer) { clearInterval(resendTimer); resendTimer = null; }
-              sendBtn.disabled = false;
-              sendBtn.style.opacity = '';
-              sendBtn.textContent = getMsg('login.sendCode');
               emailInput.focus();
+              updateButtons();
             }
-
-            sendBtn.addEventListener('click', sendCode);
-            verifyBtn.addEventListener('click', verifyCode);
+            function showCodeStep() {
+              emailStep.classList.add('hidden');
+              codeStep.classList.remove('hidden');
+              codeHint.textContent = getMsg('login.codeSent') + ' ' + currentEmail;
+              hideMsg();
+              codeInput.focus();
+              updateButtons();
+            }
+            emailStep.addEventListener('submit', function(e) { e.preventDefault(); sendCode(); });
+            codeStep.addEventListener('submit', function(e) { e.preventDefault(); verifyCode(); });
+            resendBtn.addEventListener('click', sendCode);
             backBtn.addEventListener('click', backToEmail);
-
-            emailInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); sendCode(); } });
-            codeInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); verifyCode(); } });
+            emailInput.addEventListener('input', function() {
+              resendAt = Number(cooldowns[emailInput.value.trim().toLowerCase()]) || 0;
+              updateButtons();
+            });
+            resendTimer = setInterval(updateButtons, 1000);
+            window.addEventListener('pagehide', function() { clearInterval(resendTimer); });
+            if (pendingEmail) {
+              emailInput.value = pendingEmail;
+              currentEmail = pendingEmail;
+              resendAt = Number(cooldowns[pendingEmail]) || 0;
+              showCodeStep();
+            }
+            updateButtons();
           })();
         `}} />
     </Layout>

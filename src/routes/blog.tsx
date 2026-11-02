@@ -1,4 +1,5 @@
 import { getHomeBlocks } from '../db/home'
+import { safeNextPath } from '../utils/html'
 import { positiveInteger, commentSchema } from '../utils/validation'
 import { sendReplyNotification } from '../services/email'
 import { resolveSession } from '../utils/session'
@@ -425,40 +426,31 @@ function createBlogRouter(lang: Lang) {
     const db = createDb(c.env.DB)
     const ip = getClientIp(c.req.raw.headers)
 
-    const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
-    if (!allowed) {
-      return c.json({ error: 'Rate limit exceeded. Try again later.' }, 429)
-    }
+    const isJson = (c.req.header('Content-Type') ?? '').includes('application/json')
+    c.header('Cache-Control', 'no-store')
 
     const session = await resolveSession(c)
     if (!session?.user) {
-      const postUrl = langPath(`/posts/${slug}`, lang)
+      if (isJson) return c.json({ error: 'login_required' }, 401)
+      const postUrl = langPath(`/posts/${slug}`, lang) + '#comments'
       return c.redirect(langPath(`/login?next=${encodeURIComponent(postUrl)}`, lang))
     }
     const sessionUser = session.user
 
-    const contentType = c.req.header('Content-Type') ?? ''
-
-    let authorName: string
-    let authorEmail: string | undefined
     let visitorId: string | undefined
     let content: string
     let parentId: string | undefined
 
-    if (contentType.includes('application/json')) {
+    if (isJson) {
       const body = await c.req.json<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: boolean }>().catch(() => null)
       if (!body) {
         return c.json({ error: 'Invalid JSON body' }, 400)
       }
-      authorName = body.authorName
-      authorEmail = body.authorEmail
       visitorId = body.visitorId
       content = body.content
       parentId = body.parentId
     } else {
       const formData = await c.req.parseBody<{ authorName: string; authorEmail?: string; visitorId?: string; content: string; parentId?: string; notifyOnReply?: string }>()
-      authorName = String(formData.authorName ?? '')
-      authorEmail = formData.authorEmail ? String(formData.authorEmail) : undefined
       visitorId = formData.visitorId ? String(formData.visitorId) : undefined
       content = String(formData.content ?? '')
       parentId = formData.parentId ? String(formData.parentId) : undefined
@@ -466,20 +458,28 @@ function createBlogRouter(lang: Lang) {
 
     const validatedComment = commentSchema.safeParse({ content, parentId, visitorId })
     if (!validatedComment.success) {
+      if (isJson) return c.json({ error: 'invalid_comment' }, 400)
       return c.redirect(langPath(`/posts/${slug}`, lang))
     }
 
     const [post] = await db.select().from(posts).where(eq(posts.slug, slug))
-    if (!post) return c.redirect(langPath(`/posts/${slug}`, lang))
-    if (post.status !== 'published' || post.hidden) {
+    if (!post || post.status !== 'published' || post.hidden) {
+      if (isJson) return c.json({ error: 'post_not_found' }, 404)
       return c.html(<NotFoundPage lang={lang} />, 404)
     }
 
     if (parentId) {
       const [parentComment] = await db.select().from(comments).where(eq(comments.id, parentId))
       if (!parentComment || parentComment.postId !== post.id || parentComment.status !== 'approved') {
+        if (isJson) return c.json({ error: 'parent_not_found' }, 400)
         return c.redirect(langPath(`/posts/${slug}`, lang))
       }
+    }
+
+    const allowed = await checkRateLimit(db, ip, 'comment', 5, 60)
+    if (!allowed) {
+      c.header('Retry-After', '60')
+      return c.json({ error: 'rate_limited' }, 429)
     }
 
     function escapeHtml(str: string): string {
@@ -492,6 +492,7 @@ function createBlogRouter(lang: Lang) {
     }
 
     const id = crypto.randomUUID()
+    const createdAt = new Date().toISOString()
     const userAgent = c.req.header('user-agent') || 'unknown'
     const { ipHash, ipMasked } = await getVisitorFingerprint(ip, userAgent, c.env.JWT_SECRET)
     const cf = c.req.raw as Request & { cf?: { country?: string } }
@@ -513,6 +514,7 @@ function createBlogRouter(lang: Lang) {
       userAgent: userAgent.slice(0, 500),
       content: escapeHtml(validatedComment.data.content),
       status: commentStatus,
+      createdAt,
       notifyOnReply: sessionUser.notifyOnReply,
     })
 
@@ -523,7 +525,8 @@ function createBlogRouter(lang: Lang) {
       }).catch(error => console.error('[email] reply notification failed', error)))
     }
 
-    return c.redirect(langPath(`/posts/${slug}`, lang))
+    if (isJson) return c.json({ id, status: commentStatus, authorName: sessionUser.name, createdAt }, 201)
+    return c.redirect(langPath(`/posts/${slug}`, lang) + (commentStatus === 'approved' ? `#comment-${id}` : '#comments'), 303)
   })
 
   router.get('/writings', async (c) => {
@@ -609,8 +612,11 @@ function createBlogRouter(lang: Lang) {
   })
 
   router.get('/login', async (c) => {
-    const nextPath = c.req.query('next') || langPath('/', lang)
+    const nextPath = safeNextPath(c.req.query('next'), langPath('/', lang))
     c.header('Cache-Control', 'no-store, no-cache, must-revalidate')
+    const session = await resolveSession(c)
+    const canReturn = !/^\/admin(?:[/?#]|$)/.test(nextPath) || session?.user.role === 'admin'
+    if (session?.user && canReturn && !/^\/(?:en\/)?login(?:[?#]|$)/.test(nextPath)) return c.redirect(nextPath)
     return c.html(<LoginPage lang={lang} nextPath={nextPath} />)
   })
 

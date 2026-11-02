@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { appFetch } from "../helpers";
 import { createDb } from "../../src/db";
-import { rateLimits, comments } from "../../src/db/schema";
+import { rateLimits, comments, siteConfig } from "../../src/db/schema";
 import { generateOtp } from "../../src/services/auth";
 
 const db = createDb(env.DB);
@@ -184,5 +184,108 @@ describe("Comments API", () => {
       body: JSON.stringify({ content: "" }),
     });
     expect(res.status).toBe(400);
+  });
+});
+
+describe("Public article comment flow", () => {
+  async function article() {
+    const id = await createPublishedPost();
+    const res = await appFetch(`/api/posts/${id}`);
+    return res.json() as Promise<{ id: string; slug: string }>;
+  }
+
+  it.each(["", "/en"])("returns JSON for a successful submission on %s", async (prefix) => {
+    const post = await article();
+    const { cookies, name } = await loginUser();
+    const res = await appFetch(`${prefix}/posts/${post.slug}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: cookieHeader(cookies) },
+      body: JSON.stringify({ content: "  Hello\n<b>reader</b>  " }),
+    });
+    expect(res.status).toBe(201);
+    expect(res.headers.get("Location")).toBeNull();
+    expect(res.headers.get("Cache-Control")).toContain("no-store");
+    const data = await res.json();
+    expect(data).toMatchObject({ status: "approved", authorName: name });
+    const [row] = await db.select().from(comments).where(eq(comments.id, data.id));
+    expect(row.content).toBe("Hello\n&lt;b&gt;reader&lt;/b&gt;");
+    expect(row.createdAt).toBe(data.createdAt);
+  });
+
+  it("returns 401 instead of a login redirect for an expired session", async () => {
+    const post = await article();
+    const res = await appFetch(`/posts/${post.slug}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: "Keep my draft" }),
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ error: "login_required" });
+    expect(res.headers.get("Location")).toBeNull();
+  });
+
+  it("reports invalid content and unavailable replies without a success redirect", async () => {
+    const post = await article();
+    const { cookies } = await loginUser();
+    for (const [body, error] of [
+      [{ content: "   " }, "invalid_comment"],
+      [{ content: "Reply", parentId: crypto.randomUUID() }, "parent_not_found"],
+    ] as const) {
+      const res = await appFetch(`/posts/${post.slug}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookieHeader(cookies) },
+        body: JSON.stringify(body),
+      });
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error });
+    }
+    expect(await db.select().from(comments).where(eq(comments.postId, post.id))).toHaveLength(0);
+  });
+
+  it("returns pending status while keeping a moderated comment out of the public page", async () => {
+    const post = await article();
+    const { cookies } = await loginUser();
+    await db.insert(siteConfig).values({ key: "comment_registered_auto_approve", value: "false" })
+      .onConflictDoUpdate({ target: siteConfig.key, set: { value: "false" } });
+    try {
+      const res = await appFetch(`/posts/${post.slug}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Cookie: cookieHeader(cookies) },
+        body: JSON.stringify({ content: "Waiting for review" }),
+      });
+      expect(res.status).toBe(201);
+      const data = await res.json();
+      expect(data.status).toBe("pending");
+      const page = await appFetch(`/posts/${post.slug}`);
+      expect(await page.text()).not.toContain(`id="comment-${data.id}"`);
+    } finally {
+      await db.delete(siteConfig).where(eq(siteConfig.key, "comment_registered_auto_approve"));
+    }
+  });
+
+  it("renews an expired access session before saving a comment", async () => {
+    const post = await article();
+    const { cookies } = await loginUser();
+    const res = await appFetch(`/posts/${post.slug}/comments`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Cookie: `refresh_token=${cookies.refresh_token}` },
+      body: JSON.stringify({ content: "Still logged in" }),
+    });
+    expect(res.status).toBe(201);
+    expect(extractCookies(res).access_token).toBeDefined();
+    expect(extractCookies(res).refresh_token).not.toBe(cookies.refresh_token);
+  });
+
+  it("preserves a comment anchor for native form submissions", async () => {
+    const post = await article();
+    const { cookies } = await loginUser();
+    const res = await appFetch(`/en/posts/${post.slug}/comments`, {
+      method: "POST",
+      redirect: "manual",
+      headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookieHeader(cookies) },
+      body: new URLSearchParams({ content: "Native form" }),
+    });
+    expect(res.status).toBe(303);
+    expect(res.headers.get("Location")).toMatch(new RegExp(`^/en/posts/${post.slug}#comment-`));
   });
 });

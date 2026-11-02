@@ -1,4 +1,4 @@
-import { commentText } from '../utils/html'
+import { commentText, scriptJson } from '../utils/html'
 import type { FC } from 'hono/jsx'
 import type { InferSelectModel } from 'drizzle-orm'
 import Layout from './layout'
@@ -488,7 +488,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   const replyLabel = t(lang, 'post.reply')
   const cancelReplyLabel = t(lang, 'post.cancelReply')
 
-  const loginUrl = langPath(`/login?next=${encodeURIComponent(langPath(`/posts/${postSlug}`, lang))}`, lang)
+  const loginUrl = langPath(`/login?next=${encodeURIComponent(langPath(`/posts/${postSlug}`, lang) + '#comments')}`, lang)
 
   const byId = new Map(comments.map(comment => [comment.id, comment]))
   function rootId(comment: Comment): string {
@@ -508,7 +508,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   }
 
   return (
-    <section class="discussion mt-4 pt-6 sm:pt-8 border-t-2 border-black"
+    <section id="comments" class="discussion mt-4 pt-6 sm:pt-8 border-t-2 border-black"
       data-comment-msg={successMsg}
       data-comment-err={errorMsg}
       data-comment-msg-zh={lang === 'zh' ? successMsg : otherSuccessMsg}
@@ -527,10 +527,11 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
         data-comment-count={comments.length}
         data-comment-count-zh={commentCountZh}
         data-comment-count-en={commentCountEn}
+        data-comment-count-template-zh={tf('zh', 'post.comments')('{count}')}
+        data-comment-count-template-en={tf('en', 'post.comments')('{count}')}
       >{tf(lang, 'post.comments')(comments.length)}</h2>
 
-      {comments.length > 0 && (
-        <div class="space-y-4 mb-8">
+        <div id="comment-list" class="space-y-4 mb-8">
           {topLevelComments.map((c) => (
             <div class="p-4 sm:p-6 bg-white border border-black mb-2" id={`comment-${c.id}`}>
               <div class="flex gap-3">
@@ -540,12 +541,12 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
                     <span class="text-sm font-bold text-black">{c.authorName}</span>
                     <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(c.createdAt, lang)}</span>
                   </div>
-                  <div class="text-sm opacity-70 leading-relaxed">{commentText(c.content)}</div>
+                  <div class="text-sm opacity-70 leading-relaxed whitespace-pre-wrap break-words">{commentText(c.content)}</div>
                   <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-2" data-reply-to={c.id} data-reply-name={c.authorName}>{replyLabel}</button>
                 </div>
               </div>
               {(repliesByParent[c.id] || []).length > 0 && (
-                <div class="ml-6 sm:ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <div class="comment-replies ml-6 sm:ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2">
                   {(repliesByParent[c.id] || []).map((r) => (
                     <div class="flex gap-3 py-2" id={`comment-${r.id}`}>
                       <div class="flex-shrink-0 mt-0.5 border border-gray-200 h-[32px] w-[32px] overflow-hidden" style="line-height:0;font-size:0" dangerouslySetInnerHTML={{ __html: commentAvatarHtml(r, 32) }} />
@@ -554,7 +555,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
                           <span class="text-sm font-bold text-black">{r.authorName}</span>
                           <span class="text-xs font-bold uppercase tracking-widest opacity-50">{formatDateLang(r.createdAt, lang)}</span>
                         </div>
-                        <div class="text-sm opacity-70 leading-relaxed">→ {byId.get(r.parentId ?? '')?.authorName ?? c.authorName}: {commentText(r.content)}</div>
+                        <div class="text-sm opacity-70 leading-relaxed whitespace-pre-wrap break-words">→ {byId.get(r.parentId ?? '')?.authorName ?? c.authorName}: {commentText(r.content)}</div>
                         <button type="button" class="reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-1" data-reply-to={r.id} data-reply-name={r.authorName}>{replyLabel}</button>
                       </div>
                     </div>
@@ -564,21 +565,23 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
             </div>
           ))}
         </div>
-      )}
 
       {comments.length === 0 && (
-        <div class="mb-8 px-4 py-3 border border-gray-300 bg-gray-100 text-sm text-gray-600" data-t="post.noComments">
+        <div id="comment-empty" class="mb-8 px-4 py-3 border border-gray-300 bg-gray-100 text-sm text-gray-600" data-t="post.noComments">
           {t(lang, 'post.noComments')}
         </div>
       )}
 
-      <div id="comment-login-required" class="mb-8 px-4 py-6 border border-gray-300 bg-gray-100 text-center">
+      <p id="comment-session-loading" class="text-sm text-gray-500 mb-4" role="status" data-t="post.checkingSession">{t(lang, 'post.checkingSession')}</p>
+      <div id="comment-feedback" class="hidden mb-4 p-3 border border-gray-300 text-sm" role="status" aria-live="polite"></div>
+      <button id="comment-session-retry" type="button" class="hidden mb-4 text-sm underline" data-t="post.retrySession">{t(lang, 'post.retrySession')}</button>
+      <div id="comment-login-required" class="hidden mb-8 px-4 py-6 border border-gray-300 bg-gray-100 text-center">
         <p class="text-sm font-bold mb-1" data-t="post.loginToComment">{t(lang, 'post.loginToComment')}</p>
         <p class="text-xs text-gray-500 mb-3" data-t="post.loginToCommentDesc">{t(lang, 'post.loginToCommentDesc')}</p>
         <a href={loginUrl} class="inline-block px-6 py-2.5 bg-black text-white text-xs font-bold uppercase tracking-widest hover:opacity-70 transition-all" data-t="nav.login">{t(lang, 'nav.login')}</a>
       </div>
 
-      <details class="hidden border border-black group">
+      <details open class="hidden border border-black group">
         <summary class="list-none cursor-pointer px-4 py-3 text-sm font-bold uppercase tracking-widest select-none flex items-center justify-between">
           <span data-t="post.leaveComment">{t(lang, 'post.leaveComment')}</span>
           <span class="transition-transform group-open:rotate-45">+</span>
@@ -591,19 +594,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
           </div>
           <input type="hidden" id="comment-parent-id" name="parentId" value="" />
           <div>
-            <input type="text" id="authorName" name="authorName" maxlength={50}
-              placeholder={t(lang, 'post.namePlaceholder')}
-              data-placeholder="post.namePlaceholder"
-              class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
-          </div>
-          <div>
-            <input type="email" id="authorEmail" name="authorEmail" maxlength={100}
-              placeholder={t(lang, 'post.emailLabel')}
-              data-placeholder="post.emailLabel"
-              class="w-full px-3 py-2 border border-black text-sm focus:outline-none focus:border-black" />
-            <p class="text-xs text-gray-400 mt-1" data-t="post.emailNote">{t(lang, 'post.emailNote')}</p>
-          </div>
-          <div>
+            <label for="content" class="block text-xs font-bold mb-2" data-t="post.contentLabel">{t(lang, 'post.contentLabel')}</label>
             <textarea id="content" name="content" required maxlength={1000} rows={4}
               placeholder={t(lang, 'post.contentLabel')}
               data-placeholder="post.contentLabel"
@@ -621,141 +612,201 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   var form = document.getElementById('comment-form');
   if (!form) return;
   var section = form.closest('section');
-  function getMsg() { return section.getAttribute('data-comment-msg'); }
-  function getErr() { return section.getAttribute('data-comment-err'); }
-  function getUrl() { return section.getAttribute('data-comment-url'); }
-  function getReplyLabel() { return section.getAttribute('data-reply-label'); }
-  function getCancelReplyLabel() { return section.getAttribute('data-cancel-reply-label'); }
-  var loginUrl = section.getAttribute('data-login-url');
-
   var parentInput = document.getElementById('comment-parent-id');
   var replyIndicator = document.getElementById('reply-indicator');
   var replyIndicatorText = document.getElementById('reply-indicator-text');
-  var cancelReplyBtn = document.getElementById('cancel-reply-btn');
-
-  function showToast(msg, type) {
-    var el = document.createElement('div');
-    el.className = 'comment-toast comment-toast--' + type;
-    el.textContent = msg;
-    document.body.appendChild(el);
-    requestAnimationFrame(function() {
-      el.classList.add('comment-toast--visible');
-    });
-    setTimeout(function() {
-      el.classList.remove('comment-toast--visible');
-      setTimeout(function() { el.remove(); }, 300);
-    }, 4000);
-  }
-
-  function clearReply() {
-    parentInput.value = '';
-    replyIndicator.classList.add('hidden');
-    replyIndicator.classList.remove('flex');
-  }
-
-  document.querySelectorAll('.reply-btn').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      if (!isLoggedIn) {
-        window.location.href = loginUrl;
-        return;
-      }
-      var replyTo = btn.getAttribute('data-reply-to');
-      var replyName = btn.getAttribute('data-reply-name');
-      parentInput.value = replyTo;
-      replyIndicatorText.textContent = getReplyLabel() + ' ' + replyName;
-      replyIndicator.classList.remove('hidden');
-      replyIndicator.classList.add('flex');
-      var details = form.closest('details');
-      if (details) details.open = true;
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      form.querySelector('#content').focus();
-    });
-  });
-
-  cancelReplyBtn.addEventListener('click', function() {
-    clearReply();
-  });
-
-  var savedName = localStorage.getItem('comment_authorName');
-  var savedEmail = localStorage.getItem('comment_authorEmail');
-  var visitorId = localStorage.getItem('comment_visitorId');
-  if (!visitorId) {
-    visitorId = 'v_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
-    localStorage.setItem('comment_visitorId', visitorId);
-  }
-  var nameInput = form.querySelector('#authorName');
-  var emailInput = form.querySelector('#authorEmail');
-  if (nameInput && savedName) nameInput.value = savedName;
-  if (emailInput && savedEmail) emailInput.value = savedEmail;
-
-  var isLoggedIn = false;
+  var contentInput = form.querySelector('#content');
+  var feedback = document.getElementById('comment-feedback');
   var loginPrompt = document.getElementById('comment-login-required');
-  var detailsEl = form.closest('details');
-  __getSession().then(function(d) {
-    if (d && d.user) {
-      isLoggedIn = true;
-      if (loginPrompt) loginPrompt.classList.add('hidden');
-      if (detailsEl) detailsEl.classList.remove('hidden');
-      var u = d.user;
-      if (nameInput) { nameInput.value = u.name; nameInput.closest('div').classList.add('hidden'); }
-      if (emailInput) { emailInput.closest('div').classList.add('hidden'); }
-      var loggedInAsTpl = section.getAttribute('data-logged-in-as') || '';
-      var banner = document.createElement('div');
-      banner.className = 'px-3 py-2 bg-gray-100 border border-gray-300 text-sm';
-      banner.id = 'auth-user-banner';
-      banner.textContent = loggedInAsTpl ? loggedInAsTpl.replace('{name}', u.name) : u.name;
-      form.insertBefore(banner, form.firstChild);
-    } else {
-      if (loginPrompt) loginPrompt.classList.remove('hidden');
-      if (detailsEl) detailsEl.classList.add('hidden');
+  var loading = document.getElementById('comment-session-loading');
+  var retryBtn = document.getElementById('comment-session-retry');
+  var details = form.closest('details');
+  var submitBtn = form.querySelector('button[type="submit"]');
+  var draftKey = 'comment-draft:' + ${scriptJson(postSlug)};
+  var user = null;
+  var submitting = false;
+  var sessionReady;
+  var replyName = '';
+
+  function message(key) { return __t('post.' + key); }
+  function showFeedback(key, error) {
+    feedback.textContent = message(key);
+    feedback.classList.remove('hidden');
+    feedback.classList.toggle('text-red-600', !!error);
+    feedback.setAttribute('role', error ? 'alert' : 'status');
+  }
+  function saveDraft() {
+    try {
+      if (!contentInput.value && !parentInput.value) { sessionStorage.removeItem(draftKey); return; }
+      sessionStorage.setItem(draftKey, JSON.stringify({ content: contentInput.value, parentId: parentInput.value, replyName: replyName }));
+    } catch (e) {}
+  }
+  function setReply(id, name) {
+    parentInput.value = id || '';
+    replyName = name || '';
+    replyIndicatorText.textContent = message('reply') + ' ' + replyName;
+    replyIndicator.classList.toggle('hidden', !id);
+    replyIndicator.classList.toggle('flex', !!id);
+  }
+  try {
+    var draft = JSON.parse(sessionStorage.getItem(draftKey) || 'null');
+    if (draft && typeof draft.content === 'string') {
+      contentInput.value = draft.content.slice(0, 1000);
+      if (typeof draft.parentId === 'string' && document.getElementById('comment-' + draft.parentId)) {
+        setReply(draft.parentId, typeof draft.replyName === 'string' ? draft.replyName : '');
+      }
     }
-  }).catch(function() {
-    if (loginPrompt) loginPrompt.classList.remove('hidden');
-    if (detailsEl) detailsEl.classList.add('hidden');
+  } catch (e) {}
+  contentInput.addEventListener('input', saveDraft);
+  window.addEventListener('pagehide', saveDraft);
+  loginPrompt.querySelector('a').addEventListener('click', saveDraft);
+  document.getElementById('cancel-reply-btn').addEventListener('click', function() {
+    if (submitting) return;
+    setReply('', ''); saveDraft(); contentInput.focus();
   });
 
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    if (!isLoggedIn) {
-      window.location.href = loginUrl;
-      return;
-    }
-    var btn = form.querySelector('button[type="submit"]');
-    var orig = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '...';
-
-    var authorName = isLoggedIn ? '' : (form.querySelector('#authorName').value.trim() || 'momo');
-    var data = {
-      authorName: authorName,
-      authorEmail: isLoggedIn ? undefined : (form.querySelector('#authorEmail').value.trim() || undefined),
-      visitorId: visitorId,
-      content: form.querySelector('#content').value.trim()
-    };
-    var pid = parentInput.value;
-    if (pid) data.parentId = pid;
-
-    fetch(getUrl(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    }).then(function(res) {
-      if (res.ok) {
-        showToast(getMsg(), 'success');
-        setTimeout(function() { window.location.reload(); }, 900);
-      } else {
-        return res.json().then(function(d) {
-          showToast(d.error || getErr(), 'error');
-        }).catch(function() {
-          showToast(getErr(), 'error');
-        });
+  function checkSession() {
+    loading.classList.remove('hidden');
+    retryBtn.classList.add('hidden');
+    return __getSession().then(function(data) {
+      user = data && data.user;
+      loginPrompt.classList.toggle('hidden', !!user);
+      details.classList.toggle('hidden', !user);
+      if (!user) return;
+      var banner = document.getElementById('auth-user-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'auth-user-banner';
+        banner.className = 'px-3 py-2 bg-gray-100 border border-gray-300 text-sm';
+        form.prepend(banner);
+      }
+      banner.textContent = (section.getAttribute('data-logged-in-as') || '{name}').replace('{name}', user.name);
+      if (location.hash === '#comments') {
+        details.open = true;
+        contentInput.focus({ preventScroll: true });
       }
     }).catch(function() {
-      showToast(getErr(), 'error');
-    }).finally(function() {
-      btn.disabled = false;
-      btn.textContent = orig;
-    });
+      showFeedback('sessionError', true);
+      retryBtn.classList.remove('hidden');
+    }).finally(function() { loading.classList.add('hidden'); });
+  }
+  sessionReady = checkSession();
+  retryBtn.addEventListener('click', function() {
+    feedback.classList.add('hidden');
+    sessionReady = checkSession();
+  });
+
+  section.addEventListener('click', async function(e) {
+    var btn = e.target.closest('.reply-btn');
+    if (!btn || submitting) return;
+    await sessionReady;
+    if (!user && !retryBtn.classList.contains('hidden')) return;
+    setReply(btn.getAttribute('data-reply-to'), btn.getAttribute('data-reply-name'));
+    saveDraft();
+    if (!user) { window.location.assign(section.getAttribute('data-login-url')); return; }
+    details.open = true;
+    form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    contentInput.focus({ preventScroll: true });
+  });
+
+  function element(tag, className, text) {
+    var el = document.createElement(tag);
+    el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+  function appendComment(data, content, parentId, parentName) {
+    var list = document.getElementById('comment-list');
+    var parent = parentId && document.getElementById('comment-' + parentId);
+    var root = parent;
+    while (root && root.parentElement !== list) root = root.parentElement;
+    var isReply = !!root;
+    var card = element('div', isReply ? 'flex gap-3 py-2' : 'p-4 sm:p-6 bg-white border border-black mb-2');
+    card.id = 'comment-' + data.id;
+    var row = isReply ? card : element('div', 'flex gap-3');
+    if (!isReply) card.appendChild(row);
+    var avatar = element('div', 'flex-shrink-0 mt-0.5 border border-gray-300 overflow-hidden');
+    avatar.style.cssText = 'width:' + (isReply ? 32 : 40) + 'px;height:' + (isReply ? 32 : 40) + 'px';
+    if (user.avatarUrl) {
+      var img = element('img', 'w-full h-full');
+      img.alt = ''; img.src = user.avatarUrl; avatar.appendChild(img);
+    }
+    var body = element('div', 'flex-1 min-w-0');
+    var heading = element('div', 'flex items-baseline gap-2 mb-1');
+    heading.appendChild(element('span', 'text-sm font-bold text-black', data.authorName));
+    heading.appendChild(element('span', 'text-xs opacity-50', new Date(data.createdAt).toLocaleDateString(__cur === 'zh' ? 'zh-CN' : 'en-US')));
+    body.appendChild(heading);
+    body.appendChild(element('div', 'text-sm opacity-70 leading-relaxed whitespace-pre-wrap break-words', (isReply ? '→ ' + parentName + ': ' : '') + content));
+    var reply = element('button', 'reply-btn text-xs font-bold uppercase tracking-widest opacity-50 hover:opacity-100 transition-all mt-2', message('reply'));
+    reply.type = 'button'; reply.dataset.replyTo = data.id; reply.dataset.replyName = data.authorName;
+    body.appendChild(reply); row.appendChild(avatar); row.appendChild(body);
+    if (isReply) {
+      var replies = root.querySelector('.comment-replies');
+      if (!replies) {
+        replies = element('div', 'comment-replies ml-6 sm:ml-12 mt-4 pt-4 border-t border-gray-200 space-y-2');
+        root.appendChild(replies);
+      }
+      replies.appendChild(card);
+    } else { list.appendChild(card); }
+    var empty = document.getElementById('comment-empty');
+    if (empty) empty.remove();
+    var countEl = section.querySelector('[data-comment-count]');
+    var count = Number(countEl.dataset.commentCount) + 1;
+    countEl.dataset.commentCount = String(count);
+    countEl.dataset.commentCountZh = countEl.dataset.commentCountTemplateZh.replace('{count}', count);
+    countEl.dataset.commentCountEn = countEl.dataset.commentCountTemplateEn.replace('{count}', count);
+    countEl.textContent = countEl.getAttribute('data-comment-count-' + __cur);
+  }
+
+  form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (submitting) return;
+    var content = contentInput.value.trim();
+    if (!content) { showFeedback('invalidComment', true); contentInput.focus(); return; }
+    saveDraft();
+    submitting = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = message('submitting');
+    contentInput.readOnly = true;
+    try {
+      await sessionReady;
+      if (!user) { showFeedback('sessionExpired', true); loginPrompt.classList.remove('hidden'); return; }
+      var parentId = parentInput.value;
+      var parentName = replyName;
+      var response = await fetch(section.getAttribute('data-comment-url'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content, parentId: parentId || undefined })
+      });
+      // Redirected HTML must never count as a successfully created comment.
+      if (response.redirected || !(response.headers.get('Content-Type') || '').includes('application/json')) throw new Error('Unexpected comment response');
+      var data = await response.json();
+      if (!response.ok) {
+        if (response.status === 401) {
+          user = null;
+          loginPrompt.classList.remove('hidden');
+          showFeedback('sessionExpired', true);
+        } else {
+          var key = response.status === 429 ? 'rateLimited' : data.error === 'parent_not_found' ? 'replyUnavailable' : data.error === 'post_not_found' ? 'postUnavailable' : data.error === 'invalid_comment' ? 'invalidComment' : 'commentError';
+          showFeedback(key, true);
+          if (data.error === 'parent_not_found') { setReply('', ''); saveDraft(); }
+        }
+        return;
+      }
+      if (!data.id || !['approved', 'pending'].includes(data.status)) throw new Error('Invalid comment response');
+      if (data.status === 'approved') appendComment(data, content, parentId, parentName);
+      contentInput.value = '';
+      setReply('', '');
+      saveDraft();
+      showFeedback(data.status === 'approved' ? 'commentPublished' : 'commentSuccess');
+    } catch (e) {
+      showFeedback('commentError', true);
+    } finally {
+      submitting = false;
+      contentInput.readOnly = false;
+      submitBtn.disabled = false;
+      submitBtn.textContent = message('submit');
+    }
   });
 })();
       ` }} />

@@ -39,6 +39,7 @@ authRoutes.post('/auth/otp/send', async (c) => {
 
   const allowed = await checkRateLimit(db, ip, 'otp_send', 3, 300)
   if (!allowed) {
+    c.header('Retry-After', '300')
     return c.json({ error: 'rate_limited' }, 429)
   }
 
@@ -86,10 +87,12 @@ authRoutes.post('/auth/otp/verify', async (c) => {
 
   const allowed = await checkRateLimit(db, ip, 'otp_verify', 10, 300)
   if (!allowed) {
+    c.header('Retry-After', '300')
     return c.json({ error: 'rate_limited' }, 429)
   }
 
   const result = await verifyOtp(db, email, code)
+  if (result.error === 'banned_user') return c.json({ error: 'banned_user' }, 403)
   if (!result.valid || !result.userId) {
     console.warn(`[auth] /otp/verify invalid email=${email} valid=${result.valid}`)
     return c.json({ error: 'invalid_code' }, 401)

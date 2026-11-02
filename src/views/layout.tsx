@@ -34,6 +34,7 @@ type LayoutProps = PropsWithChildren<{
   authorProfile?: AuthorProfile
   lang: Lang
   currentPath?: string
+  languageSwitchPath?: string
   publishedTime?: string
   modifiedTime?: string
   authorName?: string
@@ -52,6 +53,7 @@ const Layout: FC<LayoutProps> = ({
   authorProfile,
   lang,
   currentPath = '/',
+  languageSwitchPath,
   publishedTime,
   modifiedTime,
   authorName,
@@ -61,7 +63,7 @@ const Layout: FC<LayoutProps> = ({
   children,
 }) => {
   const hasSidebar = !homeLayout && (type === 'article' || currentPath === '/about') && !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
-  const toggleHref = langPath(currentPath, otherLang(lang))
+  const toggleHref = langPath(languageSwitchPath ?? currentPath, otherLang(lang))
   const year = new Date().getFullYear()
 
   return (
@@ -96,7 +98,7 @@ const Layout: FC<LayoutProps> = ({
         <script dangerouslySetInnerHTML={{ __html:
           'var __zh=' + zhFlat + ';var __en=' + enFlat + ';var __cur="' + lang + '";' +
           'function __t(k){var d=__cur==="zh"?__zh:__en;var v=d[k];if(!v)return "";if(v.startsWith("FN:"))try{return new Function("return "+v.slice(3))()}catch(e){return""}return v}' +
-          'var __sessionPromise;function __getSession(){if(!__sessionPromise)__sessionPromise=fetch("/auth/me",{credentials:"include"}).then(function(r){if(!r.ok)throw new Error("Session request failed");return r.json()}).catch(function(e){__sessionPromise=null;throw e});return __sessionPromise}'
+          'var __sessionPromise;function __getSession(){if(!__sessionPromise)__sessionPromise=fetch("/auth/me",{credentials:"include",signal:AbortSignal.timeout(15000)}).then(function(r){if(!r.ok)throw new Error("Session request failed");return r.json()}).catch(function(e){__sessionPromise=null;throw e});return __sessionPromise}'
         }} />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed (中文)" href="/feed.xml" />
         <link rel="alternate" type="application/rss+xml" title="RSS Feed (English)" href="/en/feed.xml" />
@@ -340,6 +342,7 @@ const Layout: FC<LayoutProps> = ({
           '})' +
           '}).catch(function(){});' +
           'document.addEventListener("click",function(e){' +
+          'var login=e.target.closest(".user-auth-link,.user-auth-login");if(login&&!/^\\/(?:en\\/)?login\\/?$/.test(location.pathname))login.href=(__cur==="en"?"/en":"")+"/login?next="+encodeURIComponent(location.pathname+location.search+location.hash);' +
           'if(!e.target.closest(".user-avatar-wrap")){document.querySelectorAll(".user-avatar-menu").forEach(function(m){m.classList.add("hidden")})}' +
           'var tg=e.target.closest(".user-auth-logout");' +
           'if(!tg)return;e.preventDefault();' +

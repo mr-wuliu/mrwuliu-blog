@@ -3,7 +3,7 @@ import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { appFetch } from "../helpers";
 import { createDb } from "../../src/db";
-import { rateLimits } from "../../src/db/schema";
+import { rateLimits, users } from "../../src/db/schema";
 import { generateOtp } from "../../src/services/auth";
 
 const db = createDb(env.DB);
@@ -93,10 +93,24 @@ describe("Auth API", () => {
         body: JSON.stringify({ email }),
       });
       expect(res.status).toBe(429);
+      expect(res.headers.get("Retry-After")).toBe("300");
     });
   });
 
   describe("POST /auth/otp/verify", () => {
+    it("distinguishes a banned account from an incorrect verification code", async () => {
+      const email = `banned-${crypto.randomUUID()}@example.com`;
+      await db.insert(users).values({ id: crypto.randomUUID(), email, name: "Banned reader", status: "banned" });
+      const { code } = await generateOtp(db, authEnv, email);
+      const res = await appFetch("/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      expect(res.status).toBe(403);
+      expect(await res.json()).toEqual({ error: "banned_user" });
+      expect(res.headers.get("Set-Cookie")).toBeNull();
+    });
     it("returns 400 for invalid email", async () => {
       const res = await appFetch("/auth/otp/verify", {
         method: "POST",
@@ -191,6 +205,27 @@ describe("Auth API", () => {
   });
 
   describe("GET /auth/me", () => {
+    it("sends an already logged in reader back to their comment anchor", async () => {
+      const email = `login-return-${crypto.randomUUID()}@example.com`;
+      const { code } = await generateOtp(db, authEnv, email);
+      const login = await appFetch("/auth/otp/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const cookies = extractCookies(login);
+      const headers = { Cookie: cookieHeader(cookies) };
+      const next = "/en/posts/example#comments";
+      const res = await appFetch(`/en/login?next=${encodeURIComponent(next)}`, { headers, redirect: 'manual' });
+      expect(res.status).toBe(302);
+      expect(res.headers.get("Location")).toBe(next);
+      const external = await appFetch("/login?next=https://example.org", { headers, redirect: 'manual' });
+      expect(external.headers.get("Location")).toBe("/");
+      const self = await appFetch("/login?next=/login", { headers, redirect: 'manual' });
+      expect(self.status).toBe(200);
+      const admin = await appFetch("/login?next=/admin/posts", { headers, redirect: 'manual' });
+      expect(admin.status).toBe(200);
+    });
     it("returns null user when not authenticated", async () => {
       const res = await appFetch("/auth/me");
       expect(res.status).toBe(200);
