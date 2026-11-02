@@ -60,7 +60,7 @@ const Layout: FC<LayoutProps> = ({
   homeLayout = false,
   children,
 }) => {
-  const hasSidebar = !homeLayout && !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
+  const hasSidebar = !homeLayout && (type === 'article' || currentPath === '/about') && !!(authorProfile && (authorProfile.avatar || authorProfile.bio || authorProfile.github || authorProfile.email || authorProfile.wechat || authorProfile.xiaohongshu))
   const toggleHref = langPath(currentPath, otherLang(lang))
   const year = new Date().getFullYear()
 
@@ -171,12 +171,12 @@ const Layout: FC<LayoutProps> = ({
                   <a href={langPath('/login', lang)} data-thref="/login" data-t="nav.login" class="mobile-menu-link user-auth-login">{t(lang, 'nav.login')}</a>
                 </div>
                 <a href={langPath('/search', lang)} data-thref="/search" data-t="nav.search" class="mobile-menu-link">{t(lang, 'nav.search')}</a>
-                <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="mobile-menu-link">{t(lang, 'nav.writings')}</a>
-                <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="mobile-menu-link">{t(lang, 'nav.series')}</a>
-                <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="mobile-menu-link">{t(lang, 'nav.projects')}</a>
-                <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="mobile-menu-link">{t(lang, 'nav.tags')}</a>
-                <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="mobile-menu-link">{t(lang, 'nav.about')}</a>
-                <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="mobile-menu-link">{t(lang, 'nav.friends')}</a>
+                <a href={langPath('/writings', lang)} data-thref="/writings" aria-current={currentPath === '/writings' || currentPath.startsWith('/writings/') ? 'page' : undefined} data-t="nav.writings" class="mobile-menu-link">{t(lang, 'nav.writings')}</a>
+                <a href={langPath('/series', lang)} data-thref="/series" aria-current={currentPath === '/series' || currentPath.startsWith('/series/') ? 'page' : undefined} data-t="nav.series" class="mobile-menu-link">{t(lang, 'nav.series')}</a>
+                <a href={langPath('/projects', lang)} data-thref="/projects" aria-current={currentPath === '/projects' || currentPath.startsWith('/projects/') ? 'page' : undefined} data-t="nav.projects" class="mobile-menu-link">{t(lang, 'nav.projects')}</a>
+                <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" aria-current={currentPath === '/tags-cloud' || currentPath.startsWith('/tags-cloud/') ? 'page' : undefined} data-t="nav.tags" class="mobile-menu-link">{t(lang, 'nav.tags')}</a>
+                <a href={langPath('/about', lang)} data-thref="/about" aria-current={currentPath === '/about' || currentPath.startsWith('/about/') ? 'page' : undefined} data-t="nav.about" class="mobile-menu-link">{t(lang, 'nav.about')}</a>
+                <a href={langPath('/friends', lang)} data-thref="/friends" aria-current={currentPath === '/friends' || currentPath.startsWith('/friends/') ? 'page' : undefined} data-t="nav.friends" class="mobile-menu-link">{t(lang, 'nav.friends')}</a>
               </div>
             </div>
 
@@ -188,12 +188,12 @@ const Layout: FC<LayoutProps> = ({
                     <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
                     <div class="flex-1 overflow-x-auto">
                       <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
-                        <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
-                        <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
-                        <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
-                        <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
-                        <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
-                        <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
+                        <a href={langPath('/writings', lang)} data-thref="/writings" aria-current={currentPath === '/writings' || currentPath.startsWith('/writings/') ? 'page' : undefined} data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
+                        <a href={langPath('/series', lang)} data-thref="/series" aria-current={currentPath === '/series' || currentPath.startsWith('/series/') ? 'page' : undefined} data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
+                        <a href={langPath('/projects', lang)} data-thref="/projects" aria-current={currentPath === '/projects' || currentPath.startsWith('/projects/') ? 'page' : undefined} data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
+                        <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" aria-current={currentPath === '/tags-cloud' || currentPath.startsWith('/tags-cloud/') ? 'page' : undefined} data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
+                        <a href={langPath('/about', lang)} data-thref="/about" aria-current={currentPath === '/about' || currentPath.startsWith('/about/') ? 'page' : undefined} data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
+                        <a href={langPath('/friends', lang)} data-thref="/friends" aria-current={currentPath === '/friends' || currentPath.startsWith('/friends/') ? 'page' : undefined} data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                       </div>
                     </div>
                   </div>
@@ -221,12 +221,12 @@ const Layout: FC<LayoutProps> = ({
                   <a href={langPath('/', lang)} data-thref="/" class="text-xl font-bold tracking-tight text-black hover:opacity-70 transition-all no-underline">mrwuliu</a>
                   <div class="flex-1 overflow-x-auto">
                     <div class="flex gap-6 text-lg uppercase tracking-widest shrink-0 whitespace-nowrap justify-center min-w-max">
-                      <a href={langPath('/writings', lang)} data-thref="/writings" data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
-                      <a href={langPath('/series', lang)} data-thref="/series" data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
-                      <a href={langPath('/projects', lang)} data-thref="/projects" data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
-                      <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
-                      <a href={langPath('/about', lang)} data-thref="/about" data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
-                      <a href={langPath('/friends', lang)} data-thref="/friends" data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
+                      <a href={langPath('/writings', lang)} data-thref="/writings" aria-current={currentPath === '/writings' || currentPath.startsWith('/writings/') ? 'page' : undefined} data-t="nav.writings" class="hover:underline no-underline text-black">{t(lang, 'nav.writings')}</a>
+                      <a href={langPath('/series', lang)} data-thref="/series" aria-current={currentPath === '/series' || currentPath.startsWith('/series/') ? 'page' : undefined} data-t="nav.series" class="hover:underline no-underline text-black">{t(lang, 'nav.series')}</a>
+                      <a href={langPath('/projects', lang)} data-thref="/projects" aria-current={currentPath === '/projects' || currentPath.startsWith('/projects/') ? 'page' : undefined} data-t="nav.projects" class="hover:underline no-underline text-black">{t(lang, 'nav.projects')}</a>
+                      <a href={langPath('/tags-cloud', lang)} data-thref="/tags-cloud" aria-current={currentPath === '/tags-cloud' || currentPath.startsWith('/tags-cloud/') ? 'page' : undefined} data-t="nav.tags" class="hover:underline no-underline text-black">{t(lang, 'nav.tags')}</a>
+                      <a href={langPath('/about', lang)} data-thref="/about" aria-current={currentPath === '/about' || currentPath.startsWith('/about/') ? 'page' : undefined} data-t="nav.about" class="hover:underline no-underline text-black">{t(lang, 'nav.about')}</a>
+                      <a href={langPath('/friends', lang)} data-thref="/friends" aria-current={currentPath === '/friends' || currentPath.startsWith('/friends/') ? 'page' : undefined} data-t="nav.friends" class="hover:underline no-underline text-black">{t(lang, 'nav.friends')}</a>
                     </div>
                   </div>
                   <div class="flex items-center gap-3 shrink-0 ml-auto">
@@ -252,13 +252,13 @@ const Layout: FC<LayoutProps> = ({
             </div>
           </nav>
         </header>
-        <main class={`${homeLayout ? 'home-main ' : ''}max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-10 md:pt-12 pb-8 md:pb-12 flex-1 w-full`}>
+        <main data-page={type === 'article' ? 'article' : currentPath.replace(/^\/en(?=\/)/, '').split('?')[0].split('/')[1] || 'home'} class={`${homeLayout ? 'home-main ' : 'inner-main '}max-w-6xl mx-auto px-4 md:px-8 lg:px-12 pt-10 md:pt-12 pb-8 md:pb-12 flex-1 w-full`}>
           {hasSidebar ? (
-            <div class="lg:flex lg:gap-16">
-              <div class="flex-1 min-w-0">
+            <div class="content-layout lg:flex lg:gap-16">
+              <div class="layout-content flex-1 min-w-0">
                 {children}
               </div>
-              <aside class={`w-full ${sidebarExtra ? 'lg:w-60' : 'lg:w-40'} shrink-0 mt-12 lg:mt-0`}>
+              <aside class={`layout-sidebar w-full ${sidebarExtra ? 'lg:w-60' : 'lg:w-40'} shrink-0 mt-12 lg:mt-0`}>
                 {sidebarExtra ? (
                   <>
                     <div class="lg:hidden">

@@ -14,7 +14,7 @@ const UnsubscribePage: FC<{ lang: Lang; status: UnsubscribeStatus }> = ({ lang, 
       currentPath="/unsubscribe"
       extraHead={<meta name="robots" content="noindex, nofollow" />}
     >
-      <div class="flex flex-col items-center justify-center py-24">
+      <div class="status-page flex flex-col items-center justify-center py-24">
         {status === 'success' ? (
           <>
             <h1 class="text-3xl font-bold text-black">{t(lang, 'unsubscribe.success')}</h1>

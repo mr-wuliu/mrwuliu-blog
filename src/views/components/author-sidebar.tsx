@@ -17,7 +17,7 @@ const AuthorSidebar: FC<{ profile: AuthorProfile }> = ({ profile }) => {
   }
 
   return (
-    <div class="space-y-4">
+    <div class="author-profile space-y-4">
       {avatar && (
         <img
           src={avatar}

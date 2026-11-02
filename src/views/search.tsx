@@ -1,7 +1,8 @@
 import type { FC } from 'hono/jsx'
 import Layout from './layout'
+import ResultCard from './components/result-card'
 import type { AuthorProfile } from './components/author-sidebar'
-import { type Lang, t, tf, langPath, formatDateLang } from '../i18n'
+import { type Lang, t, tf, langPath } from '../i18n'
 
 type Tag = {
   id: string
@@ -36,29 +37,6 @@ type SearchPageProps = {
   posts: Post[]
   pagination: PaginationData
   authorProfile?: AuthorProfile
-}
-
-const PostCard: FC<{ post: Post; lang: Lang }> = ({ post, lang }) => {
-  return (
-    <article class="p-4 sm:p-6 bg-white border border-black rounded-none shadow-none hover:-translate-y-1 transition-all mb-4 sm:mb-6">
-      <h2 class="text-lg sm:text-xl font-bold tracking-tight mb-2">
-        <a href={langPath(`/posts/${post.slug}`, lang)} class="text-black no-underline hover:opacity-70 transition-all">{post.title}</a>
-      </h2>
-      {post.publishedAt && (
-        <time class="text-xs font-bold uppercase tracking-widest opacity-50" datetime={post.publishedAt}>
-          {formatDateLang(post.publishedAt, lang)}
-        </time>
-      )}
-      {post.excerpt && <p class="mt-3 opacity-70 text-base sm:text-lg leading-relaxed">{post.excerpt}</p>}
-      {post.tags && post.tags.length > 0 && (
-        <div class="mt-3 flex flex-wrap gap-1.5">
-          {post.tags.map((tag) => (
-            <a href={langPath(`/tags/${tag.slug}`, lang)} class="text-[10px] font-black uppercase tracking-widest border border-black border-opacity-50 px-2 py-0.5 text-black hover:bg-black hover:text-white transition-all no-underline">{tag.name}</a>
-          ))}
-        </div>
-      )}
-    </article>
-  )
 }
 
 const Pagination: FC<{ pagination: PaginationData; query: string; lang: Lang }> = ({ pagination, query, lang }) => {
@@ -105,9 +83,9 @@ const SearchPage: FC<SearchPageProps> = ({ lang, query, posts, pagination, autho
       currentPath={currentPath}
       extraHead={hasQuery ? <meta name="robots" content="noindex" /> : undefined}
     >
-      <div>
-        <h1 class="text-2xl sm:text-4xl font-bold tracking-tight mb-6 sm:mb-10 break-words">{title}</h1>
-        <form action={langPath('/search', lang)} method="get" class="mb-8 sm:mb-10 flex gap-2" role="search">
+      <section class="search-page">
+        <h1 class="page-title">{title}</h1>
+        <form action={langPath('/search', lang)} method="get" class="search-form" role="search">
           <input
             type="search"
             name="q"
@@ -137,13 +115,13 @@ const SearchPage: FC<SearchPageProps> = ({ lang, query, posts, pagination, autho
           <>
             <div>
               {posts.map((post) => (
-                <PostCard post={post} lang={lang} />
+                <ResultCard post={post} lang={lang} />
               ))}
             </div>
             <Pagination pagination={pagination} query={query} lang={lang} />
           </>
         )}
-      </div>
+      </section>
     </Layout>
   )
 }

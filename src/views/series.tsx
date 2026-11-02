@@ -21,23 +21,24 @@ const CollectionCard: FC<{ collection: Collection; lang: Lang }> = ({ collection
   const displayDescription = lang === 'en' && collection.descriptionEn ? collection.descriptionEn : collection.description
 
   return (
-    <div class="break-inside-avoid mb-6 border-2 border-black hover:-translate-y-1 transition-all">
+    <div class="portfolio-card series-card">
+      <div class="series-bookmark" aria-hidden="true">≡</div>
       {collection.coverImageKey && (
         <img
-          src={`/api/images/${collection.coverImageKey}`}
+          src={`/images/${collection.coverImageKey}`}
           alt={displayName}
-          class="w-full border-b-2 border-black"
+          class="portfolio-cover" loading="lazy" decoding="async"
         />
       )}
-      <h3 class="font-bold text-lg uppercase tracking-wide p-4">
+      <h2 class="portfolio-title">
         <a href={langPath('/series/' + collection.slug, lang)} class="no-underline text-black hover:opacity-70 transition-all">
           {displayName}
         </a>
-      </h3>
+      </h2>
       {displayDescription && (
-        <p class="text-sm text-gray-700 px-4 pb-4">{displayDescription}</p>
+        <p class="portfolio-description">{displayDescription}</p>
       )}
-      <div class="flex border-t-2 border-black">
+      <div class="portfolio-actions">
         <span class="flex-1 px-4 py-3 text-sm uppercase tracking-widest text-center">
           {collection.postCount} {t(lang, 'series.posts')}
         </span>
@@ -75,23 +76,23 @@ const SeriesPage: FC<{ lang: Lang; collections: Collection[]; authorProfile?: Au
         </>
       }
     >
-      <div>
-        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-2" data-t="series.title">
+      <section class="series-page">
+        <h1 class="page-title" data-t="series.title">
           {t(lang, 'series.title')}
         </h1>
-        <p class="text-sm opacity-50 mb-8" data-t="series.subtitle">{t(lang, 'series.subtitle')}</p>
+        <p class="page-description" data-t="series.subtitle">{t(lang, 'series.subtitle')}</p>
         {collections.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
             <p data-t="series.empty">{t(lang, 'series.empty')}</p>
           </div>
         ) : (
-          <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+          <div class="collection-grid">
             {collections.map((collection) => (
               <CollectionCard collection={collection} lang={lang} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </Layout>
   )
 }

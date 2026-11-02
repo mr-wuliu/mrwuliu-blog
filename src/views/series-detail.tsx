@@ -53,9 +53,9 @@ const SeriesDetailPage: FC<{ lang: Lang; collection: Collection; authorProfile?:
         </>
       }
     >
-      <div class="flex flex-col lg:flex-row gap-8">
-        <div class="lg:w-3/5">
-          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
+      <div class="detail-layout">
+        <div class="detail-content">
+          <h1 class="page-title">
             {displayName}
           </h1>
 
@@ -67,12 +67,12 @@ const SeriesDetailPage: FC<{ lang: Lang; collection: Collection; authorProfile?:
             <h2 class="text-xs font-bold uppercase tracking-widest opacity-50 mb-4" data-t="series.collectionPosts">
               {t(lang, 'series.collectionPosts')}
             </h2>
-            <ol class="space-y-3">
+            <ol class="series-chapters">
               {collection.posts.map((post, index) => (
                 <li key={post.id} class="border-b border-gray-200 pb-3 last:border-0">
                   <a href={langPath('/posts/' + post.slug, lang)} class="text-black no-underline hover:opacity-70 transition-all flex items-baseline gap-3">
                     <span class="text-sm font-bold opacity-30">{String(index + 1).padStart(2, '0')}</span>
-                    <span class="font-medium">{post.title}</span>
+                    <span class="chapter-copy"><span class="font-medium">{post.title}</span>{post.excerpt && <span class="chapter-excerpt">{post.excerpt}</span>}</span><span aria-hidden="true" class="chapter-arrow">↗</span>
                   </a>
                 </li>
               ))}
@@ -80,16 +80,16 @@ const SeriesDetailPage: FC<{ lang: Lang; collection: Collection; authorProfile?:
           </div>
         </div>
 
-        <div class="lg:w-2/5">
+        <div class="detail-aside">
           {collection.coverImageKey && (
             <img
-              src={`/api/images/${collection.coverImageKey}`}
+              src={`/images/${collection.coverImageKey}`}
               alt={displayName}
-              class="w-full border-2 border-black mb-6"
+              class="detail-cover" decoding="async"
             />
           )}
 
-          <div class="border-2 border-black p-6 space-y-4 mb-6">
+          <div class="detail-facts space-y-4">
             <div>
               <span class="text-xs font-bold uppercase tracking-widest opacity-50 block mb-1" data-t="series.lastUpdated">
                 {t(lang, 'series.lastUpdated')}

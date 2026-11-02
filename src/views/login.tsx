@@ -19,34 +19,34 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
       currentPath={loginPath}
       extraHead={<meta name="robots" content="noindex, nofollow" />}
     >
-      <div class="grid grid-cols-1 lg:grid-cols-2 border border-black bg-white overflow-hidden max-w-4xl mx-auto">
+      <div class="login-panel grid grid-cols-1 lg:grid-cols-2">
         {/* Left panel — decorative SVG illustration */}
-        <div class="hidden lg:flex items-center justify-center bg-neutral-50 border-r border-black px-12 py-8 relative overflow-hidden">
-          <svg viewBox="0 0 400 540" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#0a0a0a" class="w-full h-auto relative z-10" style="max-width: 14rem; max-height: 260px;">
+        <div class="login-art hidden lg:flex items-center justify-center px-12 py-8 relative overflow-hidden">
+          <svg viewBox="0 0 400 540" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" class="w-full h-auto relative z-10" style="max-width: 14rem; max-height: 260px;">
             {/* Concentric arcs — focal rhythm */}
             <circle cx="200" cy="200" r="160" stroke-width="0.5" opacity="0.15" />
             <circle cx="200" cy="200" r="120" stroke-width="0.5" opacity="0.2" />
             <circle cx="200" cy="200" r="80" stroke-width="1" opacity="0.3" />
             {/* Bold focal circle */}
             <circle cx="200" cy="200" r="48" stroke-width="2.5" />
-            <circle cx="200" cy="200" r="6" fill="#0a0a0a" stroke="none" />
+            <circle cx="200" cy="200" r="6" fill="currentColor" stroke="none" />
             {/* Offset ghost circle for depth */}
             <circle cx="214" cy="186" r="48" stroke-width="1" opacity="0.15" stroke-dasharray="3 4" />
             {/* Bold vertical accent */}
-            <rect x="56" y="80" width="3" height="200" fill="#0a0a0a" stroke="none" />
+            <rect x="56" y="80" width="3" height="200" fill="currentColor" stroke="none" />
             {/* Triangle accent — Bauhaus energy */}
             <path d="M 280 380 L 340 460 L 220 460 Z" stroke-width="1.5" opacity="0.7" />
             <path d="M 280 380 L 340 460" stroke-width="3" opacity="1" />
             {/* Document card — tilted, layered */}
             <g transform="rotate(-4 150 380)">
-              <rect x="70" y="320" width="160" height="120" fill="#ffffff" stroke-width="2" />
+              <rect x="70" y="320" width="160" height="120" fill="var(--surface)" stroke-width="2" />
               <rect x="76" y="326" width="160" height="120" fill="none" stroke-width="0.5" opacity="0.2" />
               <line x1="90" y1="350" x2="200" y2="350" stroke-width="1" opacity="0.5" />
               <line x1="90" y1="370" x2="180" y2="370" stroke-width="0.8" opacity="0.4" />
               <line x1="90" y1="390" x2="210" y2="390" stroke-width="0.8" opacity="0.4" />
               <line x1="90" y1="410" x2="160" y2="410" stroke-width="0.8" opacity="0.3" />
               {/* Folded corner */}
-              <path d="M 210 320 L 230 320 L 230 340 Z" fill="#0a0a0a" stroke="none" opacity="0.08" />
+              <path d="M 210 320 L 230 320 L 230 340 Z" fill="currentColor" stroke="none" opacity="0.08" />
             </g>
             {/* Crosshair marks */}
             <line x1="200" y1="16" x2="200" y2="30" stroke-width="1.5" />
@@ -54,15 +54,15 @@ const LoginPage: FC<LoginPageProps> = ({ lang, nextPath }) => {
             <line x1="370" y1="200" x2="384" y2="200" stroke-width="1.5" />
             <line x1="386" y1="200" x2="396" y2="200" stroke-width="0.5" opacity="0.4" />
             {/* Small dots — constellation */}
-            <circle cx="350" cy="100" r="2.5" fill="#0a0a0a" stroke="none" />
-            <circle cx="60" cy="320" r="2" fill="#0a0a0a" stroke="none" />
-            <circle cx="340" cy="280" r="1.5" fill="#0a0a0a" stroke="none" />
-            <circle cx="90" cy="130" r="1.5" fill="#0a0a0a" stroke="none" />
+            <circle cx="350" cy="100" r="2.5" fill="currentColor" stroke="none" />
+            <circle cx="60" cy="320" r="2" fill="currentColor" stroke="none" />
+            <circle cx="340" cy="280" r="1.5" fill="currentColor" stroke="none" />
+            <circle cx="90" cy="130" r="1.5" fill="currentColor" stroke="none" />
             {/* Diagonal fine line — movement */}
             <line x1="56" y1="500" x2="140" y2="440" stroke-width="0.5" opacity="0.3" />
             <line x1="260" y1="80" x2="330" y2="40" stroke-width="0.5" opacity="0.3" />
             {/* Small square — anchor */}
-            <rect x="48" y="496" width="16" height="16" fill="#0a0a0a" stroke="none" />
+            <rect x="48" y="496" width="16" height="16" fill="currentColor" stroke="none" />
             {/* Envelope hint — auth theme */}
             <rect x="300" y="490" width="60" height="36" stroke-width="1.5" opacity="0.6" />
             <path d="M 300 490 L 330 508 L 360 490" stroke-width="1.5" opacity="0.6" />

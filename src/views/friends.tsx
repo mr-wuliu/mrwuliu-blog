@@ -23,21 +23,21 @@ const FriendLinkCard: FC<{ link: FriendLink; lang: Lang }> = ({ link, lang }) =>
       href={link.url}
       target="_blank"
       rel="noopener noreferrer"
-      class="flex items-start border-2 border-black p-4 hover:-translate-y-1 transition-all no-underline text-black"
+      class="friend-card no-underline text-black"
     >
       {link.avatar ? (
         <img
           src={link.avatar}
           alt={displayName}
-          class="w-14 h-14 border border-black mr-4 object-cover shrink-0"
+          class="friend-avatar" loading="lazy"
         />
       ) : (
-        <div class="w-14 h-14 border border-black mr-4 flex items-center justify-center text-lg font-bold shrink-0">
+        <div class="friend-avatar friend-initial">
           {displayName.charAt(0).toUpperCase()}
         </div>
       )}
       <div class="min-w-0">
-        <span class="block font-bold text-sm uppercase tracking-wide truncate">
+        <span class="friend-name">
           {displayName}
         </span>
         {displayDesc && (
@@ -71,22 +71,23 @@ const FriendsPage: FC<{ lang: Lang; links: FriendLink[]; authorProfile?: AuthorP
         </>
       }
     >
-      <div>
-        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="friends.title">
+      <section class="friends-page">
+        <h1 class="page-title" data-t="friends.title">
           {t(lang, 'friends.title')}
         </h1>
+        <p class="page-description" data-t="friends.description">{t(lang, 'friends.description')}</p>
         {links.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
             <p data-t="friends.noLinks">{t(lang, 'friends.noLinks')}</p>
           </div>
         ) : (
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div class="friends-grid">
             {links.map((link) => (
               <FriendLinkCard link={link} lang={lang} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </Layout>
   )
 }

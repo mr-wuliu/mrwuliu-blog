@@ -24,22 +24,22 @@ const ProjectCard: FC<{ project: Project; lang: Lang }> = ({ project, lang }) =>
   }
 
   return (
-    <div class="break-inside-avoid mb-6 border-2 border-black hover:-translate-y-1 transition-all">
+    <div class="portfolio-card project-card">
       {project.coverImageKey && (
         <img
-          src={`/api/images/${project.coverImageKey}`}
+          src={`/images/${project.coverImageKey}`}
           alt={project.title}
-          class="w-full border-b-2 border-black"
+          class="portfolio-cover" loading="lazy" decoding="async"
         />
       )}
-      <h3 class="font-bold text-lg uppercase tracking-wide p-4">
+      <h2 class="portfolio-title">
         {project.title}
-      </h3>
+      </h2>
       {project.description && (
-        <p class="text-sm text-gray-700 px-4 pb-4">{project.description}</p>
+        <p class="portfolio-description">{project.description}</p>
       )}
       {techItems.length > 0 && (
-        <div class="flex flex-wrap px-4 pb-4">
+        <div class="portfolio-tech">
           {techItems.map((tech) => (
             <span class="text-xs uppercase tracking-widest border border-black px-2 py-0.5 mr-1 mb-1">
               {tech}
@@ -47,7 +47,7 @@ const ProjectCard: FC<{ project: Project; lang: Lang }> = ({ project, lang }) =>
           ))}
         </div>
       )}
-      <div class="flex border-t-2 border-black">
+      <div class="portfolio-actions">
         <a
           href={langPath(`/projects/${project.id}`, lang)}
           class="flex-1 px-4 py-3 text-sm uppercase tracking-widest hover:bg-black hover:text-white transition-colors no-underline text-black text-center border-r-2 border-black"
@@ -94,22 +94,23 @@ const ProjectsPage: FC<{ lang: Lang; projects: Project[]; authorProfile?: Author
         </>
       }
     >
-      <div>
-        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="projects.title">
+      <section class="projects-page">
+        <h1 class="page-title" data-t="projects.title">
           {t(lang, 'projects.title')}
         </h1>
+        <p class="page-description" data-t="projects.description">{t(lang, 'projects.description')}</p>
         {projects.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
             <p data-t="projects.noProjects">{t(lang, 'projects.noProjects')}</p>
           </div>
         ) : (
-          <div class="columns-1 sm:columns-2 lg:columns-3 gap-6">
+          <div class="collection-grid">
             {projects.map((project) => (
               <ProjectCard project={project} lang={lang} />
             ))}
           </div>
         )}
-      </div>
+      </section>
     </Layout>
   )
 }

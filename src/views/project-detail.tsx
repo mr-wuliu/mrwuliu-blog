@@ -40,9 +40,9 @@ const ProjectDetailPage: FC<{ lang: Lang; project: Project; authorProfile?: Auth
         ]} />
       }
     >
-      <div class="flex flex-col lg:flex-row gap-8">
-        <div class="lg:w-3/5">
-          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-6">
+      <div class="detail-layout">
+        <div class="detail-content">
+          <h1 class="page-title">
             {project.title}
           </h1>
 
@@ -64,12 +64,12 @@ const ProjectDetailPage: FC<{ lang: Lang; project: Project; authorProfile?: Auth
           )}
         </div>
 
-        <div class="lg:w-2/5">
+        <div class="detail-aside">
           {project.coverImageKey && (
             <img
-              src={`/api/images/${project.coverImageKey}`}
+              src={`/images/${project.coverImageKey}`}
               alt={project.title}
-              class="w-full border-2 border-black mb-6"
+              class="detail-cover" decoding="async"
             />
           )}
 
@@ -85,7 +85,7 @@ const ProjectDetailPage: FC<{ lang: Lang; project: Project; authorProfile?: Auth
             </a>
           )}
 
-          <div class="border-2 border-black p-6 space-y-4 mb-6">
+          <div class="detail-facts space-y-4">
             <div>
               <span class="text-xs font-bold uppercase tracking-widest opacity-50 block mb-1" data-t="projectDetail.created">{t(lang, 'projectDetail.created')}</span>
               <span class="text-sm">{formatDateLang(project.createdAt, lang)}</span>

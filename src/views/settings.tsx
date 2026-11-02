@@ -17,7 +17,7 @@ const SettingsPage: FC<SettingsPageProps> = ({ lang, user }) => {
       currentPath={langPath('/settings', lang)}
       extraHead={<meta name="robots" content="noindex, nofollow" />}
     >
-      <div class="max-w-md mx-auto">
+      <div class="settings-panel">
         <h1 class="text-xl font-bold text-black mb-8 tracking-tight">{t(lang, 'settings.title')}</h1>
 
         <div class="space-y-8">

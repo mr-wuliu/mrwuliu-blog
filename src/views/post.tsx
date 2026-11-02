@@ -508,7 +508,7 @@ const CommentSection: FC<{ comments: Comment[]; postSlug: string; lang: Lang }> 
   }
 
   return (
-    <section class="mt-4 pt-6 sm:pt-8 border-t-2 border-black"
+    <section class="discussion mt-4 pt-6 sm:pt-8 border-t-2 border-black"
       data-comment-msg={successMsg}
       data-comment-err={errorMsg}
       data-comment-msg-zh={lang === 'zh' ? successMsg : otherSuccessMsg}
@@ -767,7 +767,7 @@ const PostNav: FC<{ prev: PostNav | null; next: PostNav | null; lang: Lang }> = 
   if (!prev && !next) return <></>
 
   return (
-    <nav class="mt-16 sm:mt-40 pt-3 border-t-2 border-black flex flex-col sm:flex-row gap-3 sm:justify-between">
+    <nav class="reading-pagination mt-16 pt-3 border-t border-black flex flex-col sm:flex-row gap-3 sm:justify-between">
       <div class="min-w-0">
         {prev && (
           <a href={langPath(`/posts/${prev.slug}`, lang)} class="text-sm font-bold text-black opacity-70 hover:opacity-100 no-underline transition-all inline-flex items-center gap-1.5 max-w-full">
@@ -834,9 +834,9 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
         </>
       }
     >
-      <article>
+      <article class="reading-article">
         <h1 class="text-2xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">{post.title}</h1>
-        <div class="mt-4 mb-4 flex flex-wrap items-center gap-3 sm:gap-4">
+        <div class="reading-meta mt-4 mb-4 flex flex-wrap items-center gap-3 sm:gap-4">
           <time datetime={post.publishedAt ?? ''} class="text-xs font-bold uppercase tracking-widest opacity-50">
             {formatDateLang(post.publishedAt, lang)}
           </time>
@@ -856,6 +856,7 @@ const PostPage: FC<PostPageProps> = ({ lang, post, content, headings, comments, 
           )}
         </div>
 
+        {coverImageUrl && <figure class="reading-cover"><img src={coverImageUrl} alt="" decoding="async" /></figure>}
         <div class="post-body-divider mb-3" />
 
         {collections && collections.length > 0 && (

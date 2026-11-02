@@ -35,32 +35,36 @@ const WritingsPage: FC<{ lang: Lang; posts: Post[]; authorProfile?: AuthorProfil
         </>
       }
     >
-      <div>
-        <h1 class="text-2xl sm:text-4xl font-bold uppercase tracking-widest border-b-2 border-black pb-2 mb-8" data-t="writings.title">
+      <section class="writings-page">
+        <h1 class="page-title" data-t="writings.title">
           {t(lang, 'writings.title')}
         </h1>
+        <p class="page-description" data-t="writings.description">{t(lang, 'writings.description')}</p>
         {posts.length === 0 ? (
           <div class="py-16 text-center opacity-50 text-lg">
             <p data-t="writings.noPosts">{t(lang, 'writings.noPosts')}</p>
           </div>
         ) : (
-          <ul class="divide-y divide-black">
-            {posts.map((post) => (
-              <li>
-                <a
-                  href={langPath(`/posts/${post.slug}`, lang)}
-                  class="flex justify-between items-baseline py-4 group hover:bg-black/5 transition-colors px-2 -mx-2 no-underline text-black"
-                >
-                  <span class="text-base group-hover:underline">{post.title}</span>
-                  <span class="text-xs uppercase tracking-widest opacity-50 shrink-0 ml-4">
-                    {formatDateLang(post.publishedAt || post.createdAt, lang)}
-                  </span>
-                </a>
-              </li>
+          <div class="archive-years">
+            {Array.from(new Set(posts.map(post => (post.publishedAt || post.createdAt).slice(0, 4)))).map(year => (
+              <section class="archive-year">
+                <h2>{year}</h2>
+                <ul>
+                  {posts.filter(post => (post.publishedAt || post.createdAt).startsWith(year)).map(post => (
+                    <li>
+                      <a href={langPath(`/posts/${post.slug}`, lang)} class="archive-entry">
+                        <span>{post.title}</span>
+                        <time datetime={post.publishedAt || post.createdAt}>{formatDateLang(post.publishedAt || post.createdAt, lang)}</time>
+                        <span aria-hidden="true" class="archive-arrow">↗</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             ))}
-          </ul>
+          </div>
         )}
-      </div>
+      </section>
     </Layout>
   )
 }
