@@ -723,8 +723,12 @@ a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid
 .journal-section-heading h2 { font-size: .8rem; color: var(--muted); font-weight: 500; }
 .journal-section-heading a { font-size: .75rem; color: var(--ink); text-decoration: none; }
 .journal-section-heading a span + span { margin-left: 12px; }
-.journal-grid { --journal-columns: 12; display: grid; grid-template-columns: repeat(var(--journal-columns),minmax(0,1fr)); grid-auto-flow: row dense; gap: 24px; align-items: start; }
+.journal-grid { position: relative; --journal-columns: 12; display: grid; grid-template-columns: repeat(var(--journal-columns),minmax(0,1fr)); grid-auto-flow: row dense; gap: 24px; align-items: start; }
 .journal-grid.is-masonry { grid-auto-rows: 4px; row-gap: 0; }
+.journal-interlude { position: absolute; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); color: var(--ink); pointer-events: none; }
+.journal-interlude svg { width: 100%; height: 100%; padding: 14px; opacity: .68; }
+.journal-interlude svg * { vector-effect: non-scaling-stroke; }
+
 .journal-card { grid-column: span 3; min-width: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; transition: box-shadow .25s, border-color .25s; }
 .journal-card-image { grid-column: span 8; }
 .journal-series { grid-column: span 4; }

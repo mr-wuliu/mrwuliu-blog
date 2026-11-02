@@ -219,7 +219,9 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
   var grid = document.querySelector('.journal-grid');
   if (grid) {
     var frame;
-    var cards = Array.from(grid.children);
+    var cards = Array.from(grid.querySelectorAll(':scope > article'));
+    var decorationSeed = Math.floor(Math.random() * 100000);
+    var decorationSignature = '';
     function columnSpan(card, columns) {
       var cover = card.querySelector('.journal-cover');
       var image = cover && !cover.hidden ? cover.querySelector('img') : null;
@@ -240,6 +242,77 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
       }, 0) : 0;
       return card.classList.contains('journal-series') || length > 42 ? 4 : 3;
     }
+    function fillGaps(columns, gap) {
+      var bounds = grid.getBoundingClientRect();
+      var track = (bounds.width - gap * (columns - 1)) / columns;
+      var boxes = cards.map(function(card) {
+        var box = card.getBoundingClientRect();
+        return {
+          column: Math.round((box.left - bounds.left) / (track + gap)),
+          row: Math.round((box.top - bounds.top) / 4),
+          span: Number(card.dataset.gridSpan),
+          rows: Math.ceil((box.height + gap) / 4)
+        };
+      });
+      var signature = columns === 1 ? 'single' : bounds.width + ':' + JSON.stringify(boxes);
+      if (signature === decorationSignature) return;
+      decorationSignature = signature;
+      grid.querySelectorAll('.journal-interlude').forEach(function(item) { item.remove(); });
+      if (columns === 1) return;
+      var rowCount = boxes.reduce(function(total, box) { return Math.max(total, box.row + box.rows); }, 0);
+      var occupied = Array.from({ length: rowCount }, function() { return new Uint8Array(columns); });
+      function occupy(column, row, span, rows) {
+        for (var y = row; y < row + rows; y++) {
+          for (var x = column; x < column + span; x++) occupied[y][x] = 1;
+        }
+      }
+      boxes.forEach(function(box) { occupy(box.column, box.row, box.span, box.rows); });
+      var patterns = [
+        '<path d="M42 278V42h236v236M58 278V58h204v220" stroke-opacity=".22"/><path d="M80 268V72h160v196" stroke-width="1.8" stroke-opacity="0.8"/><path d="M91 268V84h138v184" stroke-width="0.7" stroke-opacity="0.45"/><path d="M102 268V96h116v172" stroke-width="0.7" stroke-opacity="0.45"/><path d="M113 268V108h94v160" stroke-width="1.8" stroke-opacity="0.8"/><path d="M124 268V120h72v148" stroke-width="0.7" stroke-opacity="0.45"/><path d="M135 268V132h50v136" stroke-width="0.7" stroke-opacity="0.45"/><path d="M160 152v116" stroke-width="8"/><path d="M62 286h196M160 30v20" stroke-width=".6" stroke-opacity=".4"/><rect x="147" y="258" width="26" height="10" fill="currentColor" stroke="none"/>',
+        '<g stroke-opacity=".18" stroke-width=".6"><path d="M48 86 272 214M48 134 224 236M96 60 272 162M48 214 272 86M48 162 224 60M96 240 272 138"/></g><path d="m92 98 68-38 68 38-68 40Z" stroke-width="1.4"/><path d="M92 98v132l68 38 68-38V98M160 138v130" stroke-width="1.4"/><path d="m92 120 68 38 68-38" stroke-width=".7" stroke-opacity=".55"/><path d="m92 142 68 38 68-38" stroke-width=".7" stroke-opacity=".55"/><path d="m92 164 68 38 68-38" stroke-width=".7" stroke-opacity=".55"/><path d="m92 186 68 38 68-38" stroke-width=".7" stroke-opacity=".55"/><path d="m92 208 68 38 68-38" stroke-width=".7" stroke-opacity=".55"/><path d="m92 164 68 38v44l-68-38Z" fill="currentColor" fill-opacity=".1" stroke="none"/><path d="m194 118 0 132M126 118v132" stroke-opacity=".45"/><path d="M160 35v14M160 279v13" stroke-width=".7"/>',
+        '<path d="M160 22v276M26 268h268" stroke-width=".6" stroke-opacity=".22" stroke-dasharray="3 5"/><path d="M52 268V142a108 108 0 0 1 216 0v126" stroke-width="2.2" stroke-opacity="0.8"/><path d="M64 268V142a96 96 0 0 1 192 0v126" stroke-width="0.7" stroke-opacity="0.48"/><path d="M76 268V142a84 84 0 0 1 168 0v126" stroke-width="0.7" stroke-opacity="0.48"/><path d="M88 268V142a72 72 0 0 1 144 0v126" stroke-width="0.7" stroke-opacity="0.48"/><path d="M100 268V142a60 60 0 0 1 120 0v126" stroke-width="2.2" stroke-opacity="0.8"/><path d="M112 268V142a48 48 0 0 1 96 0v126" stroke-width="0.7" stroke-opacity="0.48"/><path d="M124 268V142a36 36 0 0 1 72 0v126" stroke-width="0.7" stroke-opacity="0.48"/><path d="M136 268V142a24 24 0 0 1 48 0v126" stroke-width="0.7" stroke-opacity="0.48"/><rect x="151" y="186" width="18" height="82" fill="currentColor" fill-opacity=".12" stroke="none"/>',
+        '<g stroke-width=".6" stroke-opacity=".26"><path d="M48 48v224M48 48h224"/><path d="M76 48v224M48 76h224"/><path d="M104 48v224M48 104h224"/><path d="M132 48v224M48 132h224"/><path d="M160 48v224M48 160h224"/><path d="M188 48v224M48 188h224"/><path d="M216 48v224M48 216h224"/><path d="M244 48v224M48 244h224"/><path d="M272 48v224M48 272h224"/></g><path d="M76 244V104h56V76h84v84h28v84Z" stroke-width="1.5"/><path d="M104 244V132h56v-28h28v84h28v56" stroke-width="1"/><path d="M132 244v-56h28v-28h28" stroke-width="3"/><path d="M76 104h28v56H76ZM188 216h56v28h-56Z" fill="currentColor" fill-opacity=".14" stroke="none"/><path d="M34 48h12M48 34v12M274 272h12M272 274v12" stroke-width="1"/>',
+        '<g stroke-width=".6" stroke-opacity=".22"><path d="M72 32v256M112 32v256M152 32v256M192 32v256M232 32v256M54 64h212M54 160h212M54 256h212"/></g><path d="m112 40 96 48-64 48 64 48-96 96V40Z" stroke-width="1.5"/><path d="m112 40 32 96-32 48 32 48-32 48M144 136l64 48M112 184h96" stroke-width=".9"/><path d="m144 136 64 48-96 96 32-48-32-48Z" fill="currentColor" fill-opacity=".1" stroke="none"/><path d="M248 66v188" stroke-width="4"/><path d="M260 112v96" stroke-width=".7"/>',
+        '<path d="M82 54v218M238 48v224M160 22v276" stroke-opacity=".24" stroke-width=".6" stroke-dasharray="3 5"/><path d="m80 82 80-38 80 38-80 38Z" stroke-width="1.5"/><path d="m80 134 80-38 80 38-80 38Z" stroke-width="0.75"/><path d="m80 186 80-38 80 38-80 38Z" stroke-width="0.75"/><path d="m80 238 80-38 80 38-80 38Z" stroke-width="1.5"/><path d="M80 82v156M240 82v156M160 120v156" stroke-width=".65" stroke-opacity=".5"/><path d="m80 186 80-38 80 38-80 38Z" fill="currentColor" fill-opacity=".1" stroke="none"/><circle cx="160" cy="44" r="3" fill="currentColor" stroke="none"/>',
+        '<path d="M48 160h224M160 32v256" stroke-width=".6" stroke-opacity=".25"/><circle cx="160" cy="160" r="108" stroke-width="0.7" stroke-opacity="0.42"/><circle cx="160" cy="160" r="96" stroke-width="1.8" stroke-opacity="0.85"/><circle cx="160" cy="160" r="74" stroke-width="0.7" stroke-opacity="0.42"/><circle cx="160" cy="160" r="62" stroke-width="0.7" stroke-opacity="0.42"/><circle cx="160" cy="160" r="40" stroke-width="0.7" stroke-opacity="0.42"/><path d="M100 44v232M218 70v188" stroke-width=".7"/><rect x="91" y="102" width="18" height="116" fill="currentColor" fill-opacity=".12" stroke="none"/><path d="M218 122v76" stroke-width="6"/><circle cx="160" cy="160" r="5" fill="currentColor" stroke="none"/>',
+        '<rect x="48" y="42" width="224" height="236" stroke-width="1.6" stroke-opacity="0.85"/><rect x="70" y="62" width="180" height="196" stroke-width="0.65" stroke-opacity="0.5"/><rect x="92" y="82" width="136" height="156" stroke-width="0.65" stroke-opacity="0.5"/><rect x="112" y="100" width="96" height="120" stroke-width="1.6" stroke-opacity="0.85"/><rect x="130" y="116" width="60" height="88" stroke-width="0.65" stroke-opacity="0.5"/><rect x="144" y="128" width="32" height="64" stroke-width="0.65" stroke-opacity="0.5"/><path d="m48 42 96 86M272 42l-96 86M48 278l96-86M272 278l-96-86" stroke-width=".7" stroke-opacity=".45"/><rect x="151" y="140" width="18" height="40" fill="currentColor" fill-opacity=".14" stroke="none"/><path d="M34 42v60M286 218v60" stroke-width="3"/>'
+      ];
+      var minSpan = Math.max(2, Math.ceil((150 + gap) / (track + gap)));
+      var minRows = Math.ceil((120 + gap) / 4);
+      var maxRows = Math.ceil((300 + gap) / 4);
+      var count = 0;
+      // Only occupy sufficiently large holes inside the articles' existing footprint.
+      for (var row = 0; row <= rowCount - minRows && count < 8; row++) {
+        for (var column = 0; column <= columns - minSpan && count < 8; column++) {
+          var run = 0;
+          while (column + run < columns && !occupied[row][column + run]) run++;
+          if (run < minSpan) continue;
+          var span = Math.min(run, columns >= 12 ? 6 : 4);
+          var rows = 0;
+          while (row + rows < rowCount && rows < maxRows) {
+            var free = true;
+            for (var x = column; x < column + span; x++) {
+              if (occupied[row + rows][x]) { free = false; break; }
+            }
+            if (!free) break;
+            rows++;
+          }
+          if (rows < minRows) continue;
+          occupy(column, row, span, rows);
+          var item = document.createElement('div');
+          item.className = 'journal-interlude';
+          item.setAttribute('aria-hidden', 'true');
+          item.style.left = column * (track + gap) + 'px';
+          item.style.top = row * 4 + 'px';
+          item.style.width = span * (track + gap) - gap + 'px';
+          item.style.height = rows * 4 - gap + 'px';
+          var variant = (decorationSeed + count * 3) % patterns.length;
+          item.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 320" preserveAspectRatio="xMidYMid slice" fill="none" stroke="currentColor" stroke-width="1" aria-hidden="true">' + patterns[variant] + '</svg>';
+          grid.appendChild(item);
+          count++;
+        }
+      }
+    }
     function layout() {
       cancelAnimationFrame(frame);
       frame = requestAnimationFrame(function() {
@@ -256,6 +329,7 @@ const Home: FC<HomeProps> = ({ lang, groups, pagination, authorProfile }) => {
         cards.forEach(function(card) {
           card.style.gridRowEnd = columns > 1 ? 'span ' + Math.ceil((card.getBoundingClientRect().height + gap) / 4) : '';
         });
+        fillGaps(columns, gap);
       });
     }
     if (window.ResizeObserver) {
